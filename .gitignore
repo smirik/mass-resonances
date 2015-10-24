@@ -1,2 +1,6 @@
 .venv
 .vimrc
+.vimrc-python3
+*.pyc
+__pycache__
+.idea

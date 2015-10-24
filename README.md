@@ -4,4 +4,4 @@ This is Python fork of Three-body-resonances (https://github.com/smirik/Three-bo
 # Installation
 * virtualenv .venv
 * source .venv/bin/activate
-* pip install reqs.pip
+* pip install -r reqs.pip

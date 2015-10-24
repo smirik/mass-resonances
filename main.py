@@ -1,10 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 from optparse import OptionParser
 import logging
+from settings import ConfigSingleton
 
-CONFIG = {}
-ACTIONS = ['start', 'stop']
-GETS = 0
 
 parser = OptionParser()
 parser.add_option('--start', dest='start', metavar='N', type='int')
@@ -14,6 +12,8 @@ parser.add_option('--loglevel', dest='loglevel', metavar='LEVEL', type='str')
 
 
 def main():
+    CONFIG = ConfigSingleton.get_singleton()
+    GETS = 0
     (options, args) = parser.parse_args()
 
     level = 'DEBUG'
@@ -27,7 +27,7 @@ def main():
     )
 
     if not options.action:
-        logging.error('Specify command')
+        logging.error('Specify action')
         return
 
     action = options.action
