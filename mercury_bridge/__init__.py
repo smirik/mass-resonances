@@ -1,10 +1,11 @@
+from typing import List
 import os
 
 from settings import ConfigSingleton
 from settings import PROJECT_DIR
 
 
-def add_small_body(number: int, elements: list[float]):
+def add_small_body(number: int, elements: List[float]):
     """Write to file, which contains data of asteroids.
 
     :param number int: number of asteroid
@@ -20,11 +21,11 @@ def add_small_body(number: int, elements: list[float]):
     )
 
     if not os.path.exists(input_dir):
-        os.mkdir(input_dir)
+        os.makedirs(input_dir)
     try:
         with open(path, 'a+') as fd:
             fd.write(' A%i ep=%s' % (number, ep))
-            fd.write(' %s 0 0 0\n' % ' '.join(elements[1:6]))
+            fd.write(' %s 0 0 0\n' % ' '.join([str(x) for x in elements[1:6]]))
     except FileNotFoundError as e:
         raise e
     except IndexError as e:

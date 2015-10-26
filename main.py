@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-from optparse import OptionParser
 import logging
-from settings import ConfigSingleton
+from optparse import OptionParser
+from commands import Command
 
+from settings import ConfigSingleton
 
 parser = OptionParser()
 parser.add_option('--start', dest='start', metavar='N', type='int')
@@ -35,13 +36,15 @@ def main():
     if options.start:
         start = options.start
     else:
-        logging.warn('Please, specify first object number')
+        logging.warning('Please, specify first object number')
         start = GETS
 
     if options.stop:
         stop = options.stop
     else:
         stop = start + CONFIG['integrator']['number_of_bodies']
+
+    Command.calc(start)
 
 
 if __name__ == '__main__':

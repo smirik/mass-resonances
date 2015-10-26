@@ -7,6 +7,7 @@ from settings import PROJECT_DIR
 from catalog import AstDys
 from mercury_bridge import add_small_body
 
+
 class Command(object):
     @staticmethod
     def _execute_mercury():
@@ -37,7 +38,7 @@ class Command(object):
             (start, start + num_b)
         )
 
-        for i in num_b['times']:
+        for i in range(num_b):
             num = i + start
             arr = AstDys.find_by_number(num)
             add_small_body(num, arr)
