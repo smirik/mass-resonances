@@ -1,14 +1,14 @@
 import yaml
 import os
 
-PROJECT_DIR = os.curdir
+PROJECT_DIR = os.path.abspath(os.curdir)
 
 
 class ConfigSingleton:
     _inst = None
 
     @classmethod
-    def get_singleton(cls):
+    def get_singleton(cls) -> dict:
         if not cls._inst:
             path = os.path.join(PROJECT_DIR, 'config', 'config.yml')
             with open(path) as f:
