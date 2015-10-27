@@ -29,6 +29,6 @@ class AstDys:
                     arr[4], arr[5] = arr[5], arr[4]
                     return arr
         except FileNotFoundError as e:
-            LINK = 'http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat'
-            logging.error('File from astdys doesn\'t exist try this %s' % LINK)
+            link = 'http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat'
+            logging.error('File from astdys doesn\'t exist try this %s' % link)
             raise e

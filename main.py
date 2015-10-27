@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import logging
 from optparse import OptionParser
-from commands import Command
+from commands import calc
 
 from settings import ConfigSingleton
 
@@ -44,7 +44,7 @@ def main():
     else:
         stop = start + CONFIG['integrator']['number_of_bodies']
 
-    Command.calc(start)
+    calc(start)
 
 
 if __name__ == '__main__':
