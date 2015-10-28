@@ -9,6 +9,10 @@ class ConfigSingleton:
 
     @classmethod
     def get_singleton(cls) -> dict:
+        """
+
+        :rtype: dict
+        """
         if not cls._inst:
             path = os.path.join(PROJECT_DIR, 'config', 'config.yml')
             with open(path) as f:

@@ -5,6 +5,9 @@ from commands import calc
 
 from settings import ConfigSingleton
 
+__verion__ = '0.0.1'
+
+
 parser = OptionParser()
 parser.add_option('--start', dest='start', metavar='N', type='int')
 parser.add_option('--stop', dest='stop', metavar='N', type='int')
