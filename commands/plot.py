@@ -1,9 +1,11 @@
 import os
+import logging
 
 from settings import ConfigSingleton
 from settings import PROJECT_DIR
 from utils import ResonanceDatabase
 from utils.resonance_archive import calc_resonances
+from utils.resonance_archive import ExtractError
 
 CONFIG = ConfigSingleton.get_singleton()
 
@@ -17,7 +19,7 @@ def plot(start: int, stop: int):
     asteroids = rdb.find_between(start, stop)
 
     # Divide by num_b
-    min = asteroids[0].number
-    max = asteroids[asteroids.size-1].number
-
+    # if asteroids:
+    #     min = asteroids[0].number
+    #     max = asteroids[-1:].number
     calc_resonances(start, stop, False)

@@ -1,7 +1,7 @@
 import yaml
 import os
 
-PROJECT_DIR = os.path.abspath(os.curdir)
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class ConfigSingleton:

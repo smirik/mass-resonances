@@ -1,5 +1,4 @@
 from typing import List
-import re
 import os
 
 from settings import ConfigSingleton
@@ -32,8 +31,8 @@ class ResonanceDatabase(object):
         """Find all asteroids in resonances for given interval [start, stop]
         in body numbers.
 
-        :param start int: start of the interval
-        :param stop int: stop of the interval
+        :param int start: start of the interval
+        :param int stop: stop of the interval
         :rtype list:
         :return: list of instances of the Asteroid.
         """
@@ -45,8 +44,7 @@ class ResonanceDatabase(object):
                 tmp = int(arr[0].strip())
                 if (tmp >= start) and (tmp <= stop):
                     resonance = arr[1]
-                    resonance = re.sub(r'\[', '', resonance)
-                    resonance = re.sub(r'\]', '', resonance)
+                    resonance = resonance.replace('[', '').replace(']', '')
                     resonance = [float(x) for x in resonance.split(',')]
                     asteroids.append(Asteroid(arr[0], resonance))
         return asteroids

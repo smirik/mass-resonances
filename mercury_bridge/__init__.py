@@ -10,8 +10,8 @@ CONFIG = ConfigSingleton.get_singleton()
 def add_small_body(number: int, elements: List[float]):
     """Write to file, which contains data of asteroids.
 
-    :param number int: number of asteroid
-    :param elements list: parameters
+    :param int number: number of asteroid
+    :param list elements: parameters
     :raises: FileNotFoundError
     :raises: IndexError
     """
@@ -25,7 +25,7 @@ def add_small_body(number: int, elements: List[float]):
         os.makedirs(input_dir)
     try:
         with open(path, 'a+') as fd:
-            fd.write(' A%i ep=%s' % (number, ep))
+            fd.write('  cA%i ep=%s' % (number, ep))
             fd.write(' %s 0 0 0\n' % ' '.join([str(x) for x in elements[1:6]]))
     except FileNotFoundError as e:
         raise e

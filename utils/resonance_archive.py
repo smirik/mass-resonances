@@ -3,15 +3,22 @@ import subprocess
 import os
 from os.path import join as opjoin
 
-
 from mercury_bridge import calc
 from utils import ResonanceDatabase
 from settings import ConfigSingleton
 from settings import PROJECT_DIR
 from mercury_bridge.programms import simple_clean
 from mercury_bridge.programms import element6
+from utils.series import find_circulation
+from utils.series import get_max_diff
+from utils.series import NoCirculationsException
+from utils.views import create_gnuplot_file
 
 CONFIG = ConfigSingleton.get_singleton()
+
+
+class ExtractError(Exception):
+    pass
 
 
 def extract(start: int, elements: bool = False, do_copy_aei: bool = False) -> bool:
@@ -23,6 +30,7 @@ def extract(start: int, elements: bool = False, do_copy_aei: bool = False) -> bo
     :param elements bool:
     :param do_copy_aei bool:
     :rtype bool:
+    :raises FileNotFoundError: if archive not found.
     :return:
     """
     # Start should have 0 remainder to number of bodies because of structure
@@ -32,7 +40,7 @@ def extract(start: int, elements: bool = False, do_copy_aei: bool = False) -> bo
     # Check directory in aei export archive
     body_number_stop = start + num_b
     aei_dir = opjoin(PROJECT_DIR, CONFIG['export']['aei_dir'],
-                     start, body_number_stop, 'aei')
+                     '%i-%i' % (start, body_number_stop), 'aei')
 
     if os.path.exists(opjoin(aei_dir, 'A%i.aei' % start)):
         return True
@@ -52,11 +60,14 @@ def extract(start: int, elements: bool = False, do_copy_aei: bool = False) -> bo
             code = subprocess.call(['tar', '-xf', tar_file],
                                    cwd=opjoin(export_base_dir))
             if code:
-                raise Exception('Error during unpacking arhive %s' % tar_file)
-            logging.debug('[done]')
+                logging.error('Error during unpacking arhive %s' % tar_file)
+                return False
+            else:
+                logging.debug('[done]')
         else:
-            logging.error('Archive %s not found')
-            return False
+            e = FileNotFoundError('Archive %s not found' % export_tar)
+            e.filename = export_tar
+            raise e
 
     def _copy_integrator_files():
         logging.debug('Copy integrator files... ')
@@ -121,10 +132,9 @@ def calc_resonances(start: int, stop: int = None, elements: bool = False):
     :param start int:
     :param stop int:
     :param elements bool:
+    :raises ExtractError: if some problems has been appeared related to
+    archive.
     """
-
-    def _max() -> int:
-        return 1
 
     num_b = CONFIG['integrator']['number_of_bodies']
 
@@ -138,24 +148,32 @@ def calc_resonances(start: int, stop: int = None, elements: bool = False):
 
     asteroids = rdb.find_between(start, stop)
 
-    # Extract from archive data
-    is_extracted = extract(start, elements)
+    try:
+        if not extract(start, elements):
+            raise ExtractError('Extracting data from %i to %i has been failed' %
+                               (start, stop))
+    except FileNotFoundError as e:
+        logging.info('Nothing to do. File %s not found.' % e.filename)
 
     for asteroid in asteroids:
-        asteroid_num = str(asteroid.number)
+        asteroid_num = asteroid.number
         logging.info('Plot for asteroid # %s' % asteroid_num)
         calc(asteroid_num, asteroid.resonance)
-        has_circulation = Series.findCirculation(asteroid_num, 0, CONFIG['gnuplot']['x_stop'], false, true)
-        if has_circulation:
-            # max = Series.max(has_circulation[0])
-            max = _max()
-            logging.info("% = %s%, medium period = %s, max = %s" % (
-                has_circulation[1],
-                has_circulation[2],
-                max
+        stop = CONFIG['gnuplot']['x_stop']
+        try:
+            breaks, libration_percent, average_delta = find_circulation(
+                asteroid_num, 0, stop, False)
+            logging.info('% = %f, average period = %f, max = %f' % (
+                libration_percent, average_delta, get_max_diff(breaks)
             ))
-        else:
+        except NoCirculationsException:
             logging.info("pure resonance")
 
-            # View.createGnuplotFile(asteroid_num)
-            # tmp = %x[ gnuplot #{output_gnu}/A#{asteroid_num}.gnu > #{output_images}/A#{asteroid_num}.png ]
+        create_gnuplot_file(asteroid_num)
+        try:
+            in_path = opjoin(PROJECT_DIR, output_gnu, 'A%i.gnu' % asteroid_num)
+            out_path = opjoin(PROJECT_DIR, output_images, 'A%i.png' % asteroid_num)
+            with open(out_path, 'wb') as f:
+                subprocess.call(['gnuplot', in_path], stdout=f)
+        except Exception as e:
+            print(e)

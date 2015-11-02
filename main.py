@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 import logging
 from optparse import OptionParser
+from typing import Generator, List
 from commands import calc
+from commands import plot
 
 from settings import ConfigSingleton
 
@@ -14,10 +16,11 @@ parser.add_option('--stop', dest='stop', metavar='N', type='int')
 parser.add_option('--action', dest='action', metavar='ACTION', type='str')
 parser.add_option('--loglevel', dest='loglevel', metavar='LEVEL', type='str')
 
+CONFIG = ConfigSingleton.get_singleton()
+GETS = 0
+
 
 def main():
-    CONFIG = ConfigSingleton.get_singleton()
-    GETS = 0
     (options, args) = parser.parse_args()
 
     level = 'DEBUG'
@@ -47,7 +50,10 @@ def main():
     else:
         stop = start + CONFIG['integrator']['number_of_bodies']
 
-    calc(start)
+    if action == 'calc':
+        calc(start)
+    else:
+        plot(start, stop)
 
 
 if __name__ == '__main__':
