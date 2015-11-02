@@ -1,11 +1,9 @@
 import os
-import logging
 
 from settings import ConfigSingleton
 from settings import PROJECT_DIR
 from utils import ResonanceDatabase
 from utils.resonance_archive import calc_resonances
-from utils.resonance_archive import ExtractError
 
 CONFIG = ConfigSingleton.get_singleton()
 

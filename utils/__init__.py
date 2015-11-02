@@ -54,6 +54,8 @@ class ResonanceDatabase(object):
             self._create()
 
     def _create(self):
-        os.makedirs(os.path.dirname(self.db_file))
+        dir_path = os.path.dirname(self.db_file)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
         f = open(self.db_file, 'w')
         f.close()
