@@ -38,7 +38,7 @@ class ResonanceDatabase(object):
         """
         asteroids = []
 
-        with open(self.db_file, 'r') as f:
+        with open(self.db_file) as f:
             for line in f:
                 arr = line.split(';')
                 tmp = int(arr[0].strip())
@@ -46,7 +46,7 @@ class ResonanceDatabase(object):
                     resonance = arr[1]
                     resonance = resonance.replace('[', '').replace(']', '')
                     resonance = [float(x) for x in resonance.split(',')]
-                    asteroids.append(Asteroid(arr[0], resonance))
+                    asteroids.append(Asteroid(int(arr[0]), resonance))
         return asteroids
 
     def _create_if_not_exists(self):
