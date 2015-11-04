@@ -3,7 +3,7 @@ from typing import Tuple
 from typing import TypeVar
 from typing import List
 from typing import io
-from typing import Generator
+from typing import Iterable
 from os.path import join as opjoin
 
 from settings import ConfigSingleton
@@ -30,9 +30,11 @@ def _cutoff_angle(angle: float) -> float:
     return value % math.pi - subtrahend
 
 
-def _get_line_data(file: io.TextIO, is_transport: bool) \
-        -> Generator[List[float], None, None]:
+def _get_line_data(file: io.TextIO, is_transport: bool)\
+        -> Iterable[List[float]]:
     """
+    :type file: io.TextIO
+    :type is_transport: bool
     :rtype : Generator[List[float], None, None]
     """
     for line in file:
@@ -74,10 +76,10 @@ def find_circulation(body_number: int, start: int, stop: int,
     """Find circulation in data array from key start to key stop.
     Raises NoCirculationsException if there is no circulations.
 
-    :param int body_numbert:
+    :param int body_number:
     :param int start:
     :param int stop:
-    :param bool transport:
+    :param bool is_transport:
     :rtype: tuple
     :return: list of circulation breaks, percantage of libration, average
     delta between circulation breaks.
