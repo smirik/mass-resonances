@@ -1,0 +1,26 @@
+language: python
+compiler: gcc
+addons:
+  - python: "3.5"
+    
+before_install:
+  - sudo apt-get update -qq
+
+install:
+  - sudo apt-get install gfortran gnuplot
+  - git submodule update --init
+  - cd ./mercury
+  - ./compile.sh
+  - cd -
+
+before_script:
+  - mkdir catalog
+  - cd ./catalog
+  - wget http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat
+
+script:
+  - python ./main.py calc
+
+#after_success:
+  #- make clean
+  #- make coveralls
