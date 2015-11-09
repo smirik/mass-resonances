@@ -6,22 +6,24 @@ from settings import ConfigSingleton
 from settings import PROJECT_DIR
 
 
+CONFIG = ConfigSingleton.get_singleton()
+SKIP_LINES = CONFIG['catalog']['astdys']['skip']
+PATH = os.path.join(PROJECT_DIR, CONFIG['catalog']['file'])
+
+
 class AstDys:
     @staticmethod
     def find_by_number(number: int) -> List[float]:
         """Find asteroid parameters by number.
 
-        :param num int: num for search.
+        :param int number: num for search.
         :return list: array contains parameters of asteroid.
         """
-        CONFIG = ConfigSingleton.get_singleton()
-        SKIP_LINES = CONFIG['catalog']['astdys']['skip']
-        PATH = os.path.join(PROJECT_DIR, CONFIG['catalog']['file'])
 
         try:
             with open(PATH, 'r') as f_file:
                 for i, line in enumerate(f_file):
-                    if i < number + SKIP_LINES:
+                    if i < number - 1 + SKIP_LINES:
                         continue
 
                     arr = line.split()[1:]

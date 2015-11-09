@@ -1,13 +1,14 @@
 import math
+from typing import Iterable
+from typing import List
 from typing import Tuple
 from typing import TypeVar
-from typing import List
 from typing import io
-from typing import Iterable
-from os.path import join as opjoin
 
+from os.path import join as opjoin
 from settings import ConfigSingleton
 from settings import PROJECT_DIR
+from utils.shortcuts import cutoff_angle
 
 CONFIG = ConfigSingleton.get_singleton()
 LIBRATION_MIN = CONFIG['resonance']['libration']['min']
@@ -15,19 +16,6 @@ LIBRATION_MIN = CONFIG['resonance']['libration']['min']
 
 class NoCirculationsException(Exception):
     pass
-
-
-def _cutoff_angle(angle: float) -> float:
-    """Cutoff input angle to interval from 0 to 2Pi or from 0 to -2Pi
-    if input angle is negative.
-
-    :param float angle:
-    :rtype: float
-    :return: angle in interval [0; 2Pi] or [0; -2Pi]
-    """
-    value = angle + math.pi
-    subtrahend = 2 * math.pi if value < 0 else 0
-    return value % math.pi - subtrahend
 
 
 def _get_line_data(file: io.TextIO, is_transport: bool)\
@@ -40,7 +28,7 @@ def _get_line_data(file: io.TextIO, is_transport: bool)\
     for line in file:
         data = [float(x) for x in line.split()]
         if is_transport:
-            data[1] = _cutoff_angle(data[1])
+            data[1] = cutoff_angle(data[1] + math.pi)
 
         yield data
 
@@ -85,13 +73,13 @@ def find_circulation(body_number: int, start: int, stop: int,
     delta between circulation breaks.
     :raises FileNotFoundError: if file doesn't exist
     :raises NoCirculationsException: if number of circulation breaks will less
-    than 2
+    than 2.
     """
-    file = _get_filepath(body_number)
+    res_file = _get_filepath(body_number)
     breaks = []  # circulation breaks by OX
     p_break = 0
 
-    with open(file) as f:
+    with open(res_file) as f:
         previous = None
         for data in _get_line_data(f, is_transport):
             # If the distance (OY axis) between new point and previous more
