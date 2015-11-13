@@ -1,20 +1,17 @@
 import sys
 import logging
 import subprocess
-
 import glob
-
 import shutil
-
 import os
 from os.path import join as opjoin
 
 from mercury_bridge import calc
 from settings import ConfigSingleton
 from settings import PROJECT_DIR
-from mercury_bridge.programms import simple_clean
-from mercury_bridge.programms import element6
-from utils import ResonanceDatabase
+from mercury_bridge.programs import simple_clean
+from mercury_bridge.programs import element6
+from .resonancedatabase import ResonanceDatabase
 from utils.series import find_circulation
 from utils.series import get_max_diff
 from utils.series import NoCirculationsException
@@ -116,7 +113,7 @@ def extract(start: int, elements: bool = False, do_copy_aei: bool = False) -> bo
 
     if do_copy_aei:
         logging.info('Copy AEI files to export directory')
-        for i in range(100):
+        for i in range(BODIES_COUNTER):
             source = opjoin(PROJECT_DIR, 'mercury', 'A%i.aei' % (start + i))
             target = opjoin(PROJECT_DIR, export_dir, 'aei')
             code = subprocess.call(['cp', source, target])
