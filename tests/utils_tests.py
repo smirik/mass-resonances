@@ -6,7 +6,7 @@ import os
 from settings import ConfigSingleton
 import settings
 from utils.series import get_max_diff
-from utils import ResonanceDatabase
+from storage import ResonanceDatabase
 
 setattr(settings, 'PROJECT_DIR', opjoin(settings.PROJECT_DIR, 'tests'))
 CONFIG = ConfigSingleton.get_singleton()

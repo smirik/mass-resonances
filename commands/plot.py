@@ -1,5 +1,5 @@
 from settings import ConfigSingleton
-from utils.resonance_archive import calc_resonances
+from storage import calc_resonances
 
 CONFIG = ConfigSingleton.get_singleton()
 
