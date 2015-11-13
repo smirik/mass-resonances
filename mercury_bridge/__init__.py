@@ -12,6 +12,7 @@ BODY1 = CONFIG['resonance']['bodies'][0]
 BODY2 = CONFIG['resonance']['bodies'][1]
 BODIES_COUNTER = CONFIG['integrator']['number_of_bodies']
 OUTPUT_ANGLE = CONFIG['output']['angle']
+SMALL_BODIES_FILENAME = CONFIG['integrator']['files']['small_bodies']
 
 
 def add_small_body(number: int, elements: List[float]):
@@ -124,7 +125,7 @@ def calc(body_number: int, resonance: List[float]):
         file.close()
 
 
-def create_small_body_file():
+def create_small_body_file(do_symlink=True):
     header = ")O+_06 Small-body initial data  (WARNING: Do not delete this line!!)\n" \
              ") Lines beginning with `)' are ignored.\n" \
              ")---------------------------------------------------------------------\n" \
@@ -133,8 +134,17 @@ def create_small_body_file():
     filename = opjoin(
         PROJECT_DIR,
         CONFIG['integrator']['input'],
-        CONFIG['integrator']['files']['small_bodies']
+        SMALL_BODIES_FILENAME
     )
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
     fd = open(filename, 'w')
     fd.write(header)
     fd.close()
+
+    if do_symlink:
+        symlink_path = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'],
+                              SMALL_BODIES_FILENAME)
+        if os.path.exists(symlink_path):
+            os.remove(symlink_path)
+        os.symlink(filename, symlink_path)
