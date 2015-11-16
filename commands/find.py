@@ -64,9 +64,10 @@ def _find_resonances(by_axis: float, with_swing: float = 0.0001) \
     return _get_resonances(by_axis, with_swing)
 
 
-def find(start: int, stop: int):
+def find(start: int, stop: int, is_current: bool = False):
     """Find all possible resonances for all asteroids from start to stop.
 
+    :param is_current:
     :param stop:
     :param start:
     :return:
@@ -81,7 +82,11 @@ def find(start: int, stop: int):
         resonances.append(_find_resonances(arr[1], AXIS_SWING))
 
     rdb = ResonanceDatabase('export/full.db')
-    extract(start)
+    if not is_current:
+        try:
+            extract(start)
+        except FileNotFoundError as e:
+            logging.info('Archive %s not found. Try command \'package\'' % e.filename)
 
     for i in range(delta + 1):
         asteroid_num = start + i

@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/smirik/resonances.svg?branch=master)](https://travis-ci.org/smirik/resonances)
 # resonances
 This is Python fork of Three-body-resonances (https://github.com/smirik/Three-body-resonances).
 

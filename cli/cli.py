@@ -15,7 +15,6 @@ LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 @click.group()
 @click.option('--loglevel', default='DEBUG', help='default: DEBUG',
               type=click.Choice(LEVELS))
-@click.pass_context
 def cli(loglevel: str = 'DEBUG'):
     logging.basicConfig(
         format='%(asctime)s %(levelname)s %(message)s',

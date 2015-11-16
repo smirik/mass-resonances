@@ -1,0 +1,32 @@
+language: python
+python: 3.5
+
+before_install:
+  - sudo apt-get update -qq
+
+install:
+  - sudo apt-get install gfortran gnuplot wget
+  - git submodule update --init
+  - cd ./mercury
+  - ./compile.sh
+  - cd -
+  - pip install -r reqs.pip
+
+before_script:
+  - cd ./catalog
+  - wget http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat
+  - cd -
+  - mkdir axis
+  - cd axis
+  - wget https://raw.githubusercontent.com/smirik/Three-body-resonances/master/axis/resonances
+  - cd -
+
+script:
+  - python ./main.py calc
+  - python ./main.py package --res=1 --compress=1 --aei=1
+  - python ./main.py find
+  - cat ./export/full.db | wc -l
+
+#after_success:
+  #- make clean
+  #- make coveralls
