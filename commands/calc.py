@@ -1,19 +1,17 @@
 import logging
-import subprocess
 import os
 
 from settings import ConfigSingleton
 from settings import PROJECT_DIR
-from catalog import AstDys
-from mercury_bridge import add_small_body
-from mercury_bridge import create_small_body_file
-from mercury_bridge.programs import simple_clean
-from mercury_bridge.programs import mercury6
-from mercury_bridge.programs import element6
-
+from catalog import find_by_number
+from integrator import SmallBodiesFileBuilder
+from integrator.programs import simple_clean
+from integrator.programs import mercury6
+from integrator.programs import element6
 
 CONFIG = ConfigSingleton.get_singleton()
 BODY_COUNTER = CONFIG['integrator']['number_of_bodies']
+SMALL_BODIES_FILENAME = CONFIG['integrator']['files']['small_bodies']
 
 
 class MercuryException(Exception):
@@ -37,20 +35,28 @@ def _execute_mercury():
 
 
 def calc(start: int):
-    """Calculate
+    """Gets from astdys catalog parameters of orbital elements. Represents them
+    to small.in file and makes symlink of this file in directory of application
+    mercury6.
 
     :param int start: start is position of start element for computing.
     """
-    create_small_body_file()
+    filepath = os.path.join(PROJECT_DIR, CONFIG['integrator']['input'],
+                            SMALL_BODIES_FILENAME)
+    symlink = os.path.join(PROJECT_DIR, CONFIG['integrator']['dir'],
+                           SMALL_BODIES_FILENAME)
+    small_bodies_storage = SmallBodiesFileBuilder(filepath, symlink)
+    small_bodies_storage.create_small_body_file()
     logging.info(
-        'Create initial conditions for asteroids from %i to %i' %
-        (start, start + BODY_COUNTER)
+        'Create initial conditions for asteroids from %i to %i',
+        start, start + BODY_COUNTER
     )
 
     for i in range(BODY_COUNTER):
         num = i + start
-        arr = AstDys.find_by_number(num)
-        add_small_body(num, arr)
+        arr = find_by_number(num)
+        small_bodies_storage.add_body(num, arr)
+    small_bodies_storage.flush()
 
     logging.info('Integrating orbits...')
     _execute_mercury()

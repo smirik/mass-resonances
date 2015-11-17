@@ -11,6 +11,7 @@ install:
   - ./compile.sh
   - cd -
   - pip install -r reqs.pip
+  - pip install coverage
 
 before_script:
   - cd ./catalog
@@ -26,6 +27,10 @@ script:
   - python ./main.py package --res=1 --compress=1 --aei=1
   - python ./main.py find
   - cat ./export/full.db | wc -l
+  - coverage run -m unittest tests.utils_tests
+  - coverage report -m
+  - coverage run -m unittest tests.integratortests
+  - coverage report -m
 
 #after_success:
   #- make clean

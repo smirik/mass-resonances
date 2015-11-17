@@ -3,8 +3,8 @@ import sys
 from typing import List
 
 import os
-from catalog import AstDys
-from mercury_bridge import calc
+from catalog import find_by_number
+from integrator import calc
 from settings import ConfigSingleton
 from settings import PROJECT_DIR
 from storage import ResonanceDatabase
@@ -78,7 +78,7 @@ def find(start: int, stop: int, is_current: bool = False):
     logging.info("Finding asteroids and possible resonances")
     for i in range(delta + 1):
         num = start + i
-        arr = AstDys.find_by_number(num)
+        arr = find_by_number(num)
         resonances.append(_find_resonances(arr[1], AXIS_SWING))
 
     rdb = ResonanceDatabase('export/full.db')

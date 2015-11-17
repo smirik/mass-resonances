@@ -6,11 +6,11 @@ import shutil
 import os
 from os.path import join as opjoin
 
-from mercury_bridge import calc
+from integrator import calc
 from settings import ConfigSingleton
 from settings import PROJECT_DIR
-from mercury_bridge.programs import simple_clean
-from mercury_bridge.programs import element6
+from integrator.programs import simple_clean
+from integrator.programs import element6
 from .resonancedatabase import ResonanceDatabase
 from utils.series import find_circulation
 from utils.series import get_max_diff
