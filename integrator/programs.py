@@ -2,11 +2,11 @@ import logging
 import subprocess
 import os
 
-from settings import PROJECT_DIR
-from settings import ConfigSingleton
+from settings import Config
 
 
-CONFIG = ConfigSingleton.get_singleton()
+CONFIG = Config.get_params()
+PROJECT_DIR = Config.get_project_dir()
 
 
 def _execute_programm(name: str) -> int:

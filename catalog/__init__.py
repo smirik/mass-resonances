@@ -2,12 +2,11 @@ from typing import List
 import os
 import logging
 
-from settings import ConfigSingleton
-from settings import PROJECT_DIR
+from settings import Config
 
-
-CONFIG = ConfigSingleton.get_singleton()
+CONFIG = Config.get_params()
 SKIP_LINES = CONFIG['catalog']['astdys']['skip']
+PROJECT_DIR = Config.get_project_dir()
 PATH = os.path.join(PROJECT_DIR, CONFIG['catalog']['file'])
 
 

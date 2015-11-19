@@ -1,7 +1,7 @@
-from settings import ConfigSingleton
+from settings import Config
 from storage import calc_resonances
 
-CONFIG = ConfigSingleton.get_singleton()
+CONFIG = Config.get_params()
 
 
 def plot(start: int, stop: int):

@@ -7,17 +7,16 @@ import os
 from os.path import join as opjoin
 
 from integrator import calc
-from settings import ConfigSingleton
-from settings import PROJECT_DIR
+from settings import Config
 from integrator.programs import simple_clean
 from integrator.programs import element6
 from .resonancedatabase import ResonanceDatabase
 from utils.series import find_circulation
-from utils.series import get_max_diff
 from utils.series import NoCirculationsException
 from utils.views import create_gnuplot_file
 
-CONFIG = ConfigSingleton.get_singleton()
+CONFIG = Config.get_params()
+PROJECT_DIR = Config.get_project_dir()
 BODIES_COUNTER = int(CONFIG['integrator']['number_of_bodies'])
 OUTPUT_GNU = CONFIG['output']['gnuplot']
 OUTPUT_IMAGES = CONFIG['output']['images']
@@ -125,7 +124,7 @@ def extract(start: int, elements: bool = False, do_copy_aei: bool = False) -> bo
 
 
 def calc_resonances(start: int, stop: int, elements: bool = False):
-    """Calculate resonances and plot the png files for given object
+    """Calculate resonances and plot the png files for given object.
 
     :param int start:
     :param int stop:
@@ -149,11 +148,9 @@ def calc_resonances(start: int, stop: int, elements: bool = False):
         logging.info('Plot for asteroid # %s' % asteroid_num)
         calc(asteroid_num, asteroid.resonance)
         try:
-            breaks, libration_percent, average_delta = find_circulation(
+            libration = find_circulation(
                 asteroid_num, 0, X_STOP, False)
-            logging.info('% = %f, average period = %f, max = %f' % (
-                libration_percent, average_delta, get_max_diff(breaks)
-            ))
+            logging.info('%s' % str(libration))
         except NoCirculationsException:
             logging.info("pure resonance")
 
