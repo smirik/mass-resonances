@@ -1,14 +1,14 @@
 import os
 
-from settings import ConfigSingleton
-from settings import PROJECT_DIR
+from settings import Config
 from entities import Asteroid
 
 from typing import List
 
 
 class ResonanceDatabase(object):
-    CONFIG = ConfigSingleton.get_singleton()
+    CONFIG = Config.get_params()
+    PROJECT_DIR = Config.get_project_dir()
     DBPATH = os.path.join(PROJECT_DIR, CONFIG['resonance']['db_file'])
 
     def __init__(self, db_file: str = DBPATH):

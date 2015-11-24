@@ -2,20 +2,26 @@ import unittest
 from os.path import join as opjoin
 from os.path import exists as opexists
 import os
-
-from settings import ConfigSingleton
+from settings import Config
 import settings
-from integrator import SmallBodiesFileBuilder
 
-setattr(settings, 'PROJECT_DIR', opjoin(settings.PROJECT_DIR, 'tests'))
-CONFIG = ConfigSingleton.get_singleton()
+
+CONFIG = Config.get_params()
+if 'tests' not in Config.get_project_dir():
+    Config.set_project_dir(opjoin(settings.Config.get_project_dir(), 'tests'))
+PROJECT_DIR = Config.get_project_dir()
 
 
 class SmallBodiesFileBuilderTestCase(unittest.TestCase):
-    FILEPATH = opjoin(settings.PROJECT_DIR, 'small.in')
-    SYMLINK = opjoin(settings.PROJECT_DIR, 'small.in.link')
+    FILEPATH = opjoin(PROJECT_DIR, 'small.in')
+    SYMLINK = opjoin(PROJECT_DIR, 'small.in.link')
+
+    def tearDown(self):
+        if opexists(self.FILEPATH):
+            os.remove(self.FILEPATH)
 
     def test_create_small_body_file(self):
+        from integrator import SmallBodiesFileBuilder
 
         def _test_with_symlink():
             builder = SmallBodiesFileBuilder(self.FILEPATH, self.SYMLINK)
@@ -40,6 +46,8 @@ class SmallBodiesFileBuilderTestCase(unittest.TestCase):
         _test_without_symlink()
 
     def test_flush(self):
+        from integrator import SmallBodiesFileBuilder
+
         def _test_file_existance():
             builder = SmallBodiesFileBuilder(self.FILEPATH)
             builder.add_body(1, [1., 2., 3., 4., 5., 6., 7.])
@@ -60,8 +68,4 @@ class SmallBodiesFileBuilderTestCase(unittest.TestCase):
 
         _test_file_existance()
         _test_success_flush()
-
-    def tearDown(self):
-        if opexists(self.FILEPATH):
-            os.remove(self.FILEPATH)
 

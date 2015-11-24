@@ -5,11 +5,11 @@ from os.path import join as opjoin
 import glob
 import tarfile
 
-from settings import ConfigSingleton
-from settings import PROJECT_DIR
+from settings import Config
 from utils.shortcuts import logging_done
 
-CONFIG = ConfigSingleton.get_singleton()
+CONFIG = Config.get_params()
+PROJECT_DIR = Config.get_project_dir()
 BODIES_COUNTER = CONFIG['integrator']['number_of_bodies']
 EXPORT_BASE_DIR = opjoin(PROJECT_DIR, CONFIG['export']['base_dir'])
 INTEGRATOR_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])

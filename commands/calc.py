@@ -1,15 +1,15 @@
 import logging
 import os
 
-from settings import ConfigSingleton
-from settings import PROJECT_DIR
+from settings import Config
 from catalog import find_by_number
 from integrator import SmallBodiesFileBuilder
 from integrator.programs import simple_clean
 from integrator.programs import mercury6
 from integrator.programs import element6
 
-CONFIG = ConfigSingleton.get_singleton()
+CONFIG = Config.get_params()
+PROJECT_DIR = Config.get_project_dir()
 BODY_COUNTER = CONFIG['integrator']['number_of_bodies']
 SMALL_BODIES_FILENAME = CONFIG['integrator']['files']['small_bodies']
 

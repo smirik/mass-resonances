@@ -1,8 +1,8 @@
-from settings import ConfigSingleton
-from settings import PROJECT_DIR
+from settings import Config
 import os
 
-CONFIG = ConfigSingleton.get_singleton()
+CONFIG = Config.get_params()
+PROJECT_DIR = Config.get_project_dir()
 
 
 def create_gnuplot_file(body_number):

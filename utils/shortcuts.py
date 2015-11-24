@@ -7,12 +7,12 @@ def logging_done():
 
 
 def cutoff_angle(value: float) -> float:
-    """Cutoff input angle to interval from 0 to 2Pi or from 0 to -2Pi
+    """Cutoff input angle to interval from 0 to Pi or from 0 to -Pi
     if input angle is negative.
 
     :param float value:
     :rtype: float
-    :return: angle in interval [0; 2Pi] or [0; -2Pi]
+    :return: angle in interval [0; Pi] or (0; -Pi]
     """
     if value > math.pi:
         while value > math.pi:
@@ -21,16 +21,3 @@ def cutoff_angle(value: float) -> float:
         while value < -math.pi:
             value += 2*math.pi
     return value
-
-
-# def cutoff_angle(value: float) -> float:
-#     """Cutoff input angle to interval from 0 to 2Pi or from 0 to -2Pi
-#     if input angle is negative.
-#
-#     :param float value:
-#     :rtype: float
-#     :return: angle in interval [0; 2Pi] or [0; -2Pi]
-#     """
-#     n = int(value / math.pi)
-#     return value - (n * math.pi)
-

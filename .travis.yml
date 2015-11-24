@@ -11,7 +11,7 @@ install:
   - ./compile.sh
   - cd -
   - pip install -r reqs.pip
-  - pip install coverage
+  - pip install coverage pytest==2.8.3
 
 before_script:
   - cd ./catalog
@@ -27,11 +27,8 @@ script:
   - python ./main.py package --res=1 --compress=1 --aei=1
   - python ./main.py find
   - cat ./export/full.db | wc -l
-  - coverage run -m unittest tests.utils_tests
-  - coverage report -m
-  - coverage run -m unittest tests.integratortests
-  - coverage report -m
+  - python -m unittest discover -v -p '*.py' ./tests
+  - coverage run -m pytest ./tests/entitiestest/librationtest.py ./tests/utils_tests.py
 
-#after_success:
-  #- make clean
-  #- make coveralls
+after_success:
+  - coverage report -m

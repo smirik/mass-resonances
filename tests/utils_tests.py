@@ -1,44 +1,54 @@
-import unittest
+from typing import List
+
+import pytest
 from os.path import join as opjoin
 from os.path import exists as opexists
 import os
-
-from settings import ConfigSingleton
+from settings import Config
 import settings
-from utils.series import get_max_diff
 from storage import ResonanceDatabase
+from utils.series import find_circulation
 
-setattr(settings, 'PROJECT_DIR', opjoin(settings.PROJECT_DIR, 'tests'))
-CONFIG = ConfigSingleton.get_singleton()
+if 'tests' not in Config.get_project_dir():
+    Config.set_project_dir(opjoin(settings.Config.get_project_dir(), 'tests'))
 
-
-class SeriesTestCase(unittest.TestCase):
-    def test_get_max_diff(self):
-        data = [10000, 12000, 14000, 90000, 100000]
-        res = get_max_diff(data)
-        self.assertEqual(res, 76000)
+CONFIG = Config.get_params()
+PROJECT_DIR = Config.get_project_dir()
 
 
-class ResonanceDatabaseTestCase(unittest.TestCase):
-    def test_init(self):
-        def _common_test(path: str=None):
-            if not path:
-                path = opjoin(settings.PROJECT_DIR,
-                              CONFIG['resonance']['db_file'])
+@pytest.mark.parametrize('path', [
+    opjoin(PROJECT_DIR, CONFIG['resonance']['db_file']),
+    opjoin(PROJECT_DIR, 'export', 'unittest_db.txt')
+])
+def test_init(path: str):
+    obj = ResonanceDatabase(path)
+    assert obj.db_file == path
+    assert opexists(obj.db_file)
+    os.remove(path)
+    os.removedirs(os.path.dirname(path))
 
-            obj = ResonanceDatabase(path)
-            self.assertEqual(obj.db_file, path)
-            self.assertTrue(opexists(obj.db_file))
-            os.remove(path)
-            os.removedirs(os.path.dirname(path))
 
-        def _test_custom_path_db():
-            _common_test(opjoin(
-                settings.PROJECT_DIR, 'export', 'unittest_db.txt'
-            ))
+RESFILE_DATA = """0.0000000 -0.511077 2.765030 0.077237 0.174533 1.396263 2.690092 5.203010 0.048542 9.578820 0.054070
+3.0000000 0.875501 2.764430 0.078103 0.174533 1.396263 2.682815 5.203710 0.048899 9.584690 0.057297
+6.0000000 2.371922 2.764580 0.078213 0.174533 1.396263 2.663383 5.201790 0.048970 9.573660 0.056652
+9.0000000 -2.512588 2.765610 0.077484 0.174533 1.396263 2.662716 5.202390 0.048907 9.542190 0.053900
+"""
 
-        def _test_default_path_db():
-            _common_test()
 
-        _test_custom_path_db()
-        _test_default_path_db()
+@pytest.fixture
+def res_filepath() -> str:
+    filepath = opjoin(PROJECT_DIR, 'testfile.res')
+    with open(filepath, 'w') as resfile:
+        resfile.write(RESFILE_DATA)
+
+    return filepath
+
+
+@pytest.mark.parametrize('do_cutoff_axis, results', [
+    (False, [9.]), (True, [3.])
+])
+def test_find_circulation(res_filepath: str, do_cutoff_axis: bool,
+                          results: List[float]):
+    res = find_circulation(res_filepath, do_cutoff_axis)
+    assert res == results
+    os.remove(res_filepath)
