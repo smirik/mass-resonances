@@ -7,7 +7,7 @@ import os
 from settings import Config
 import settings
 from storage import ResonanceDatabase
-from utils.series import find_circulation
+from utils.series import CirculationYearsFinder
 
 if 'tests' not in Config.get_project_dir():
     Config.set_project_dir(opjoin(settings.Config.get_project_dir(), 'tests'))
@@ -44,11 +44,11 @@ def res_filepath() -> str:
     return filepath
 
 
-@pytest.mark.parametrize('do_cutoff_axis, results', [
+@pytest.mark.parametrize('for_apocetric, results', [
     (False, [9.]), (True, [3.])
 ])
-def test_find_circulation(res_filepath: str, do_cutoff_axis: bool,
-                          results: List[float]):
-    res = find_circulation(res_filepath, do_cutoff_axis)
+def test_getting_years(res_filepath: str, for_apocetric: bool, results: List[float]):
+    finder = CirculationYearsFinder(for_apocetric, res_filepath)
+    res = finder.get_years()
     assert res == results
     os.remove(res_filepath)

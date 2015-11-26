@@ -1,16 +1,14 @@
 from typing import List
 
-from .threebodyresonance import ThreeBodyResonance
-from .threebodyresonance import LONG
-from .threebodyresonance import PERI
-from .threebodyresonance import LONG_COEFF
-from .threebodyresonance import PERI_COEFF
-from .threebodyresonance import build_resonance
+from entities.body import Body, LONG, PERI, LONG_COEFF, PERI_COEFF
+from entities.dbutills import Base
 from .libration import Libration
-
-
-class Body(object):
-    pass
+from .threebodyresonance import LONG
+from .threebodyresonance import LONG_COEFF
+from .threebodyresonance import PERI
+from .threebodyresonance import PERI_COEFF
+from .threebodyresonance import ThreeBodyResonance
+from .threebodyresonance import build_resonance
 
 
 class Asteroid(Body):

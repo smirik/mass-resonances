@@ -8,9 +8,10 @@ from integrator import ResonanceOrbitalElementSet
 from settings import Config
 from storage import ResonanceDatabase
 from storage.resonance_archive import extract
-from utils.series import find_circulation
+from utils.series import CirculationYearsFinder
 from entities import build_resonance, Libration
 from entities import ThreeBodyResonance
+from entities.dbutills import session
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -24,14 +25,14 @@ BODY1 = CONFIG['resonance']['bodies'][0]
 BODY2 = CONFIG['resonance']['bodies'][1]
 
 
-def _get_resonances(by_asteroid_axis: float, with_swing: float) \
+def _build_resonances(asteroid_num: int, by_asteroid_axis: float, with_swing: float) \
         -> List[ThreeBodyResonance]:
     res = []
     try:
         with open(RESONANCE_FILEPATH) as resonance_file:
             for line in resonance_file:
                 line_data = line.split()
-                resonance = build_resonance(line_data)
+                resonance = build_resonance(line_data, asteroid_num)
                 if abs(resonance.asteroid_axis - by_asteroid_axis) <= with_swing:
                     res.append(resonance)
     except FileNotFoundError:
@@ -39,12 +40,13 @@ def _get_resonances(by_asteroid_axis: float, with_swing: float) \
                       RESONANCE_FILEPATH)
         sys.exit(1)
 
+    session.commit()
     return res
 
 
 def _find_resonance_with_min_axis(by_axis: float, with_swing: float = 0.0001) \
         -> ThreeBodyResonance:
-    resonances = _get_resonances(by_axis, with_swing)
+    resonances = _build_resonances(1, by_axis, with_swing)
     index_of_min_axis = 0
 
     def _delta(of_resonance: ThreeBodyResonance) -> float:
@@ -72,9 +74,9 @@ def _find_resonances(start: int, stop: int) -> Iterable[Tuple[int, ThreeBodyReso
     for i in range(delta + 1):
         asteroid_num = start + i
         asteroid_parameters = find_by_number(asteroid_num)
-        for resonances in _get_resonances(asteroid_parameters[1], AXIS_SWING):
-            if resonances:
-                yield asteroid_num, resonances
+        for resonance in _build_resonances(asteroid_num, asteroid_parameters[1], AXIS_SWING):
+            if resonance:
+                yield asteroid_num, resonance
 
 
 def _get_orbitalelements_filepaths(body_number: int) -> Tuple[str, str, str]:
@@ -109,6 +111,23 @@ def find(start: int, stop: int, is_current: bool = False):
     :param start:
     :return:
     """
+
+    def _prepare_resfile(asteroid_num: int, resonance: ThreeBodyResonance) -> str:
+        smallbody_filepath, firstbody_filepath, secondbody_filepath \
+            = _get_orbitalelements_filepaths(asteroid_num)
+        res_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE, 'A%i.res' % asteroid_num)
+        logging.debug("Check asteroid %i", asteroid_num)
+        orbital_elem_set = ResonanceOrbitalElementSet(
+            resonance, firstbody_filepath, secondbody_filepath)
+
+        if not os.path.exists(os.path.dirname(res_filepath)):
+            os.makedirs(os.path.dirname(res_filepath))
+        with open(res_filepath, 'w+') as resonance_file:
+            for item in orbital_elem_set.get_elements(smallbody_filepath):
+                resonance_file.write(item)
+
+        return res_filepath
+
     rdb = ResonanceDatabase('export/full.db')
     if not is_current:
         try:
@@ -118,41 +137,50 @@ def find(start: int, stop: int, is_current: bool = False):
                          exc.filename)
 
     for asteroid_num, resonance in _find_resonances(start, stop):
-        smallbody_filepath, firstbody_filepath, secondbody_filepath \
-            = _get_orbitalelements_filepaths(asteroid_num)
-        resonance_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE,
-                                    'A%i.res' % asteroid_num)
-        logging.debug("Check asteroid %i", asteroid_num)
-        orbital_elem_set = ResonanceOrbitalElementSet(
-            resonance, firstbody_filepath, secondbody_filepath)
-
-        if not os.path.exists(os.path.dirname(resonance_filepath)):
-            os.makedirs(os.path.dirname(resonance_filepath))
-        with open(resonance_filepath, 'w+') as resonance_file:
-            for item in orbital_elem_set.get_elements(smallbody_filepath):
-                resonance_file.write(item)
-
-        circulations = find_circulation(resonance_filepath, False)
-        libration = Libration(asteroid_num, resonance, circulations, X_STOP)
+        resonance_filepath = _prepare_resfile(asteroid_num, resonance)
+        transient_finder = CirculationYearsFinder(False, resonance_filepath)
+        years = transient_finder.get_years()
+        libration = resonance.libration
+        is_new = False
+        if libration is None:
+            libration = Libration(resonance, years, X_STOP)
+            is_new = True
 
         if not libration.is_pure:
-            if libration.is_apocentric:
+            if libration.is_transient:
                 if libration.percentage:
+                    # if session.query(Libration).filter_by(
+                    #     asteroid_number=asteroid_num, resonance_id=resonance.id
+                    # ).first():
+                    #     pass
+                    # else:
+                    # if is_new:
+                        # session.add(libration)
+                        # session.refresh(resonance)
                     logging.info('A%i, %s, resonance = %s', asteroid_num,
                                  str(libration), str(resonance))
-                    rdb.add_string(libration.as_apocentric())
+                    rdb.add_string(libration.as_transient())
+                    continue
                 else:
                     logging.debug(
                         'A%i, NO RESONANCE, resonance = %s, max = %f',
                         asteroid_num, str(resonance), libration.max_diff
                     )
+                    session.expunge(libration)
+
         else:
             logging.info('A%i, pure resonance %s', asteroid_num, str(resonance))
             rdb.add_string(libration.as_pure())
+            continue
 
-        circulations = find_circulation(resonance_filepath, True)
-        libration = Libration(asteroid_num, resonance, circulations, X_STOP)
+        apocentric_finder = CirculationYearsFinder(True, resonance_filepath)
+        years = apocentric_finder.get_years()
+        libration = Libration(resonance, years, X_STOP)
         if libration.is_pure:
+            rdb.add_string(libration.as_pure_apocentric())
             logging.info('A%i, pure apocentric resonance %s', asteroid_num,
                          str(resonance))
-            rdb.add_string(libration.as_pure_apocentric())
+        else:
+            session.expunge(libration)
+
+    session.commit()
