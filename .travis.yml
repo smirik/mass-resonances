@@ -1,5 +1,7 @@
 language: python
 python: 3.5
+addons:
+  - postgresql: "9.4"
 
 before_install:
   - sudo apt-get update -qq
@@ -21,6 +23,8 @@ before_script:
   - cd axis
   - wget https://raw.githubusercontent.com/smirik/Three-body-resonances/master/axis/resonances
   - cd -
+  - psql -c 'create database resonances;' -U postgres
+  - alembic upgrade head
 
 script:
   - python ./main.py calc
@@ -28,7 +32,7 @@ script:
   - python ./main.py find
   - cat ./export/full.db | wc -l
   - python -m unittest discover -v -p '*.py' ./tests
-  - coverage run -m pytest ./tests/entitiestest/librationtest.py ./tests/utils_tests.py
+  - python -m pytest ./tests/entitiestest/librationtest.py ./tests/utils_tests.py
 
-after_success:
-  - coverage report -m
+#after_success:
+#  - coverage report -m

@@ -6,7 +6,7 @@ from math import sqrt
 import os
 from utils.shortcuts import cutoff_angle
 from entities import ThreeBodyResonance
-from entities import LONG
+from entities.body import LONG, PERI
 from entities import PERI
 from settings import Config
 

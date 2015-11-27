@@ -1,25 +1,38 @@
 from typing import List
 
-from entities import ThreeBodyResonance
+from sqlalchemy import Table, Column, ForeignKey, Integer, Enum, Float, UniqueConstraint
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.orm import relationship, backref
+
+from .threebodyresonance import ThreeBodyResonance
+from entities.dbutills import Base
 from settings import Config
+
 
 CONFIG = Config.get_params()
 LIBRATION_MIN = CONFIG['resonance']['libration']['min']
 
 
-class Libration:
+class Libration(Base):
     """
     Class represents libration.
     """
-    APOCENTRIC_ID = 2
     PURE_ID = 1
+    TRANSIENT_ID = 2
     APOCENTRIC_PURE_ID = 3
     MIN_BREAKS = 2
 
-    def __init__(self, asteroid_number: int, resonance: ThreeBodyResonance,
-                 circulation_breaks: List[float], body_count: int):
+    __tablename__ = 'libration'
+    _resonance_id = Column('resonance_id', Integer, ForeignKey('resonance.id'), nullable=False,
+                           unique=True)
+    _resonance = relationship(ThreeBodyResonance, backref=backref('libration', uselist=False))
+    _average_delta = Column('average_delta', Float)
+    _percentage = Column('percentage', Float)
+    _circulation_breaks = Column('circulation_breaks', ARRAY(Float), nullable=False)
+
+    def __init__(self, resonance: ThreeBodyResonance, circulation_breaks: List[float],
+                 body_count: int):
         self._resonance = resonance
-        self._asteroid_number = asteroid_number
         self._circulation_breaks = circulation_breaks
         self._average_delta = None
         self._percentage = None
@@ -69,7 +82,7 @@ class Libration:
         return max([a - b for a, b in zip(breaks, [0.] + breaks[:-1])])
 
     @property
-    def is_apocentric(self) -> bool:
+    def is_transient(self) -> bool:
         return bool(self._circulation_breaks or self._percentage or self._average_delta)
 
     def __str__(self):
@@ -78,15 +91,16 @@ class Libration:
 
     @property
     def asteroid_number(self) -> int:
-        return self._asteroid_number
+        name = self._resonance.small_body.name
+        return int(name[1:])
 
     @property
     def resonance(self) -> ThreeBodyResonance:
         return self._resonance
 
-    def as_apocentric(self) -> str:
+    def as_transient(self) -> str:
         return '%i;%s;%i;%f;%f' % (
-            self._asteroid_number, str(self._resonance), self.APOCENTRIC_ID,
+            self.asteroid_number, str(self._resonance), self.TRANSIENT_ID,
             self._average_delta, self.max_diff
         )
 
@@ -95,9 +109,9 @@ class Libration:
         return len(self._circulation_breaks) < self.MIN_BREAKS
 
     def as_pure(self) -> str:
-        return '%i;%s;%i' % (self._asteroid_number, str(self._resonance),
+        return '%s;%s;%i' % (self.asteroid_number, str(self._resonance),
                              self.PURE_ID)
 
     def as_pure_apocentric(self) -> str:
-        return '%i;%s;%i' % (self._asteroid_number, str(self._resonance),
+        return '%s;%s;%i' % (self.asteroid_number, str(self._resonance),
                              self.APOCENTRIC_PURE_ID)

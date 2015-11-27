@@ -11,7 +11,7 @@ from settings import Config
 from integrator.programs import simple_clean
 from integrator.programs import element6
 from .resonancedatabase import ResonanceDatabase
-from utils.series import find_circulation
+from utils.series import CirculationYearsFinder
 from utils.series import NoCirculationsException
 from utils.views import create_gnuplot_file
 
@@ -148,7 +148,7 @@ def calc_resonances(start: int, stop: int, elements: bool = False):
         logging.info('Plot for asteroid # %s' % asteroid_num)
         calc(asteroid_num, asteroid.resonance)
         try:
-            libration = find_circulation(
+            libration = find_circulation_times(
                 asteroid_num, 0, X_STOP, False)
             logging.info('%s' % str(libration))
         except NoCirculationsException:
