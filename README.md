@@ -1,4 +1,6 @@
-[![Build Status](https://travis-ci.org/smirik/resonances.svg?branch=master)](https://travis-ci.org/smirik/resonances)
+* Master: [![Build Status](https://travis-ci.org/smirik/resonances.svg?branch=master)](https://travis-ci.org/smirik/resonances)
+* Develop: [![Build Status](https://travis-ci.org/smirik/resonances.svg?branch=develop)](https://travis-ci.org/smirik/resonances)
+
 # resonances
 This is Python fork of Three-body-resonances (https://github.com/smirik/Three-body-resonances).
 
@@ -21,3 +23,16 @@ This is Python fork of Three-body-resonances (https://github.com/smirik/Three-bo
 * libpq-dev
 * libpython3.5-dev
 * sed
+
+# Deploy via fabric
+
+...
+
+# Run
+
+To run the script on the server please follow the instructions below:
+
+1. Run the script: `source .venv/bin/activate`
+2. Run the calc command: `./main.py calc`
+3. To find the resonances: `./main.py find`
+
