@@ -4,15 +4,21 @@ from sqlalchemy import create_engine, Integer, Column
 from sqlalchemy.ext.declarative import as_declarative
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import ClauseElement
+from alembic.config import Config as AlembicConfig
+import os
+from settings import Config
+
+
+_config = AlembicConfig(os.path.join(Config.get_project_dir(), 'alembic.ini'))
 
 
 @as_declarative()
 class Base(object):
     def __init__(self, **kwargs):
-        super(Base, self).__init__(kwargs)
+        super(Base, self).__init__(**kwargs)
     id = Column(Integer, primary_key=True)
 
-_engine = create_engine('postgresql://postgres:qweasd@localhost/resonances')
+_engine = create_engine(_config.get_main_option('sqlalchemy.url'))
 _Session = sessionmaker()
 _Session.configure(bind=_engine)
 session = _Session()
