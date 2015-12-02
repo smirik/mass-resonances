@@ -5,6 +5,7 @@ from entities.body import Body, LONG, PERI, LONG_COEFF, PERI_COEFF
 from entities.dbutills import Base, session, get_or_create
 from sqlalchemy import Column, ForeignKey, Integer, Float, UniqueConstraint
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 
 
 class ThreeBodyResonance(Base):
@@ -24,6 +25,19 @@ class ThreeBodyResonance(Base):
     second_body = relationship('Body', foreign_keys=second_body_id)
     small_body_id = Column(Integer, ForeignKey('body.id'), nullable=False)
     small_body = relationship('Body', foreign_keys=small_body_id)
+
+    @hybrid_property
+    def asteroid_number(self) -> int:
+        name = self.small_body.name
+        return int(name[1:])
+
+    # @asteroid_number.expression
+    # def asteroid_number(cls):
+    #     try:
+    #         name = str(Body.name)
+    #         return int(name[1:])
+    #     except ValueError:
+    #         return None
 
     def __str__(self):
         return '[%i %i %i %i %i %i %f]' % (

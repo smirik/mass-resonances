@@ -11,7 +11,6 @@ from fabric.contrib import files
 import os
 from fabric.operations import sudo
 from os.path import join as opjoin
-from StringIO import StringIO
 from six import moves
 
 

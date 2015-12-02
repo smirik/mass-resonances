@@ -1,7 +1,9 @@
+import sys
 from typing import List
 import os
 import logging
-
+from entities import ThreeBodyResonance, build_resonance
+from entities.dbutills import session
 from settings import Config
 
 CONFIG = Config.get_params()
@@ -31,3 +33,33 @@ def find_by_number(number: int) -> List[float]:
         link = 'http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat'
         logging.error('File from astdys doesn\'t exist try this %s' % link)
         raise e
+
+
+def _build_resonances(from_filepath: str, asteroid_num: int) \
+        -> List[ThreeBodyResonance]:
+    try:
+        with open(from_filepath) as resonance_file:
+            for line in resonance_file:
+                line_data = line.split()
+                build_resonance(line_data, asteroid_num)
+    except FileNotFoundError:
+        logging.error('File %s not found. Try command resonance_table.',
+                      from_filepath)
+        sys.exit(1)
+
+    session.commit()
+
+
+def save_resonances(from_filepath: str, start_asteroid: int, stop_asteroid: int):
+    divider = 2
+    toolbar_width = (stop_asteroid + 1 - start_asteroid) // divider
+    sys.stdout.write("Build resonances [%s]" % (" " * toolbar_width))
+    sys.stdout.flush()
+    sys.stdout.write("\b" * (toolbar_width+1))
+
+    for i in range(start_asteroid, stop_asteroid + 1):
+        _build_resonances(from_filepath, i)
+        if i % divider == 0:
+            sys.stdout.write("#")
+            sys.stdout.flush()
+    sys.stdout.write("\n")
