@@ -33,11 +33,13 @@ def cli(loglevel: str = 'DEBUG'):
 
 @cli.command()
 @click.option('--start', default=1)
+@click.option('--stop', default=101)
 @click.option('--from-day', default=2451000.5)
 @click.option('--to-day', default=2501000.5)
-def calc(start: int, from_day: float, to_day: float):
+def calc(start: int, stop: int, from_day: float, to_day: float):
     set_time_interval(from_day, to_day)
-    _calc(start)
+    for i in range(start, stop, 100):
+        _calc(start)
 
 
 @cli.command()
@@ -48,9 +50,11 @@ def calc(start: int, from_day: float, to_day: float):
 @click.option('--to-day', default=2501000.5)
 def find(start: int, stop: int, reload_resonances: bool, from_day: float, to_day: float):
     set_time_interval(from_day, to_day)
-    if reload_resonances:
-        save_resonances(RESONANCE_FILEPATH, start, stop)
-    _find(start, stop)
+    for i in range(start, stop, 100):
+        end = start + 100 if start + 100 < stop else stop
+        if reload_resonances:
+            save_resonances(RESONANCE_FILEPATH, start, end)
+        _find(start, end)
 
 
 @cli.command()
