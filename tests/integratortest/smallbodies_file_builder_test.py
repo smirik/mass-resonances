@@ -3,12 +3,9 @@ from os.path import join as opjoin
 from os.path import exists as opexists
 import os
 from settings import Config
-import settings
 
 
 CONFIG = Config.get_params()
-if 'tests' not in Config.get_project_dir():
-    Config.set_project_dir(opjoin(settings.Config.get_project_dir(), 'tests'))
 PROJECT_DIR = Config.get_project_dir()
 
 

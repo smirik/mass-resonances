@@ -80,7 +80,7 @@ def test_is_pure(ThreeBodyResonanceMock, breaks: List[float], is_pure: bool):
 ])
 @mock.patch('entities.ThreeBodyResonance')
 def test_is_transient(ThreeBodyResonanceMock, breaks: List[float],
-                 is_apocentric: bool):
+                      is_apocentric: bool):
     resonance = ThreeBodyResonanceMock()
     libration = Libration(resonance, breaks, BODY_COUNT)
     assert libration.is_transient == is_apocentric

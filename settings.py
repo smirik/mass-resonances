@@ -5,6 +5,18 @@ import os
 _PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+class _ParamBridge:
+    def __init__(self, path: str):
+        with open(path) as f:
+            try:
+                self._params = yaml.load(f)
+            except Exception as e:
+                raise e
+
+    def __getitem__(self, key: str):
+        return getattr(self, key, self._params[key])
+
+
 class Config:
     _project_dir = _PROJECT_DIR
     _params = None
@@ -17,11 +29,7 @@ class Config:
         """
         if not cls._params:
             path = os.path.join(cls._project_dir, 'config', 'config.yml')
-            with open(path) as f:
-                try:
-                    cls._params = yaml.load(f)
-                except Exception as e:
-                    raise e
+            cls._params = _ParamBridge(path)
         return cls._params
 
     @classmethod
