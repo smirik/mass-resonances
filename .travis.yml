@@ -31,10 +31,9 @@ before_script:
 script:
   - python ./main.py calc
   - python ./main.py package --res=1 --compress=1 --aei=1
-  - python ./main.py find
+  - python ./main.py find --reload-resonances=1
   - cat ./export/full.db | wc -l
-  - python -m unittest discover -v -p '*.py' ./tests
-  - python -m pytest ./tests/entitiestest/librationtest.py ./tests/utils_tests.py
+  - python -m pytest ./tests/entitiestest/*.py ./tests/*.py ./tests/integratortest/*.py
 
 #after_success:
 #  - coverage report -m

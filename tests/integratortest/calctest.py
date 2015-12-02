@@ -27,7 +27,13 @@ class CalcTestCase(unittest.TestCase):
             opjoin(PROJECT_DIR, self.MERCURY_DIR)
         )
 
+        os.symlink(
+            opjoin(OLD_PROJECT_DIR, 'alembic.ini'),
+            opjoin(PROJECT_DIR, 'alembic.ini')
+        )
+
     def tearDown(self):
+        os.remove(opjoin(PROJECT_DIR, 'alembic.ini'))
         os.remove(opjoin(PROJECT_DIR, self.MERCURY_DIR))
         filepath = opjoin(PROJECT_DIR, self.OUTPUT_ANGLE_DIR,
                           'A%i.res' % self.BODY_NUMBER)
