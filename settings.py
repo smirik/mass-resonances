@@ -6,6 +6,9 @@ _PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class _ParamBridge:
+    INTEGRATOR_PARAM_FILENAME = 'param.in'
+    INTEGRATOR_BIG_FILENAME = 'big.in'
+
     def __init__(self, path: str):
         with open(path) as f:
             try:
@@ -22,7 +25,7 @@ class Config:
     _params = None
 
     @classmethod
-    def get_params(cls) -> dict:
+    def get_params(cls) -> _ParamBridge:
         """
 
         :rtype: dict

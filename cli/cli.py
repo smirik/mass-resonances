@@ -7,6 +7,7 @@ from commands import find as _find
 from commands import plot as _plot
 from commands import package as _package
 from commands import remove_export_directory
+from integrator import set_time_interval
 from storage import extract as _extract
 from settings import Config
 from os.path import join as opjoin
@@ -32,7 +33,10 @@ def cli(loglevel: str = 'DEBUG'):
 
 @cli.command()
 @click.option('--start', default=1)
-def calc(start: int):
+@click.option('--from-day', default=2451000.5)
+@click.option('--to-day', default=2501000.5)
+def calc(start: int, from_day: float, to_day: float):
+    set_time_interval(from_day, to_day)
     _calc(start)
 
 
@@ -40,7 +44,10 @@ def calc(start: int):
 @click.option('--start', default=1)
 @click.option('--stop', default=101)
 @click.option('--reload-resonances', default=False)
-def find(start: int, stop: int, reload_resonances: bool):
+@click.option('--from-day', default=2451000.5)
+@click.option('--to-day', default=2501000.5)
+def find(start: int, stop: int, reload_resonances: bool, from_day: float, to_day: float):
+    set_time_interval(from_day, to_day)
     if reload_resonances:
         save_resonances(RESONANCE_FILEPATH, start, stop)
     _find(start, stop)
