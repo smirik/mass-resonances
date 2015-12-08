@@ -1,6 +1,7 @@
 from typing import List
 
 from sqlalchemy import Table, Column, ForeignKey, Integer, Enum, Float, UniqueConstraint
+from sqlalchemy import Boolean
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship, backref
 
@@ -29,13 +30,15 @@ class Libration(Base):
     _average_delta = Column('average_delta', Float)
     _percentage = Column('percentage', Float)
     _circulation_breaks = Column('circulation_breaks', ARRAY(Float), nullable=False)
+    _is_apocentric = Column('is_apocentric', Boolean, nullable=False)
 
     def __init__(self, resonance: ThreeBodyResonance, circulation_breaks: List[float],
-                 body_count: int):
+                 body_count: int, is_apocentric: bool):
         self._resonance = resonance
         self._circulation_breaks = circulation_breaks
         self._average_delta = None
         self._percentage = None
+        self._is_apocentric = is_apocentric
 
         if self._circulation_breaks:
             previous_circulation_break = 0
@@ -58,6 +61,10 @@ class Libration(Base):
             if libration_percent:
                 self._average_delta = average_delta
                 self._percentage = libration_percent
+
+    @property
+    def is_apocentric(self) -> bool:
+        return self._is_apocentric
 
     @property
     def circulation_breaks(self) -> List[float]:

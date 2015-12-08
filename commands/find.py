@@ -2,7 +2,8 @@ import logging
 from typing import Tuple, Iterable
 
 import os
-from catalog import find_by_number, _build_resonances
+from abc import abstractmethod
+from catalog import find_by_number
 from entities import Libration, Body
 from entities import ThreeBodyResonance
 from entities.dbutills import session
@@ -10,7 +11,6 @@ from integrator import ResonanceOrbitalElementSet
 from os.path import join as opjoin
 from settings import Config
 from storage import ResonanceDatabase
-from storage.resonance_archive import extract
 from utils.series import CirculationYearsFinder
 
 CONFIG = Config.get_params()
@@ -83,37 +83,78 @@ def find(start: int, stop: int, is_current: bool = False):
             = _get_orbitalelements_filepaths(asteroid_num)
         res_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE, 'A%i.res' % asteroid_num)
         logging.debug("Check asteroid %i", asteroid_num)
-        orbital_elem_set = ResonanceOrbitalElementSet(
-            resonance, firstbody_filepath, secondbody_filepath)
-
-        if not os.path.exists(os.path.dirname(res_filepath)):
-            os.makedirs(os.path.dirname(res_filepath))
-        with open(res_filepath, 'w+') as resonance_file:
-            for item in orbital_elem_set.get_elements(smallbody_filepath):
-                resonance_file.write(item)
+        if not is_current:
+            orbital_elem_set = ResonanceOrbitalElementSet(
+                resonance, firstbody_filepath, secondbody_filepath)
+            if not os.path.exists(os.path.dirname(res_filepath)):
+                os.makedirs(os.path.dirname(res_filepath))
+            with open(res_filepath, 'w+') as resonance_file:
+                for item in orbital_elem_set.get_elements(smallbody_filepath):
+                    resonance_file.write(item)
 
         return res_filepath
 
     rdb = ResonanceDatabase('export/full.db')
-    if not is_current:
-        try:
-            extract(start)
-        except FileNotFoundError as exc:
-            logging.info('Archive %s not found. Try command \'package\'',
-                         exc.filename)
+    # if not is_current:
+    #     try:
+    #         extract(start)
+    #     except FileNotFoundError as exc:
+    #         logging.info('Archive %s not found. Try command \'package\'',
+    #                      exc.filename)
 
     count = 0
+
+    class AbstractLibrationBuilder:
+        def __init__(self, asteroid_number: int, libration_resonance: ThreeBodyResonance):
+            self._resonance = libration_resonance
+            self._res_filepath = _prepare_resfile(asteroid_number, self._resonance)
+
+        def build(self) -> Libration:
+            finder = self._get_finder()
+            return Libration(self._resonance, finder.get_years(), X_STOP,
+                             self.is_apocetric())
+
+        @abstractmethod
+        def _get_finder(self) -> CirculationYearsFinder:
+            pass
+
+        @abstractmethod
+        def is_apocetric(self) -> bool:
+            pass
+
+    class TransientBuilder(AbstractLibrationBuilder):
+        def _get_finder(self) -> CirculationYearsFinder:
+            transient_finder = CirculationYearsFinder(False, self._res_filepath)
+            return transient_finder
+
+        def is_apocetric(self) -> bool:
+            return False
+
+    class ApocentricBuilder(AbstractLibrationBuilder):
+        def _get_finder(self) -> CirculationYearsFinder:
+            apocentric_finder = CirculationYearsFinder(True, self._res_filepath)
+            return apocentric_finder
+
+        def is_apocetric(self) -> bool:
+            return True
+
+    class LibrationDirector:
+        def __init__(self, libration_builder: AbstractLibrationBuilder):
+            self._builder = libration_builder
+
+        def build(self) -> Libration:
+            return self._builder.build()
+
     for resonance in _find_resonances(start, stop):
         asteroid_num = resonance.asteroid_number
         count += 1
-        resonance_filepath = _prepare_resfile(asteroid_num, resonance)
-        transient_finder = CirculationYearsFinder(False, resonance_filepath)
-        years = transient_finder.get_years()
         libration = resonance.libration
-        if str(resonance) == '[6 -7 4 0 0 -3 2.404800]':
-            print(123)
-        if libration is None:
-            libration = Libration(resonance, years, X_STOP)
+
+        if not is_current and libration is None:
+            builder = TransientBuilder(asteroid_num, resonance)
+            libration = LibrationDirector(builder).build()
+        elif not libration:
+            continue
 
         if not libration.is_pure:
             if libration.is_transient:
@@ -129,14 +170,16 @@ def find(start: int, stop: int, is_current: bool = False):
                     )
                     session.expunge(libration)
 
-        else:
+        elif not libration.is_apocentric:
             logging.info('A%i, pure resonance %s', asteroid_num, str(resonance))
             rdb.add_string(libration.as_pure())
             continue
 
-        apocentric_finder = CirculationYearsFinder(True, resonance_filepath)
-        years = apocentric_finder.get_years()
-        libration = Libration(resonance, years, X_STOP)
+        if not is_current and not libration.is_apocentric:
+            # session.expunge(libration)
+            builder = ApocentricBuilder(asteroid_num, resonance)
+            libration = LibrationDirector(builder).build()
+
         if libration.is_pure:
             rdb.add_string(libration.as_pure_apocentric())
             logging.info('A%i, pure apocentric resonance %s', asteroid_num,
