@@ -110,6 +110,8 @@ def find(start: int, stop: int, is_current: bool = False):
         transient_finder = CirculationYearsFinder(False, resonance_filepath)
         years = transient_finder.get_years()
         libration = resonance.libration
+        if str(resonance) == '[6 -7 4 0 0 -3 2.404800]':
+            print(123)
         if libration is None:
             libration = Libration(resonance, years, X_STOP)
 
