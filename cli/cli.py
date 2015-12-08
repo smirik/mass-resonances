@@ -39,7 +39,7 @@ def cli(loglevel: str = 'DEBUG'):
 def calc(start: int, stop: int, from_day: float, to_day: float):
     set_time_interval(from_day, to_day)
     for i in range(start, stop, 100):
-        _calc(start)
+        _calc(i)
 
 
 @cli.command()
@@ -54,7 +54,7 @@ def find(start: int, stop: int, reload_resonances: bool, from_day: float, to_day
         end = start + 100 if start + 100 < stop else stop
         if reload_resonances:
             save_resonances(RESONANCE_FILEPATH, start, end)
-        _find(start, end)
+        _find(i, end)
 
 
 @cli.command()
