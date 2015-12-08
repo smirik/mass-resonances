@@ -1,5 +1,6 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-
+from fabric.api import get
 from fabric.api import run
 from fabric.api import cd
 from fabric.api import env
@@ -157,9 +158,22 @@ def setup_deploy(username, password, host, dbname):
 
 
 @task
+def get_dump():
+    backup()
+    with cd(env.root):
+        get(REMOTE_DUMP_FILENAME, './')
+
+
+@task
+def import_dump():
+    local('psql -U postgres -c \'drop database resonances\'')
+    local('psql -U postgres -c \'create database resonances\'')
+    local('psql -U postgres -d resonances < fabric-dump.sql')
+
+
+@task
 def deploy():
     update()
     backup()
     install_deps()
     migrate()
-

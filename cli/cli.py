@@ -47,10 +47,11 @@ def calc(start: int, stop: int, from_day: float, to_day: float):
 @click.option('--stop', default=101)
 @click.option('--from-day', default=2451000.5)
 @click.option('--to-day', default=2501000.5)
-@click.option('--reload-resonances', default=False)
-@click.option('--recalc', default=False)
+@click.option('--reload-resonances', default=False, type=bool)
+@click.option('--recalc', default=False, type=bool)
+@click.option('--is-current', default=False, type=bool)
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
-         recalc: bool):
+         recalc: bool, is_current: bool):
     set_time_interval(from_day, to_day)
     for i in range(start, stop, 100):
         if recalc:
@@ -58,7 +59,7 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
         end = i + 100 if i + 100 < stop else stop
         if reload_resonances:
             save_resonances(RESONANCE_FILEPATH, i, end)
-        _find(i, end)
+        _find(i, end, is_current)
 
 
 @cli.command()
