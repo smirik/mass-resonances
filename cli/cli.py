@@ -57,7 +57,7 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
             _calc(i)
         end = i + 100 if i + 100 < stop else stop
         if reload_resonances:
-            save_resonances(RESONANCE_FILEPATH, start, end)
+            save_resonances(RESONANCE_FILEPATH, i, end)
         _find(i, end)
 
 
