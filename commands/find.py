@@ -34,7 +34,7 @@ def _find_resonances(start: int, stop: int) -> Iterable[ThreeBodyResonance]:
     :return:
     """
 
-    names = ['A%i' % x for x in range(start, stop + 1)]
+    names = ['A%i' % x for x in range(start, stop)]
     resonances = session.query(ThreeBodyResonance).join(ThreeBodyResonance.small_body) \
         .filter(Body.name.in_(names))
 
