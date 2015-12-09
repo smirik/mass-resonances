@@ -62,7 +62,8 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
         _find(i, end, is_current)
 
 
-@cli.command()
+@cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
+                  ' Libration can be created by command \'find\'.')
 @click.option('--start', default=1)
 @click.option('--stop', default=101)
 def plot(start: int, stop: int):
@@ -91,4 +92,3 @@ def extract(start: int, copy_aei: bool):
 @click.option('--compress', default=False, type=bool)
 def package(start: int, stop: int, res: bool, aei: bool, compress: bool):
     _package(start, stop, res, aei, compress)
-
