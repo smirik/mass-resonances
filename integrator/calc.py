@@ -162,7 +162,8 @@ class ResonanceOrbitalElementSet:
 
 
 def calc(body_number: int, resonance: ThreeBodyResonance):
-    """Returns path of file, which contains results of calculation.
+    """Creates res file and returns path of it. Res file contains resonant
+    phase and orbital (Keplerian) elements by data from aei files.
 
     :param body_number:
     :param resonance:
@@ -198,26 +199,26 @@ def calc(body_number: int, resonance: ThreeBodyResonance):
         os.makedirs(dirpath)
 
     with open(resonance_filename, 'w+') as resonance_file:
-        for orbitanl_elements in _get_body_orbital_elements(*bodies_filenames):
+        for orbital_elements in _get_body_orbital_elements(*bodies_filenames):
             resonant_phase = resonance.get_resonant_phase(
-                {LONG: orbitanl_elements[FIRST_BODY][1],
-                 PERI: orbitanl_elements[FIRST_BODY][2]},
-                {LONG: orbitanl_elements[SECOND_BODY][1],
-                 PERI: orbitanl_elements[SECOND_BODY][2]},
-                {LONG: orbitanl_elements[SMALL_BODY][1],
-                 PERI: orbitanl_elements[SMALL_BODY][2]}
+                {LONG: orbital_elements[FIRST_BODY][1],
+                 PERI: orbital_elements[FIRST_BODY][2]},
+                {LONG: orbital_elements[SECOND_BODY][1],
+                 PERI: orbital_elements[SECOND_BODY][2]},
+                {LONG: orbital_elements[SMALL_BODY][1],
+                 PERI: orbital_elements[SMALL_BODY][2]}
             )
             resonant_phase = cutoff_angle(resonant_phase)
 
             # time, resonance parameter, s/m axis a, ecc a, inclination a,
             # node a, p_longitude a, s/m axis 1, ecc 1, s/m axis 2, ecc 2
             resonance_data = "%s %f %f %f %f %f %f %f %f %f %f\n" % (
-                orbitanl_elements[SMALL_BODY][0], resonant_phase,
-                orbitanl_elements[SMALL_BODY][4], orbitanl_elements[SMALL_BODY][5],
-                orbitanl_elements[SMALL_BODY][7], orbitanl_elements[SMALL_BODY][8],
-                orbitanl_elements[SMALL_BODY][2], orbitanl_elements[FIRST_BODY][4],
-                orbitanl_elements[FIRST_BODY][5], orbitanl_elements[SECOND_BODY][4],
-                orbitanl_elements[SECOND_BODY][5]
+                orbital_elements[SMALL_BODY][0], resonant_phase,
+                orbital_elements[SMALL_BODY][4], orbital_elements[SMALL_BODY][5],
+                orbital_elements[SMALL_BODY][7], orbital_elements[SMALL_BODY][8],
+                orbital_elements[SMALL_BODY][2], orbital_elements[FIRST_BODY][4],
+                orbital_elements[FIRST_BODY][5], orbital_elements[SECOND_BODY][4],
+                orbital_elements[SECOND_BODY][5]
             )
             resonance_file.write(resonance_data)
 

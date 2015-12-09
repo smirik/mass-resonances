@@ -3,6 +3,7 @@ from typing import List
 from sqlalchemy import Table, Column, ForeignKey, Integer, Enum, Float, UniqueConstraint
 from sqlalchemy import Boolean
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, backref
 
 from .threebodyresonance import ThreeBodyResonance
@@ -101,7 +102,7 @@ class Libration(Base):
         name = self._resonance.small_body.name
         return int(name[1:])
 
-    @property
+    @hybrid_property
     def resonance(self) -> ThreeBodyResonance:
         return self._resonance
 

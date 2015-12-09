@@ -4,6 +4,8 @@ import subprocess
 import glob
 import shutil
 import os
+from entities import Body, ThreeBodyResonance, Libration
+from entities.dbutills import session
 from os.path import join as opjoin
 
 from integrator import calc
@@ -19,7 +21,7 @@ CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 BODIES_COUNTER = int(CONFIG['integrator']['number_of_bodies'])
 OUTPUT_GNU = CONFIG['output']['gnuplot']
-OUTPUT_IMAGES = CONFIG['output']['images']
+OUTPUT_IMAGES = opjoin(PROJECT_DIR, CONFIG['output']['images'])
 X_STOP = CONFIG['gnuplot']['x_stop']
 EXPORT_BASE_DIR = opjoin(PROJECT_DIR, CONFIG['export']['base_dir'])
 
@@ -132,33 +134,19 @@ def calc_resonances(start: int, stop: int, elements: bool = False):
     :raises ExtractError: if some problems has been appeared related to
     archive.
     """
-    rdb = ResonanceDatabase('export/full.db')
-    asteroids = rdb.find_between(start, stop)
+    names = ['A%i' % x for x in range(start, stop)]
+    librations = session.query(Libration).join(Libration.resonance)\
+        .join(ThreeBodyResonance.small_body).filter(Body.name.in_(names))
 
-    try:
-        if not extract(start, elements):
-            raise ExtractError('Extracting data from %i to %i has been failed' %
-                               (start, stop))
-    except FileNotFoundError as e:
-        logging.error('Nothing to do. File %s not found.' % e.filename)
-        sys.exit(1)
-
-    for asteroid in asteroids:
-        asteroid_num = asteroid.number
-        logging.info('Plot for asteroid # %s' % asteroid_num)
-        calc(asteroid_num, asteroid.resonance)
-        try:
-            libration = find_circulation_times(
-                asteroid_num, 0, X_STOP, False)
-            logging.info('%s' % str(libration))
-        except NoCirculationsException:
-            logging.info("pure resonance")
+    for libration in librations:
+        asteroid_num = libration.asteroid_number
 
         create_gnuplot_file(asteroid_num)
-        try:
-            in_path = opjoin(PROJECT_DIR, OUTPUT_GNU, 'A%i.gnu' % asteroid_num)
-            out_path = opjoin(PROJECT_DIR, OUTPUT_IMAGES, 'A%i.png' % asteroid_num)
-            with open(out_path, 'wb') as f:
-                subprocess.call(['gnuplot', in_path], stdout=f)
-        except Exception as e:
-            print(e)
+        if not os.path.exists(OUTPUT_IMAGES):
+            os.makedirs(OUTPUT_IMAGES)
+
+        in_path = opjoin(PROJECT_DIR, OUTPUT_GNU, 'A%i.gnu' % asteroid_num)
+        out_path = opjoin(OUTPUT_IMAGES, 'A%i.png' % asteroid_num)
+        with open(out_path, 'wb') as f:
+            subprocess.call(['gnuplot', in_path], stdout=f)
+
