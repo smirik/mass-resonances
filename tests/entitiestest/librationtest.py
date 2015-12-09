@@ -8,9 +8,6 @@ from settings import Config
 
 CONFIG = Config.get_params()
 
-if 'tests' not in Config.get_project_dir():
-    Config.set_project_dir(opjoin(Config.get_project_dir(), 'tests'))
-
 LIBRATION_MIN = CONFIG['resonance']['libration']['min']
 X_STOP = CONFIG['gnuplot']['x_stop']
 
@@ -28,7 +25,7 @@ BODY_COUNT = 100
 @mock.patch('entities.ThreeBodyResonance')
 def test_circulations(ThreeBodyResonanceMock, breaks: List[float]):
     resonance = ThreeBodyResonanceMock()
-    libration = Libration(resonance, breaks, BODY_COUNT)
+    libration = Libration(resonance, breaks, BODY_COUNT, False)
     assert libration.circulation_breaks == breaks
 
 
@@ -40,7 +37,7 @@ def test_circulations(ThreeBodyResonanceMock, breaks: List[float]):
 def test_average_delta(ThreeBodyResonanceMock, breaks: List[float],
                        average_delta: float):
     resonance = ThreeBodyResonanceMock()
-    libration = Libration(resonance, breaks, BODY_COUNT)
+    libration = Libration(resonance, breaks, BODY_COUNT, False)
     assert libration.average_delta == average_delta
 
 
@@ -50,7 +47,7 @@ def test_average_delta(ThreeBodyResonanceMock, breaks: List[float],
 def test_percentage(ThreeBodyResonanceMock, breaks: List[float],
                     percentage: float):
     resonance = ThreeBodyResonanceMock()
-    libration = Libration(resonance, breaks, BODY_COUNT)
+    libration = Libration(resonance, breaks, BODY_COUNT, False)
     assert libration.percentage == percentage
 
 
@@ -61,7 +58,7 @@ def test_percentage(ThreeBodyResonanceMock, breaks: List[float],
 @mock.patch('entities.ThreeBodyResonance')
 def test_max_diff(ThreeBodyResonanceMock, breaks: List[float], max_diff: float):
     resonance = ThreeBodyResonanceMock()
-    libration = Libration(resonance, breaks, BODY_COUNT)
+    libration = Libration(resonance, breaks, BODY_COUNT, False)
     assert libration.max_diff == max_diff
 
 
@@ -71,7 +68,7 @@ def test_max_diff(ThreeBodyResonanceMock, breaks: List[float], max_diff: float):
 @mock.patch('entities.ThreeBodyResonance')
 def test_is_pure(ThreeBodyResonanceMock, breaks: List[float], is_pure: bool):
     resonance = ThreeBodyResonanceMock()
-    libration = Libration(resonance, breaks, BODY_COUNT)
+    libration = Libration(resonance, breaks, BODY_COUNT, False)
     assert libration.is_pure == is_pure
 
 
@@ -82,7 +79,7 @@ def test_is_pure(ThreeBodyResonanceMock, breaks: List[float], is_pure: bool):
 def test_is_transient(ThreeBodyResonanceMock, breaks: List[float],
                       is_apocentric: bool):
     resonance = ThreeBodyResonanceMock()
-    libration = Libration(resonance, breaks, BODY_COUNT)
+    libration = Libration(resonance, breaks, BODY_COUNT, False)
     assert libration.is_transient == is_apocentric
 
 
@@ -93,7 +90,7 @@ def test_as_aposentric(ThreeBodyResonanceMock, breaks: List[float]):
     resonance_str = '[1,2,3]'
     resonance.__str__ = mock.MagicMock(return_value=resonance_str)
     asteroid_num = 1
-    libration = Libration(resonance, breaks, BODY_COUNT)
+    libration = Libration(resonance, breaks, BODY_COUNT, False)
     assert libration.as_transient() == '%i;%s;%i;%f;%f' % (
         asteroid_num, resonance_str, Libration.TRANSIENT_ID,
         libration.average_delta, libration.max_diff)
@@ -106,7 +103,7 @@ def test_as_pure(ThreeBodyResonanceMock, breaks: List[float]):
     resonance_str = '[1,2,3]'
     resonance.__str__ = mock.MagicMock(return_value=resonance_str)
     asteroid_num = 1
-    libration = Libration(resonance, breaks, BODY_COUNT)
+    libration = Libration(resonance, breaks, BODY_COUNT, False)
     assert libration.as_pure() == '%i;%s;%i' % (
         asteroid_num, resonance_str, Libration.PURE_ID)
 
@@ -118,6 +115,6 @@ def test_as_pure_apocentric(ThreeBodyResonanceMock, breaks: List[float]):
     resonance_str = '[1,2,3]'
     resonance.__str__ = mock.MagicMock(return_value=resonance_str)
     asteroid_num = 1
-    libration = Libration(resonance, breaks, BODY_COUNT)
+    libration = Libration(resonance, breaks, BODY_COUNT, False)
     assert libration.as_pure_apocentric() == '%i;%s;%i' % (
         asteroid_num, resonance_str, Libration.APOCENTRIC_PURE_ID)

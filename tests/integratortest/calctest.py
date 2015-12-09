@@ -9,9 +9,6 @@ from settings import Config
 import settings
 
 CONFIG = Config.get_params()
-OLD_PROJECT_DIR = settings._PROJECT_DIR
-if 'tests' not in Config.get_project_dir():
-    Config.set_project_dir(opjoin(OLD_PROJECT_DIR, 'tests'))
 PROJECT_DIR = Config.get_project_dir()
 
 
@@ -22,19 +19,9 @@ class CalcTestCase(unittest.TestCase):
     MERCURY_DIR = CONFIG['integrator']['dir']
 
     def setUp(self):
-        os.symlink(
-            opjoin(OLD_PROJECT_DIR, self.MERCURY_DIR),
-            opjoin(PROJECT_DIR, self.MERCURY_DIR)
-        )
-
-        os.symlink(
-            opjoin(OLD_PROJECT_DIR, 'alembic.ini'),
-            opjoin(PROJECT_DIR, 'alembic.ini')
-        )
+        pass
 
     def tearDown(self):
-        os.remove(opjoin(PROJECT_DIR, 'alembic.ini'))
-        os.remove(opjoin(PROJECT_DIR, self.MERCURY_DIR))
         filepath = opjoin(PROJECT_DIR, self.OUTPUT_ANGLE_DIR,
                           'A%i.res' % self.BODY_NUMBER)
         os.remove(filepath)
