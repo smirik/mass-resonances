@@ -9,11 +9,9 @@ import settings
 from storage import ResonanceDatabase
 from utils.series import CirculationYearsFinder
 
-if 'tests' not in Config.get_project_dir():
-    Config.set_project_dir(opjoin(settings.Config.get_project_dir(), 'tests'))
 
 CONFIG = Config.get_params()
-PROJECT_DIR = Config.get_project_dir()
+PROJECT_DIR = opjoin(Config.get_project_dir(), 'tests')
 
 
 @pytest.mark.parametrize('path', [

@@ -38,7 +38,3 @@ class Config:
     @classmethod
     def get_project_dir(cls):
         return cls._project_dir
-
-    @classmethod
-    def set_project_dir(cls, value: str):
-        cls._project_dir = value
