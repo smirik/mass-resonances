@@ -4,7 +4,7 @@ from typing import List
 from entities.body import Body, LONG, PERI, LONG_COEFF, PERI_COEFF
 from entities.dbutills import Base, session, get_or_create
 from sqlalchemy import Column, ForeignKey, Integer, Float, UniqueConstraint
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property
 
 
@@ -24,7 +24,7 @@ class ThreeBodyResonance(Base):
     second_body_id = Column(Integer, ForeignKey('body.id'), nullable=False)
     second_body = relationship('Body', foreign_keys=second_body_id)
     small_body_id = Column(Integer, ForeignKey('body.id'), nullable=False)
-    small_body = relationship('Body', foreign_keys=small_body_id)
+    small_body = relationship('Body', foreign_keys=small_body_id, backref=backref('resonances'))
 
     @hybrid_property
     def asteroid_number(self) -> int:

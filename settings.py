@@ -1,6 +1,6 @@
 import yaml
 import os
-
+import sys
 
 _PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -27,11 +27,14 @@ class Config:
     @classmethod
     def get_params(cls) -> _ParamBridge:
         """
-
         :rtype: dict
         """
+        if 'pytest' in ' '.join(sys.argv):
+            config_filename = 'config_unittest.yml'
+        else:
+            config_filename = 'config.yml'
         if not cls._params:
-            path = os.path.join(cls._project_dir, 'config', 'config.yml')
+            path = os.path.join(cls._project_dir, 'config', config_filename)
             cls._params = _ParamBridge(path)
         return cls._params
 

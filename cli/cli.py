@@ -18,6 +18,7 @@ CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 RESONANCE_TABLE_FILE = CONFIG['resonance_table']['file']
 RESONANCE_FILEPATH = opjoin(PROJECT_DIR, 'axis', RESONANCE_TABLE_FILE)
+STEP = 100
 
 
 @click.group()
@@ -38,8 +39,9 @@ def cli(loglevel: str = 'DEBUG'):
 @click.option('--to-day', default=2501000.5)
 def calc(start: int, stop: int, from_day: float, to_day: float):
     set_time_interval(from_day, to_day)
-    for i in range(start, stop, 100):
-        _calc(i)
+    for i in range(start, stop, STEP):
+        end = i + STEP if i + STEP < stop else stop
+        _calc(i, end)
 
 
 @cli.command()
@@ -53,10 +55,10 @@ def calc(start: int, stop: int, from_day: float, to_day: float):
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
          recalc: bool, is_current: bool):
     set_time_interval(from_day, to_day)
-    for i in range(start, stop, 100):
+    for i in range(start, stop, STEP):
+        end = i + STEP if i + STEP < stop else stop
         if recalc:
-            _calc(i)
-        end = i + 100 if i + 100 < stop else stop
+            _calc(i, end)
         if reload_resonances:
             save_resonances(RESONANCE_FILEPATH, i, end)
         _find(i, end, is_current)
@@ -66,8 +68,9 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
                   ' Libration can be created by command \'find\'.')
 @click.option('--start', default=1)
 @click.option('--stop', default=101)
-def plot(start: int, stop: int):
-    _plot(start, stop)
+@click.option('--force', default=False, type=bool)
+def plot(start: int, stop: int, force: bool):
+    _plot(start, stop, force)
 
 
 @cli.command()

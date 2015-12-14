@@ -10,6 +10,8 @@ CONFIG = Config.get_params()
 SKIP_LINES = CONFIG['catalog']['astdys']['skip']
 PROJECT_DIR = Config.get_project_dir()
 PATH = os.path.join(PROJECT_DIR, CONFIG['catalog']['file'])
+AXIS_COLUMN_NUMBER = 6
+AXIS_SWING = CONFIG['resonance']['axis_error']
 
 
 def find_by_number(number: int) -> List[float]:
@@ -35,13 +37,17 @@ def find_by_number(number: int) -> List[float]:
         raise e
 
 
-def _build_resonances(from_filepath: str, asteroid_num: int) \
+def _build_resonances(from_filepath: str, for_asteroid_num: int) \
         -> List[ThreeBodyResonance]:
     try:
         with open(from_filepath) as resonance_file:
+            asteroid_parameters = find_by_number(for_asteroid_num)
+            asteroid_axis = asteroid_parameters[1]
             for line in resonance_file:
                 line_data = line.split()
-                build_resonance(line_data, asteroid_num)
+                resonant_asteroid_axis = float(line_data[AXIS_COLUMN_NUMBER])
+                if abs(resonant_asteroid_axis - asteroid_axis) <= AXIS_SWING:
+                    build_resonance(line_data, for_asteroid_num)
     except FileNotFoundError:
         logging.error('File %s not found. Try command resonance_table.',
                       from_filepath)
