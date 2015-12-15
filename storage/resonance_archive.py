@@ -1,4 +1,3 @@
-import sys
 import logging
 import subprocess
 import glob
@@ -8,13 +7,9 @@ from entities import Body, ThreeBodyResonance, Libration
 from entities.dbutills import session
 from os.path import join as opjoin
 
-from integrator import calc
 from settings import Config
 from integrator.programs import simple_clean
 from integrator.programs import element6
-from .resonancedatabase import ResonanceDatabase
-from utils.series import CirculationYearsFinder
-from utils.series import NoCirculationsException
 from utils.views import create_gnuplot_file
 
 CONFIG = Config.get_params()
@@ -125,7 +120,7 @@ def extract(start: int, elements: bool = False, do_copy_aei: bool = False) -> bo
     return True
 
 
-def calc_resonances(start: int, stop: int, elements: bool = False):
+def calc_resonances(start: int, stop: int, is_force: bool = False):
     """Calculate resonances and plot the png files for given object.
 
     :param int start:
@@ -135,12 +130,14 @@ def calc_resonances(start: int, stop: int, elements: bool = False):
     archive.
     """
     names = ['A%i' % x for x in range(start, stop)]
-    librations = session.query(Libration).join(Libration.resonance)\
-        .join(ThreeBodyResonance.small_body).filter(Body.name.in_(names))
+    if is_force:
+        asterod_numbers = range(start, stop)
+    else:
+        librations = session.query(Libration).join(Libration.resonance)\
+            .join(ThreeBodyResonance.small_body).filter(Body.name.in_(names))
+        asterod_numbers = [x.asteroid_number for x in librations]
 
-    for libration in librations:
-        asteroid_num = libration.asteroid_number
-
+    for asteroid_num in asterod_numbers:
         create_gnuplot_file(asteroid_num)
         if not os.path.exists(OUTPUT_IMAGES):
             os.makedirs(OUTPUT_IMAGES)

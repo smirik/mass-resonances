@@ -10,7 +10,6 @@ from integrator.programs import element6
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
-BODY_COUNTER = CONFIG['integrator']['number_of_bodies']
 SMALL_BODIES_FILENAME = CONFIG['integrator']['files']['small_bodies']
 
 
@@ -34,12 +33,13 @@ def _execute_mercury():
         raise e
 
 
-def calc(start: int):
+def calc(start: int, stop: int):
     """Gets from astdys catalog parameters of orbital elements. Represents them
     to small.in file and makes symlink of this file in directory of application
     mercury6.
 
     :param int start: start is position of start element for computing.
+    :param int stop:
     """
     filepath = os.path.join(PROJECT_DIR, CONFIG['integrator']['input'],
                             SMALL_BODIES_FILENAME)
@@ -49,13 +49,12 @@ def calc(start: int):
     small_bodies_storage.create_small_body_file()
     logging.info(
         'Create initial conditions for asteroids from %i to %i',
-        start, start + BODY_COUNTER
+        start, stop
     )
 
-    for i in range(BODY_COUNTER):
-        num = i + start
-        arr = find_by_number(num)
-        small_bodies_storage.add_body(num, arr)
+    for i in range(start, stop):
+        arr = find_by_number(i)
+        small_bodies_storage.add_body(i, arr)
     small_bodies_storage.flush()
 
     logging.info('Integrating orbits...')

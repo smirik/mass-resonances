@@ -6,7 +6,6 @@ from os.path import join as opjoin
 from os.path import exists as opexists
 
 from settings import Config
-import settings
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
