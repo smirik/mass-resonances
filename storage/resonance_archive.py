@@ -1,10 +1,16 @@
 import logging
 import subprocess
 import glob
+from typing import List
+
 import shutil
 import os
-from entities import Body, ThreeBodyResonance, Libration
+from catalog import find_resonances
+from entities import ThreeBodyResonance, Libration
+from entities.body import Asteroid
 from entities.dbutills import session
+from entities.phase import Phase
+from integrator.calc import build_bigbody_elements, OrbitalElementSet
 from os.path import join as opjoin
 
 from settings import Config
@@ -19,6 +25,10 @@ OUTPUT_GNU = CONFIG['output']['gnuplot']
 OUTPUT_IMAGES = opjoin(PROJECT_DIR, CONFIG['output']['images'])
 X_STOP = CONFIG['gnuplot']['x_stop']
 EXPORT_BASE_DIR = opjoin(PROJECT_DIR, CONFIG['export']['base_dir'])
+MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
+BODY1 = CONFIG['resonance']['bodies'][0]
+BODY2 = CONFIG['resonance']['bodies'][1]
+OUTPUT_ANGLE = CONFIG['output']['angle']
 
 
 class ExtractError(Exception):
@@ -123,27 +133,43 @@ def extract(start: int, elements: bool = False, do_copy_aei: bool = False) -> bo
 def calc_resonances(start: int, stop: int, is_force: bool = False):
     """Calculate resonances and plot the png files for given object.
 
+    :param is_force:
     :param int start:
     :param int stop:
-    :param bool elements:
     :raises ExtractError: if some problems has been appeared related to
     archive.
     """
-    names = ['A%i' % x for x in range(start, stop)]
-    if is_force:
-        asterod_numbers = range(start, stop)
-    else:
-        librations = session.query(Libration).join(Libration.resonance)\
-            .join(ThreeBodyResonance.small_body).filter(Body.name.in_(names))
-        asterod_numbers = [x.asteroid_number for x in librations]
+    def _make_plot(for_resonance: ThreeBodyResonance, by_aei_data: List[str],
+                   with_phases: List[float], is_for_apocentric: bool):
+        res_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE, 'A%i.res' %
+                              for_resonance.asteroid_number)
+        orbital_elem_set = OrbitalElementSet(
+            firstbody_elements, secondbody_elements, with_phases)
+        orbital_elem_set.write_to_resfile(res_filepath, by_aei_data)
 
-    for asteroid_num in asterod_numbers:
-        create_gnuplot_file(asteroid_num)
+        gnufile_path = create_gnuplot_file(for_resonance.asteroid_number)
         if not os.path.exists(OUTPUT_IMAGES):
             os.makedirs(OUTPUT_IMAGES)
 
-        in_path = opjoin(PROJECT_DIR, OUTPUT_GNU, 'A%i.gnu' % asteroid_num)
-        out_path = opjoin(OUTPUT_IMAGES, 'A%i.png' % asteroid_num)
-        with open(out_path, 'wb') as f:
-            subprocess.call(['gnuplot', in_path], stdout=f)
+        out_path = opjoin(OUTPUT_IMAGES, 'A%i-res%i%s.png' % (
+            for_resonance.asteroid_number, for_resonance.id,
+            '-apocentric' if is_for_apocentric else ''
+        ))
+        with open(out_path, 'wb') as image_file:
+            subprocess.call(['gnuplot', gnufile_path], stdout=image_file)
 
+    firstbody_elements, secondbody_elements = build_bigbody_elements(
+        opjoin(MERCURY_DIR, '%s.aei' % BODY1),
+        opjoin(MERCURY_DIR, '%s.aei' % BODY2))
+    for resonance, aei_data in find_resonances(start, stop):
+        apocentric_phases = []
+        phases = []
+        for phase in resonance.phases:  # type: Phase
+            if phase.is_for_apocentric:
+                apocentric_phases.append(phase.value)
+            else:
+                phases.append(phase.value)
+        if phases:
+            _make_plot(resonance, aei_data, phases, False)
+        if apocentric_phases:
+            _make_plot(resonance, aei_data, apocentric_phases, True)

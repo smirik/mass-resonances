@@ -1,36 +1,24 @@
 import logging
-from typing import Iterable
 
-from commands.find.librationbuilder import get_orbitalelements_filepaths
-from commands.find.librationbuilder import TransientBuilder
+import os
+import shutil
+from catalog import find_resonances
 from commands.find.librationbuilder import ApocentricBuilder
-from entities import Body
-from entities import ThreeBodyResonance
+from commands.find.librationbuilder import TransientBuilder, LibrationDirector
 from entities.dbutills import session
-from integrator.calc import BigBodyOrbitalElementSet
+from integrator.calc import ResonanceOrbitalElementSet
+from integrator.calc import build_bigbody_elements
+from os.path import join as opjoin
+from settings import Config
 from storage import ResonanceDatabase
 
-
-def _find_resonances(start: int, stop: int) -> Iterable[ThreeBodyResonance]:
-    """Find resonances from /axis/resonances by asteroid axis. Currently
-    described by 7 items list of floats. 6 is integers satisfying
-    D'Alembert rule. First 3 for longitutes, and second 3 for longitutes
-    perihilion. Seventh value is asteroid axis.
-
-    :param stop:
-    :param start:
-    :return:
-    """
-
-    names = ['A%i' % x for x in range(start, stop)]
-    resonances = session.query(ThreeBodyResonance).join(ThreeBodyResonance.small_body) \
-        .filter(Body.name.in_(names))
-
-    resonances = [x for x in resonances]
-    resonances = sorted(resonances, key=lambda x: x.asteroid_number)
-
-    for resonance in resonances:
-        yield resonance
+PROJECT_DIR = Config.get_project_dir()
+CONFIG = Config.get_params()
+BODIES_COUNTER = CONFIG['integrator']['number_of_bodies']
+BODY1 = CONFIG['resonance']['bodies'][0]
+BODY2 = CONFIG['resonance']['bodies'][1]
+MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
+OUTPUT_ANGLE = CONFIG['output']['angle']
 
 
 def find(start: int, stop: int, is_current: bool = False):
@@ -49,19 +37,23 @@ def find(start: int, stop: int, is_current: bool = False):
     #         logging.info('Archive %s not found. Try command \'package\'',
     #                      exc.filename)
 
-    smallbody_filepath, firstbody_filepath, secondbody_filepath \
-        = get_orbitalelements_filepaths(1)
-    firstbody_elements = BigBodyOrbitalElementSet(firstbody_filepath)
-    secondbody_elements = BigBodyOrbitalElementSet(secondbody_filepath)
+    firstbody_elements, secondbody_elements = build_bigbody_elements(
+        opjoin(MERCURY_DIR, '%s.aei' % BODY1),
+        opjoin(MERCURY_DIR, '%s.aei' % BODY2))
+    libration_director = LibrationDirector()
 
-    for resonance in _find_resonances(start, stop):
+    for resonance, aei_data in find_resonances(start, stop):
         asteroid_num = resonance.asteroid_number
         libration = resonance.libration
 
+        res_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE, 'A%i.res' % asteroid_num)
+        orbital_elem_set = ResonanceOrbitalElementSet(
+            firstbody_elements, secondbody_elements, resonance)
+        orbital_elem_set.write_to_resfile(res_filepath, aei_data)
+
         if not is_current and libration is None:
-            builder = TransientBuilder(asteroid_num, resonance, firstbody_elements,
-                                       secondbody_elements, not is_current)
-            libration = builder.build()
+            builder = TransientBuilder(resonance, orbital_elem_set, res_filepath)
+            libration = libration_director.build(builder)
         elif not libration:
             continue
 
@@ -85,9 +77,8 @@ def find(start: int, stop: int, is_current: bool = False):
             continue
 
         if not is_current and not libration.is_apocentric:
-            builder = ApocentricBuilder(asteroid_num, resonance, firstbody_elements,
-                                        secondbody_elements, not is_current)
-            libration = builder.build()
+            builder = ApocentricBuilder(resonance, orbital_elem_set, res_filepath)
+            libration = libration_director.build(builder)
 
         if libration.is_pure:
             rdb.add_string(libration.as_pure_apocentric())

@@ -40,7 +40,6 @@ class Libration(Base):
         self._average_delta = None
         self._percentage = None
         self._is_apocentric = is_apocentric
-
         if self._circulation_breaks:
             previous_circulation_break = 0
             libration = 0

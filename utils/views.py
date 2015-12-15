@@ -21,5 +21,7 @@ def create_gnuplot_file(body_number):
     if not os.path.exists(OUTPUT_GNU_PATH):
         os.makedirs(OUTPUT_GNU_PATH)
 
-    with open(opjoin(OUTPUT_GNU_PATH, 'A%i.gnu' % body_number), 'w+') as gnuplot_file:
+    path = opjoin(OUTPUT_GNU_PATH, 'A%i.gnu' % body_number)
+    with open(path, 'w+') as gnuplot_file:
         gnuplot_file.write(content)
+    return path
