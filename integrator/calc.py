@@ -1,10 +1,9 @@
-from typing import List, Iterable, Dict
-
-from abc import abstractmethod
-from os.path import join as opjoin
+import os
+from typing import List, Iterable, Dict, Tuple
 from math import radians
 from math import sqrt
-import os
+
+from abc import abstractmethod
 from utils.shortcuts import cutoff_angle
 from entities import ThreeBodyResonance
 from entities.body import LONG
@@ -23,225 +22,172 @@ SMALL_BODIES_FILENAME = CONFIG['integrator']['files']['small_bodies']
 HEADER_LINE_COUNT = 4
 
 
-def _get_body_orbital_elements(
-        smallbody_filepath: str, firstbody_filepath: str,
-        secondbody_filepath: str) -> Iterable[Dict[str, List[float]]]:
-    """Get orbital elements of bodies from pointed .aei files.
-    :param smallbody_filepath:
-    :param firstbody_filepath:
-    :param secondbody_filepath:
-    :return:
-    """
+class _OrbitalElementSet:
+    _TIME = 0
+    _PERIHELLION_LONGITUDE = 1
+    _MEAN_ANOMALY = 2
+    _SEMIMAJOR_AXIS = 3
+    _ECCENTRICITY = 4
+    _INCLINATION = 5
+    _NODE = 7
 
-    def _parse_orbital_elements(from_string: str) -> List[float]:
-        """Represents data from .aei file as set of parameters, which ready for computings.
-        :param from_string: line with parameters.
+    def __init__(self, data_string: str):
+        """Data string must be formated as data in aei file, that generates by element6.
+        :param data_string:
         :return:
         """
+        datas = [float(x) for x in data_string.split()]
 
-        def _get_mean_motion(from_axis: float) -> float:
-            return sqrt(0.0002959122082855911025 / from_axis ** 3.)
+        self.time = datas[self._TIME]
+        self.p_longitude = radians(datas[self._PERIHELLION_LONGITUDE])
+        self.mean_anomaly = radians(datas[self._MEAN_ANOMALY])
+        self.semi_axis = datas[self._SEMIMAJOR_AXIS]
+        self.eccentricity = datas[self._ECCENTRICITY]
+        self.inclination = radians(int(datas[self._INCLINATION]))
+        self.node = radians(int(datas[self._NODE]))
 
-        datas = from_string.split()
-        time = datas[0]
-        p_longitude = radians(float(datas[1]))
-        mean_anomaly = radians(float(datas[2]))
-        semi_axis = float(datas[3])
-        ecc = float(datas[4])
-        inclination = radians(int(float(datas[5])))
-        node = radians(int(float(datas[7])))
-
-        m_longitude = p_longitude + mean_anomaly
-        mean_motion = _get_mean_motion(semi_axis)
-
-        return [time, m_longitude, p_longitude, mean_motion, semi_axis, ecc,
-                mean_anomaly, inclination, node]
-
-    smallbody_file = open(smallbody_filepath)
-    firstbody_file = open(firstbody_filepath)
-    secondbody_file = open(secondbody_filepath)
-
-    for i, line in enumerate(smallbody_file):
-        if i < HEADER_LINE_COUNT:
-            next(firstbody_file)
-            next(secondbody_file)
-            continue
-
-        yield {
-            SMALL_BODY: _parse_orbital_elements(line),
-            FIRST_BODY: _parse_orbital_elements(firstbody_file.readline()),
-            SECOND_BODY: _parse_orbital_elements(secondbody_file.readline())
-        }
-
-    smallbody_file.close()
-    firstbody_file.close()
-    secondbody_file.close()
-
-
-class AbstractOrbialElementSet(object):
-    @abstractmethod
-    def __init__(self):
-        pass
-
-    def _parse_orbital_elements(self, from_string: str) -> List[float]:
-        """Represents data from .aei file as set of parameters, which ready for computings.
-        :param from_string: line with parameters.
-        :return:
+    @property
+    def m_longitude(self) -> float:
+        """Computes and returns longitude by perihelion longitude.
+        :return: longitude
         """
+        return self.p_longitude + self.mean_anomaly
 
-        def _get_mean_motion(from_axis: float) -> float:
-            return sqrt(0.0002959122082855911025 / from_axis ** 3.)
+    @property
+    def mean_motion(self) -> float:
+        """Gets mean motion.
+        :return: mean motion
+        """
+        return sqrt(0.0002959122082855911025 / self.semi_axis ** 3.)
 
-        datas = from_string.split()
-        time = datas[0]
-        p_longitude = radians(float(datas[1]))
-        mean_anomaly = radians(float(datas[2]))
-        semi_axis = float(datas[3])
-        ecc = float(datas[4])
-        inclination = radians(int(float(datas[5])))
-        node = radians(int(float(datas[7])))
+    def serialize_as_asteroid(self) -> List[float]:
+        """Represents data for storing in res file for asteroid.
+        :return: list of data for asteroid representation.
+        """
+        return '%f %f %f %f %f' % (self.semi_axis, self.eccentricity, self.inclination,
+                                   self.node, self.p_longitude)
 
-        m_longitude = p_longitude + mean_anomaly
-        mean_motion = _get_mean_motion(semi_axis)
-
-        return [time, m_longitude, p_longitude, mean_motion, semi_axis, ecc,
-                mean_anomaly, inclination, node]
+    def serialize_as_planet(self) -> List[float]:
+        """Represents data for storing in res file for planet.
+        :return: list of data for planet representation.
+        """
+        return '%f %f' % (self.semi_axis, self.eccentricity)
 
 
-class BigBodyOrbitalElementSet(AbstractOrbialElementSet):
+class BigBodyOrbitalElementSet:
     def __init__(self, filepath):
         self._filepath = filepath
         self._set = self._get_orbital_elements()
-        super(BigBodyOrbitalElementSet, self).__init__()
 
-    def _get_orbital_elements(self) -> List[List[float]]:
+    def _get_orbital_elements(self) -> List[_OrbitalElementSet]:
         res = []
         with open(self._filepath) as bodyfile:
             for i, line in enumerate(bodyfile):
                 if i < HEADER_LINE_COUNT:
                     continue
 
-                res.append(self._parse_orbital_elements(line))
+                res.append(_OrbitalElementSet(line))
         return res
 
     @property
-    def orbital_elements(self) -> List[List[float]]:
+    def orbital_elements(self) -> List[_OrbitalElementSet]:
         return self._set
 
 
-class ResonanceOrbitalElementSet(AbstractOrbialElementSet):
-    def __init__(self, resonance: ThreeBodyResonance,
-                 firstbody_elements: BigBodyOrbitalElementSet,
-                 secondbody_elements: BigBodyOrbitalElementSet):
+class AbstractOrbitalElementSet(object):
+    def __init__(self, secondbody_elements: BigBodyOrbitalElementSet,
+                 firstbody_elements: BigBodyOrbitalElementSet):
+        assert (len(firstbody_elements.orbital_elements) ==
+                len(secondbody_elements.orbital_elements))
         self._firstbody_elements = firstbody_elements
         self._secondbody_elements = secondbody_elements
-        self._resonance = resonance
-        super(ResonanceOrbitalElementSet, self).__init__()
 
-    # TODO: separate writing of axis and orbital elements to two files.
-    def get_elements(self, smallbody_filepath: str) -> Iterable[str]:
-        for orbital_elements in self._get_body_orbital_elements(smallbody_filepath):
-            resonant_phase = self._resonance.get_resonant_phase(
-                {LONG: orbital_elements[FIRST_BODY][1],
-                 PERI: orbital_elements[FIRST_BODY][2]},
-                {LONG: orbital_elements[SECOND_BODY][1],
-                 PERI: orbital_elements[SECOND_BODY][2]},
-                {LONG: orbital_elements[SMALL_BODY][1],
-                 PERI: orbital_elements[SMALL_BODY][2]}
-            )
-            resonant_phase = cutoff_angle(resonant_phase)
+    def _get_body_orbital_elements(self, aei_data: List[str]) \
+            -> Iterable[Dict[str, _OrbitalElementSet]]:
+        """Get orbital elements of bodies from data of the .aei file.
+        :return:
+        """
+        for i, line in enumerate(aei_data):
+            if i < HEADER_LINE_COUNT:
+                continue
 
-            # time, resonance parameter, s/m axis a, ecc a, inclination a,
-            # node a, p_longitude a, s/m axis 1, ecc 1, s/m axis 2, ecc 2
-            resonance_data = "%s %f %f %f %f %f %f %f %f %f %f\n" % (
-                orbital_elements[SMALL_BODY][0], resonant_phase,
-                orbital_elements[SMALL_BODY][4], orbital_elements[SMALL_BODY][5],
-                orbital_elements[SMALL_BODY][7], orbital_elements[SMALL_BODY][8],
-                orbital_elements[SMALL_BODY][2], orbital_elements[FIRST_BODY][4],
-                orbital_elements[FIRST_BODY][5], orbital_elements[SECOND_BODY][4],
-                orbital_elements[SECOND_BODY][5]
+            index = i - HEADER_LINE_COUNT
+            yield {
+                SMALL_BODY: _OrbitalElementSet(line),
+                FIRST_BODY: self._firstbody_elements.orbital_elements[index],
+                SECOND_BODY: self._secondbody_elements.orbital_elements[index]
+            }
+
+    def write_to_resfile(self, res_filepath: str, aei_data: List[str]):
+        if not os.path.exists(os.path.dirname(res_filepath)):
+            os.makedirs(os.path.dirname(res_filepath))
+        with open(res_filepath, 'w') as resonance_file:
+            for item in self.get_elements(aei_data):
+                resonance_file.write(item)
+
+    @abstractmethod
+    def get_elements(self, aei_data: List[str]) -> Iterable[str]:
+        pass
+
+
+class OrbitalElementSet(AbstractOrbitalElementSet):
+    def __init__(self, secondbody_elements: BigBodyOrbitalElementSet,
+                 firstbody_elements: BigBodyOrbitalElementSet,
+                 resonant_phases: List[float]):
+        super(OrbitalElementSet, self).__init__(
+            secondbody_elements, firstbody_elements)
+        assert (len(resonant_phases) == len(secondbody_elements.orbital_elements))
+        self._resonant_phases = resonant_phases
+
+    def get_elements(self, aei_data: List[str]) -> Iterable[str]:
+        for i, orbital_elements in enumerate(self._get_body_orbital_elements(aei_data)):
+            resonant_phase = self._resonant_phases[i]
+            resonance_data = "%f %f %s %s %s\n" % (
+                orbital_elements[SMALL_BODY].time, resonant_phase,
+                orbital_elements[SMALL_BODY].serialize_as_asteroid(),
+                orbital_elements[FIRST_BODY].serialize_as_planet(),
+                orbital_elements[SECOND_BODY].serialize_as_planet()
             )
             yield resonance_data
 
-    def _get_body_orbital_elements(self, smallbody_filepath: str)\
-            -> Iterable[Dict[str, List[float]]]:
-        """Get orbital elements of bodies from pointed .aei files.
 
-        :param smallbody_filepath:
+class ResonanceOrbitalElementSet(AbstractOrbitalElementSet):
+    def __init__(self, secondbody_elements: BigBodyOrbitalElementSet,
+                 firstbody_elements: BigBodyOrbitalElementSet,
+                 resonance: ThreeBodyResonance):
+        """
+        :param secondbody_elements:
+        :param firstbody_elements:
+        :param resonance:
         :return:
         """
-        with open(smallbody_filepath) as smallbody_file:
-            for i, line in enumerate(smallbody_file):
-                if i < HEADER_LINE_COUNT:
-                    continue
+        super(ResonanceOrbitalElementSet, self).__init__(
+            secondbody_elements, firstbody_elements)
+        self._resonance = resonance
 
-                index = i - HEADER_LINE_COUNT
-                yield {
-                    SMALL_BODY: self._parse_orbital_elements(line),
-                    FIRST_BODY: self._firstbody_elements.orbital_elements[index],
-                    SECOND_BODY: self._secondbody_elements.orbital_elements[index]
-                }
-
-
-def calc(body_number: int, resonance: ThreeBodyResonance):
-    """Creates res file and returns path of it. Res file contains resonant
-    phase and orbital (Keplerian) elements by data from aei files.
-
-    :param body_number:
-    :param resonance:
-    :return:
-    """
-    project_dir = Config.get_project_dir()
-
-    mercury_dir = opjoin(project_dir, CONFIG['integrator']['dir'])
-    mercury_planet_dir = mercury_dir
-
-    body_number_start = body_number - body_number % 100
-    body_number_stop = body_number_start + BODIES_COUNTER
-    aei_dir = opjoin(
-        project_dir, CONFIG['export']['aei_dir'],
-        '%i-%i' % (body_number_start, body_number_stop), 'aei'
-    )
-    aei_filepath = opjoin(aei_dir, 'A%i.aei' % body_number)
-    if os.path.exists(aei_filepath):
-        mercury_dir = aei_dir
-        mercury_planet_dir = opjoin(
-            project_dir, CONFIG['export']['aei_dir'], 'Planets'
-        )
-
-    resonance_filename = opjoin(project_dir, OUTPUT_ANGLE, 'A%i.res' % body_number)
-    bodies_filenames = [
-        opjoin(mercury_dir, 'A%i.aei' % body_number),
-        opjoin(mercury_planet_dir, '%s.aei' % BODY1),
-        opjoin(mercury_planet_dir, '%s.aei' % BODY2),
-    ]
-
-    dirpath = opjoin(project_dir, OUTPUT_ANGLE)
-    if not os.path.exists(dirpath):
-        os.makedirs(dirpath)
-
-    with open(resonance_filename, 'w+') as resonance_file:
-        for orbital_elements in _get_body_orbital_elements(*bodies_filenames):
-            resonant_phase = resonance.get_resonant_phase(
-                {LONG: orbital_elements[FIRST_BODY][1],
-                 PERI: orbital_elements[FIRST_BODY][2]},
-                {LONG: orbital_elements[SECOND_BODY][1],
-                 PERI: orbital_elements[SECOND_BODY][2]},
-                {LONG: orbital_elements[SMALL_BODY][1],
-                 PERI: orbital_elements[SMALL_BODY][2]}
+    # TODO: separate writing of axis and orbital elements to two files.
+    def get_elements(self, aei_data: List[str]) -> Iterable[str]:
+        for orbital_elements in self._get_body_orbital_elements(aei_data):
+            resonant_phase = self._resonance.compute_resonant_phase(
+                {LONG: orbital_elements[FIRST_BODY].m_longitude,
+                 PERI: orbital_elements[FIRST_BODY].p_longitude},
+                {LONG: orbital_elements[SECOND_BODY].m_longitude,
+                 PERI: orbital_elements[SECOND_BODY].p_longitude},
+                {LONG: orbital_elements[SMALL_BODY].m_longitude,
+                 PERI: orbital_elements[SMALL_BODY].p_longitude}
             )
             resonant_phase = cutoff_angle(resonant_phase)
-
-            # time, resonance parameter, s/m axis a, ecc a, inclination a,
-            # node a, p_longitude a, s/m axis 1, ecc 1, s/m axis 2, ecc 2
-            resonance_data = "%s %f %f %f %f %f %f %f %f %f %f\n" % (
-                orbital_elements[SMALL_BODY][0], resonant_phase,
-                orbital_elements[SMALL_BODY][4], orbital_elements[SMALL_BODY][5],
-                orbital_elements[SMALL_BODY][7], orbital_elements[SMALL_BODY][8],
-                orbital_elements[SMALL_BODY][2], orbital_elements[FIRST_BODY][4],
-                orbital_elements[FIRST_BODY][5], orbital_elements[SECOND_BODY][4],
-                orbital_elements[SECOND_BODY][5]
+            resonance_data = "%f %f %s %s %s\n" % (
+                orbital_elements[SMALL_BODY].time, resonant_phase,
+                orbital_elements[SMALL_BODY].serialize_as_asteroid(),
+                orbital_elements[FIRST_BODY].serialize_as_planet(),
+                orbital_elements[SECOND_BODY].serialize_as_planet()
             )
-            resonance_file.write(resonance_data)
+            yield resonance_data
 
-    return resonance_filename
+
+def build_bigbody_elements(firstbody_filepath: str, secondbody_filepath: str) \
+        -> Tuple[BigBodyOrbitalElementSet, BigBodyOrbitalElementSet]:
+    firstbody_elements = BigBodyOrbitalElementSet(firstbody_filepath)
+    secondbody_elements = BigBodyOrbitalElementSet(secondbody_filepath)
+    return firstbody_elements, secondbody_elements

@@ -24,9 +24,13 @@ before_script:
   - wget https://raw.githubusercontent.com/smirik/Three-body-resonances/master/axis/resonances
   - cd -
   - psql -c 'create database resonances;' -U postgres
+  - psql -c 'create database resonances_test;' -U postgres
   - cp alembic.ini.dist alembic.ini
+  - cp alembic.ini.dist alembic.test.ini
   - sed -i.bak -r -e 's/^# sqlalchemy.url(.*)/sqlalchemy.url = postgresql:\/\/postgres@localhost\/resonances/g' alembic.ini
+  - sed -i.bak -r -e 's/^# sqlalchemy.url(.*)/sqlalchemy.url = postgresql:\/\/postgres@localhost\/resonances_test/g' alembic.test.ini
   - alembic upgrade head
+  - alembic -c ./alembic.test.ini upgrade head
 
 script:
   - python ./main.py calc

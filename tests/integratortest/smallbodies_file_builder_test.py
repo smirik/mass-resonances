@@ -65,4 +65,3 @@ class SmallBodiesFileBuilderTestCase(unittest.TestCase):
 
         _test_file_existance()
         _test_success_flush()
-

@@ -2,7 +2,6 @@ from typing import List, Callable, TextIO, Iterable
 import os
 from os.path import join as opjoin
 from settings import Config
-from .calc import calc
 from .calc import ResonanceOrbitalElementSet
 
 CONFIG = Config.get_params()

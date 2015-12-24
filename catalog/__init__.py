@@ -5,6 +5,7 @@ import logging
 from entities import ThreeBodyResonance, build_resonance
 from entities.dbutills import session
 from settings import Config
+from .find_resonances import find_resonances
 
 CONFIG = Config.get_params()
 SKIP_LINES = CONFIG['catalog']['astdys']['skip']

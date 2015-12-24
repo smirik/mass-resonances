@@ -1,7 +1,8 @@
 from typing import List
 
-from entities.body import Body, LONG, PERI, LONG_COEFF, PERI_COEFF
+from entities.body import _Body, LONG, PERI, LONG_COEFF, PERI_COEFF
 from entities.dbutills import Base
+from .phase import Phase
 from .libration import Libration
 from .threebodyresonance import LONG
 from .threebodyresonance import LONG_COEFF
@@ -11,7 +12,7 @@ from .threebodyresonance import ThreeBodyResonance
 from .threebodyresonance import build_resonance
 
 
-class Asteroid(Body):
+class RDB_Asteroid(_Body):
     number = None
     resonance = None
 

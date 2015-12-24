@@ -1,9 +1,19 @@
 from typing import Dict
 from typing import List
 
-from entities.body import Body, LONG, PERI, LONG_COEFF, PERI_COEFF
-from entities.dbutills import Base, session, get_or_create
-from sqlalchemy import Column, ForeignKey, Integer, Float, UniqueConstraint
+from entities.body import LONG
+from entities.body import PERI
+from entities.body import LONG_COEFF
+from entities.body import PERI_COEFF
+from entities.body import Planet
+from entities.body import Asteroid
+from entities.dbutills import Base
+from entities.dbutills import get_or_create
+from sqlalchemy import Column, Float
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import UniqueConstraint
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -14,30 +24,26 @@ class ThreeBodyResonance(Base):
     """
     __tablename__ = 'resonance'
     __table_args__ = (UniqueConstraint(
-        'asteroid_axis', 'first_body_id', 'second_body_id', 'small_body_id',
+        'first_body_id', 'second_body_id', 'small_body_id',
         name='uc_axis_first_second_small'
     ),)
 
-    asteroid_axis = Column(Float, nullable=False)
-    first_body_id = Column(Integer, ForeignKey('body.id'), nullable=False)
-    first_body = relationship('Body', foreign_keys=first_body_id)
-    second_body_id = Column(Integer, ForeignKey('body.id'), nullable=False)
-    second_body = relationship('Body', foreign_keys=second_body_id)
-    small_body_id = Column(Integer, ForeignKey('body.id'), nullable=False)
-    small_body = relationship('Body', foreign_keys=small_body_id, backref=backref('resonances'))
+    first_body_id = Column(Integer, ForeignKey('planet.id'), nullable=False)
+    first_body = relationship('Planet', foreign_keys=first_body_id)
+    second_body_id = Column(Integer, ForeignKey('planet.id'), nullable=False)
+    second_body = relationship('Planet', foreign_keys=second_body_id)
+    small_body_id = Column(Integer, ForeignKey('asteroid.id'), nullable=False)
+    small_body = relationship('Asteroid', foreign_keys=small_body_id,
+                              backref=backref('resonances'))
+
+    @hybrid_property
+    def asteroid_axis(self):
+        return self.small_body.axis
 
     @hybrid_property
     def asteroid_number(self) -> int:
         name = self.small_body.name
         return int(name[1:])
-
-    # @asteroid_number.expression
-    # def asteroid_number(cls):
-    #     try:
-    #         name = str(Body.name)
-    #         return int(name[1:])
-    #     except ValueError:
-    #         return None
 
     def __str__(self):
         return '[%i %i %i %i %i %i %f]' % (
@@ -47,14 +53,14 @@ class ThreeBodyResonance(Base):
             self.first_body[PERI_COEFF],
             self.second_body[PERI_COEFF],
             self.small_body[PERI_COEFF],
-            self.asteroid_axis
+            self.small_body.axis
         )
 
-    def get_resonant_phase(self, first_body: Dict[str, float],
-                           second_body: Dict[str, float],
-                           small_body: Dict[str, float]) -> float:
-        """Computes resonant phase by linear combination of stored coeffitients
-        and pointed longitudes.
+    def compute_resonant_phase(self, first_body: Dict[str, float],
+                               second_body: Dict[str, float],
+                               small_body: Dict[str, float]) -> float:
+        """Computes resonant phase by linear combination of coeffitients
+        satisfying D'Alambert rule and pointed longitudes.
 
         :param first_body:
         :param second_body:
@@ -89,14 +95,15 @@ def build_resonance(data: List[str], asteroid_num: int) -> ThreeBodyResonance:
     small_body = {
         'name': 'A%i' % asteroid_num,
         LONG_COEFF: int(data[2]),
-        PERI_COEFF: int(data[5])
+        PERI_COEFF: int(data[5]),
+        'axis': float(data[6])
     }
 
-    first_body, is_new = get_or_create(Body, **first_body)
-    second_body, is_new = get_or_create(Body, **second_body)
-    small_body, is_new = get_or_create(Body, **small_body)
+    first_body, is_new = get_or_create(Planet, **first_body)
+    second_body, is_new = get_or_create(Planet, **second_body)
+    small_body, is_new = get_or_create(Asteroid, **small_body)
 
-    resonance, is_new = get_or_create(ThreeBodyResonance, first_body=first_body,
-                                      second_body=second_body, small_body=small_body,
-                                      asteroid_axis=float(data[6]))
+    resonance, is_new = get_or_create(
+        ThreeBodyResonance, first_body=first_body, second_body=second_body,
+        small_body=small_body)
     return resonance

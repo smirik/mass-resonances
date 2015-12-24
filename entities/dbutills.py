@@ -9,7 +9,9 @@ import os
 from settings import Config
 
 
-_config = AlembicConfig(os.path.join(Config.get_project_dir(), 'alembic.ini'))
+_config = AlembicConfig(os.path.join(
+    Config.get_project_dir(), Config.get_params()['db_path']
+))
 
 
 @as_declarative()

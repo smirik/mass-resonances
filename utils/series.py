@@ -1,35 +1,38 @@
 import math
-from typing import Iterable, Tuple
 from typing import List
-from typing import io
-from os.path import join as opjoin
+from entities.dbutills import session
+from entities.phase import Phase
 from settings import Config
-from utils.shortcuts import cutoff_angle
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 
 
-class NoCirculationsException(Exception):
+class NoPhaseException(Exception):
     pass
 
 
 class CirculationYearsFinder:
-    def __init__(self, for_apocentric: bool, in_filepath: str):
-        self._in_filepath = in_filepath
-        self._for_apocentric = for_apocentric
-        self._resfile_line_data = []
+    def __init__(self, resonant_phase_ids: List[int]):
+        self._resonant_phase_ids = resonant_phase_ids
 
     def get_years(self) -> List[float]:
         """Find circulations in file.
         """
         result_breaks = []  # circulation breaks by OX
         p_break = 0
-
         previous_resonant_phase = None
-        for year, resonant_phase in self._get_line_data():
+        prev_year = None
+
+        phases = session.query(Phase).filter(Phase.id.in_(self._resonant_phase_ids))\
+            .order_by(Phase.year).yield_per(1000).all()
+        if not phases:
+            raise NoPhaseException('no resonant phases by poined id numbers' %
+                                   self._resonant_phase_ids)
+        for phase in phases:  # type: Phase
             # If the distance (OY axis) between new point and previous more
             # than PI then there is a break (circulation)
+            resonant_phase = phase.value
             if resonant_phase:
                 if (previous_resonant_phase and
                         (abs(previous_resonant_phase - resonant_phase) >= math.pi)):
@@ -42,40 +45,21 @@ class CirculationYearsFinder:
                     if (c_break != p_break) and (p_break != 0):
                         del result_breaks[len(result_breaks) - 1]
 
-                    result_breaks.append(year)
+                    assert prev_year is not None
+                    result_breaks.append(prev_year)
                     p_break = c_break
 
             previous_resonant_phase = resonant_phase
+            prev_year = phase.year
 
         return result_breaks
 
-    def get_first_years(self) -> float:
-        """
-        :return:
-        """
-        with open(self._in_filepath) as f:
-            for years, resonant_phase in self._get_line_data():
-                if resonant_phase:
-                    return years
+    # def get_first_years(self) -> float:
+    #     """
+    #     :return:
+    #     """
+    #     with open(self._in_filepath) as f:
+    #         for years, resonant_phase in self._get_line_data():
+    #             if resonant_phase:
+    #                 return years
 
-    def _get_line_data(self) -> Iterable[Tuple[float, float]]:
-        """
-        :rtype : Generator[List[float], None, None]
-        """
-        def _get_data(from_array: List[float]) -> Tuple[float, float]:
-            year = from_array[0]
-            resonant_phase = from_array[1]
-            if self._for_apocentric:
-                resonant_phase = cutoff_angle(resonant_phase + math.pi)
-
-            return year, resonant_phase
-
-        if not self._resfile_line_data:
-            with open(self._in_filepath) as file:
-                for line in file:
-                    data = [float(x) for x in line.split()]
-                    self._resfile_line_data.append([data[0], data[1]])
-                    yield _get_data(data)
-        else:
-            for item in self._resfile_line_data:
-                yield _get_data(item)

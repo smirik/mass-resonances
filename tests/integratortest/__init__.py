@@ -45,5 +45,3 @@ def test_set_time_interval():
     os.rename(param_in_filepath + '.backup', param_in_filepath)
     os.remove(big_in_filepath)
     os.rename(big_in_filepath + '.backup', big_in_filepath)
-
-    # os.rmdir(test_integrator_path)

@@ -8,3 +8,4 @@ input
 .coverage
 htmlcov
 alembic.ini
+.cache

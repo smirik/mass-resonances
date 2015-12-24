@@ -1,14 +1,14 @@
-from typing import List
-
+from typing import List, Dict
 import pytest
+from unittest import mock
 from os.path import join as opjoin
 from os.path import exists as opexists
 import os
 from settings import Config
-import settings
 from storage import ResonanceDatabase
 from utils.series import CirculationYearsFinder
-
+from utils.series import NoPhaseException
+from utils.series import session
 
 CONFIG = Config.get_params()
 PROJECT_DIR = opjoin(Config.get_project_dir(), 'tests')
@@ -26,27 +26,46 @@ def test_init(path: str):
     os.removedirs(os.path.dirname(path))
 
 
-RESFILE_DATA = """0.0000000 -0.511077 2.765030 0.077237 0.174533 1.396263 2.690092 5.203010 0.048542 9.578820 0.054070
-3.0000000 0.875501 2.764430 0.078103 0.174533 1.396263 2.682815 5.203710 0.048899 9.584690 0.057297
-6.0000000 2.371922 2.764580 0.078213 0.174533 1.396263 2.663383 5.201790 0.048970 9.573660 0.056652
-9.0000000 -2.512588 2.765610 0.077484 0.174533 1.396263 2.662716 5.202390 0.048907 9.542190 0.053900
-"""
-
-
-@pytest.fixture
-def res_filepath() -> str:
-    filepath = opjoin(PROJECT_DIR, 'testfile.res')
-    with open(filepath, 'w') as resfile:
-        resfile.write(RESFILE_DATA)
-
-    return filepath
-
-
-@pytest.mark.parametrize('for_apocetric, results', [
-    (False, [9.]), (True, [3.])
+@pytest.mark.parametrize('ids, phase_arguments, result_years', [
+    ([1, 2, 3], [], None),
+    ([1, 2, 3], [
+        {'year': 0.0, 'value': 1.32}
+    ], []),
+    ([1, 2, 3], [
+        {'year': 0.0, 'value': -0.51},
+        {'year': 3.0, 'value': 0.87},
+        {'year': 6.0, 'value': 2.37},
+        {'year': 9.0, 'value': -2.51}
+    ], [6.])
 ])
-def test_getting_years(res_filepath: str, for_apocetric: bool, results: List[float]):
-    finder = CirculationYearsFinder(for_apocetric, res_filepath)
-    res = finder.get_years()
-    assert res == results
-    os.remove(res_filepath)
+@mock.patch('entities.Phase')
+def test_getting_years(Phase, monkeypatch, ids, phase_arguments: List[Dict],
+                       result_years: List[float]):
+    class QueryMock:
+        def filter(self, *args):
+            return self
+
+        def order_by(self, *args):
+            return self
+
+        def yield_per(self, number):
+            return self
+
+        def all(self):
+            phase = Phase()
+            year = mock.PropertyMock(side_effect=[x['year'] for x in phase_arguments])
+            value = mock.PropertyMock(side_effect=[x['value'] for x in phase_arguments])
+            type(phase).year = year
+            type(phase).value = value
+            return [phase for x in range(len(phase_arguments))]
+
+    def query(arg):
+        return QueryMock()
+
+    monkeypatch.setattr(session, 'query', query)
+    finder = CirculationYearsFinder(ids)
+    if result_years is None:
+        with pytest.raises(NoPhaseException):
+            finder.get_years()
+    else:
+        assert finder.get_years() == result_years
