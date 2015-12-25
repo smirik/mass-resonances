@@ -1,13 +1,10 @@
 import logging
-
-import os
-import shutil
 from catalog import find_resonances
 from commands.find.librationbuilder import ApocentricBuilder
 from commands.find.librationbuilder import TransientBuilder, LibrationDirector
 from entities.dbutills import session
-from integrator.calc import ResonanceOrbitalElementSet
-from integrator.calc import build_bigbody_elements
+from integrator import ResonanceOrbitalElementSetFacade
+from integrator import build_bigbody_elements
 from os.path import join as opjoin
 from settings import Config
 from storage import ResonanceDatabase
@@ -47,7 +44,7 @@ def find(start: int, stop: int, is_current: bool = False):
         libration = resonance.libration
 
         res_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE, 'A%i.res' % asteroid_num)
-        orbital_elem_set = ResonanceOrbitalElementSet(
+        orbital_elem_set = ResonanceOrbitalElementSetFacade(
             firstbody_elements, secondbody_elements, resonance)
         orbital_elem_set.write_to_resfile(res_filepath, aei_data)
 
