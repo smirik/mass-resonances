@@ -11,7 +11,6 @@ from entities import ThreeBodyResonance
 from entities.phase import Phase
 from integrator import build_bigbody_elements
 from integrator import ComputedOrbitalElementSetFacade
-from memory_profiler import profile
 from os.path import join as opjoin
 
 from settings import Config
