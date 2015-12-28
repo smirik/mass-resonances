@@ -2,7 +2,13 @@ from typing import List, Callable, TextIO, Iterable
 import os
 from os.path import join as opjoin
 from settings import Config
-from .calc import ResonanceOrbitalElementSet
+from .orbitalelements import OrbitalElementSetCollection
+from .orbitalelements import ComputedOrbitalElementSetFacade
+from .orbitalelements import ResonanceOrbitalElementSetFacade
+from .orbitalelements import build_bigbody_elements
+from .orbitalelements import IOrbitalElementSetFacade
+from .orbitalelements import ElementCountException
+from .orbitalelements import PhaseCountException
 
 CONFIG = Config.get_params()
 INTEGRATOR_START = CONFIG['integrator']['start']

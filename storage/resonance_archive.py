@@ -1,16 +1,17 @@
 import logging
 import subprocess
 import glob
+from entities.dbutills import engine
 from typing import List
 
 import shutil
 import os
 from catalog import find_resonances
-from entities import ThreeBodyResonance, Libration
-from entities.body import Asteroid
-from entities.dbutills import session
+from entities import ThreeBodyResonance
 from entities.phase import Phase
-from integrator.calc import build_bigbody_elements, OrbitalElementSet
+from integrator import build_bigbody_elements
+from integrator import ComputedOrbitalElementSetFacade
+from memory_profiler import profile
 from os.path import join as opjoin
 
 from settings import Config
@@ -139,11 +140,16 @@ def calc_resonances(start: int, stop: int, is_force: bool = False):
     :raises ExtractError: if some problems has been appeared related to
     archive.
     """
+
+    firstbody_elements, secondbody_elements = build_bigbody_elements(
+        opjoin(MERCURY_DIR, '%s.aei' % BODY1),
+        opjoin(MERCURY_DIR, '%s.aei' % BODY2))
+
     def _make_plot(for_resonance: ThreeBodyResonance, by_aei_data: List[str],
                    with_phases: List[float], is_for_apocentric: bool):
         res_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE, 'A%i.res' %
                               for_resonance.asteroid_number)
-        orbital_elem_set = OrbitalElementSet(
+        orbital_elem_set = ComputedOrbitalElementSetFacade(
             firstbody_elements, secondbody_elements, with_phases)
         orbital_elem_set.write_to_resfile(res_filepath, by_aei_data)
 
@@ -158,17 +164,19 @@ def calc_resonances(start: int, stop: int, is_force: bool = False):
         with open(out_path, 'wb') as image_file:
             subprocess.call(['gnuplot', gnufile_path], stdout=image_file)
 
-    firstbody_elements, secondbody_elements = build_bigbody_elements(
-        opjoin(MERCURY_DIR, '%s.aei' % BODY1),
-        opjoin(MERCURY_DIR, '%s.aei' % BODY2))
+    conn = engine.connect()
     for resonance, aei_data in find_resonances(start, stop):
         apocentric_phases = []
         phases = []
-        for phase in resonance.phases:  # type: Phase
-            if phase.is_for_apocentric:
-                apocentric_phases.append(phase.value)
+
+        result = conn.execute(
+            'SELECT value, is_for_apocentric FROM %s WHERE resonance_id=%i' %
+            (Phase.__tablename__, resonance.id))
+        for row in result:
+            if row['is_for_apocentric']:
+                apocentric_phases.append(row['value'])
             else:
-                phases.append(phase.value)
+                phases.append(row['value'])
         if phases:
             _make_plot(resonance, aei_data, phases, False)
         if apocentric_phases:

@@ -24,7 +24,7 @@ def find_resonances(start: int, stop: int) -> Iterable[Tuple[ThreeBodyResonance,
 
     names = ['A%i' % x for x in range(start, stop)]
     resonances = session.query(ThreeBodyResonance).join(ThreeBodyResonance.small_body) \
-        .filter(Asteroid.name.in_(names))
+        .filter(Asteroid.name.in_(names)).all()
 
     resonances = [x for x in resonances]
     resonances = sorted(resonances, key=lambda x: x.asteroid_number)

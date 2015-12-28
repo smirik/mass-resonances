@@ -1,18 +1,13 @@
 from typing import Tuple, List, Iterable
-import logging
-
 import math
 
-import os
 from abc import abstractmethod
 from entities.dbutills import session
 from entities.phase import Phase
-from integrator import ResonanceOrbitalElementSet
-from os.path import join as opjoin
 from settings import Config
 from utils.series import CirculationYearsFinder
 from entities import Libration
-from integrator.calc import BigBodyOrbitalElementSet, AbstractOrbitalElementSet
+from integrator import IOrbitalElementSetFacade
 from entities import ThreeBodyResonance
 from utils.shortcuts import cutoff_angle
 
@@ -63,7 +58,7 @@ class _PhaseBuilder:
 
 class AbstractLibrationBuilder:
     def __init__(self, libration_resonance: ThreeBodyResonance,
-                 orbital_elem_set: AbstractOrbitalElementSet,
+                 orbital_elem_set: IOrbitalElementSetFacade,
                  res_filepath: str):
         self._orbital_elem_set = orbital_elem_set
         self._resonance = libration_resonance

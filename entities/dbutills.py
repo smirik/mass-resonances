@@ -20,9 +20,9 @@ class Base(object):
         super(Base, self).__init__(**kwargs)
     id = Column(Integer, primary_key=True)
 
-_engine = create_engine(_config.get_main_option('sqlalchemy.url'))
+engine = create_engine(_config.get_main_option('sqlalchemy.url'))
 _Session = sessionmaker()
-_Session.configure(bind=_engine)
+_Session.configure(bind=engine)
 session = _Session()
 
 

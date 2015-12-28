@@ -37,7 +37,7 @@ script:
   - python ./main.py package --res=1 --compress=1 --aei=1
   - python ./main.py find --reload-resonances=1
   - cat ./export/full.db | wc -l
-  - python -m pytest ./tests/entitiestest/*.py ./tests/*.py ./tests/integratortest/*.py
+  - python -m pytest ./tests/**/*.py
 
 #after_success:
 #  - coverage report -m
