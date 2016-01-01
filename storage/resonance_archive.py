@@ -9,7 +9,7 @@ import os
 from catalog import find_resonances
 from entities import ThreeBodyResonance
 from entities.phase import Phase
-from integrator import build_bigbody_elements
+from integrator import build_bigbody_elements, PhaseCountException
 from integrator import ComputedOrbitalElementSetFacade
 from os.path import join as opjoin
 
@@ -165,18 +165,22 @@ def calc_resonances(start: int, stop: int, is_force: bool = False):
 
     conn = engine.connect()
     for resonance, aei_data in find_resonances(start, stop):
+        resonance_id = resonance.id
         apocentric_phases = []
         phases = []
 
         result = conn.execute(
             'SELECT value, is_for_apocentric FROM %s WHERE resonance_id=%i' %
-            (Phase.__tablename__, resonance.id))
+            (Phase.__tablename__, resonance_id))
         for row in result:
             if row['is_for_apocentric']:
                 apocentric_phases.append(row['value'])
             else:
                 phases.append(row['value'])
-        if phases:
-            _make_plot(resonance, aei_data, phases, False)
-        if apocentric_phases:
-            _make_plot(resonance, aei_data, apocentric_phases, True)
+        try:
+            if phases:
+                _make_plot(resonance, aei_data, phases, False)
+            if apocentric_phases:
+                _make_plot(resonance, aei_data, apocentric_phases, True)
+        except PhaseCountException as e:
+            logging.error('%s, resonance_id = %i', str(e), resonance_id)
