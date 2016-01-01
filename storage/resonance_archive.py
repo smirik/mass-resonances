@@ -1,34 +1,18 @@
+import glob
 import logging
 import subprocess
-import glob
-from entities.dbutills import engine
-from typing import List
 
-import shutil
 import os
-from catalog import find_resonances
-from entities import ThreeBodyResonance
-from entities.phase import Phase
-from integrator import build_bigbody_elements
-from integrator import ComputedOrbitalElementSetFacade
-from os.path import join as opjoin
-
-from settings import Config
-from integrator.programs import simple_clean
+import shutil
 from integrator.programs import element6
-from utils.views import create_gnuplot_file
+from integrator.programs import simple_clean
+from os.path import join as opjoin
+from settings import Config
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 BODIES_COUNTER = int(CONFIG['integrator']['number_of_bodies'])
-OUTPUT_GNU = CONFIG['output']['gnuplot']
-OUTPUT_IMAGES = opjoin(PROJECT_DIR, CONFIG['output']['images'])
-X_STOP = CONFIG['gnuplot']['x_stop']
 EXPORT_BASE_DIR = opjoin(PROJECT_DIR, CONFIG['export']['base_dir'])
-MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
-BODY1 = CONFIG['resonance']['bodies'][0]
-BODY2 = CONFIG['resonance']['bodies'][1]
-OUTPUT_ANGLE = CONFIG['output']['angle']
 
 
 class ExtractError(Exception):
@@ -128,55 +112,3 @@ def extract(start: int, elements: bool = False, do_copy_aei: bool = False) -> bo
                                 (source, target))
 
     return True
-
-
-def calc_resonances(start: int, stop: int, is_force: bool = False):
-    """Calculate resonances and plot the png files for given object.
-
-    :param is_force:
-    :param int start:
-    :param int stop:
-    :raises ExtractError: if some problems has been appeared related to
-    archive.
-    """
-
-    firstbody_elements, secondbody_elements = build_bigbody_elements(
-        opjoin(MERCURY_DIR, '%s.aei' % BODY1),
-        opjoin(MERCURY_DIR, '%s.aei' % BODY2))
-
-    def _make_plot(for_resonance: ThreeBodyResonance, by_aei_data: List[str],
-                   with_phases: List[float], is_for_apocentric: bool):
-        res_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE, 'A%i.res' %
-                              for_resonance.asteroid_number)
-        orbital_elem_set = ComputedOrbitalElementSetFacade(
-            firstbody_elements, secondbody_elements, with_phases)
-        orbital_elem_set.write_to_resfile(res_filepath, by_aei_data)
-
-        gnufile_path = create_gnuplot_file(for_resonance.asteroid_number)
-        if not os.path.exists(OUTPUT_IMAGES):
-            os.makedirs(OUTPUT_IMAGES)
-
-        out_path = opjoin(OUTPUT_IMAGES, 'A%i-res%i%s.png' % (
-            for_resonance.asteroid_number, for_resonance.id,
-            '-apocentric' if is_for_apocentric else ''
-        ))
-        with open(out_path, 'wb') as image_file:
-            subprocess.call(['gnuplot', gnufile_path], stdout=image_file)
-
-    conn = engine.connect()
-    for resonance, aei_data in find_resonances(start, stop):
-        apocentric_phases = []
-        phases = []
-
-        result = conn.execute(
-            'SELECT value, is_for_apocentric FROM %s WHERE resonance_id=%i' %
-            (Phase.__tablename__, resonance.id))
-        for row in result:
-            if row['is_for_apocentric']:
-                apocentric_phases.append(row['value'])
-            else:
-                phases.append(row['value'])
-        if phases:
-            _make_plot(resonance, aei_data, phases, False)
-        if apocentric_phases:
-            _make_plot(resonance, aei_data, apocentric_phases, True)

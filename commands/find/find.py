@@ -1,7 +1,10 @@
 import logging
+from typing import List
+
 from catalog import find_resonances
 from commands.find.librationbuilder import ApocentricBuilder
 from commands.find.librationbuilder import TransientBuilder, LibrationDirector
+from entities import Phase
 from entities.dbutills import session
 from integrator import ResonanceOrbitalElementSetFacade
 from integrator import build_bigbody_elements
@@ -39,6 +42,16 @@ def find(start: int, stop: int, is_current: bool = False):
         opjoin(MERCURY_DIR, '%s.aei' % BODY2))
     libration_director = LibrationDirector()
 
+    def _build_phases(by_aei_data: List[str], is_apocentric: bool, by_resonance):
+        objs = [
+            Phase(resonance_id=by_resonance.id, year=year, value=value,
+                  is_for_apocentric=is_apocentric)
+            for year, value in orbital_elem_set.get_resonant_phases(by_aei_data)
+        ]
+        session.bulk_save_objects(objs)
+        session.commit()
+        return [x.id for x in objs]
+
     for resonance, aei_data in find_resonances(start, stop):
         asteroid_num = resonance.asteroid_number
         libration = resonance.libration
@@ -46,8 +59,10 @@ def find(start: int, stop: int, is_current: bool = False):
         res_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE, 'A%i.res' % asteroid_num)
         orbital_elem_set = ResonanceOrbitalElementSetFacade(
             firstbody_elements, secondbody_elements, resonance)
-        orbital_elem_set.write_to_resfile(res_filepath, aei_data)
 
+        _build_phases(aei_data, False, resonance)
+        _build_phases(aei_data, True, resonance)
+        resonance_str = str(resonance)
         if not is_current and libration is None:
             builder = TransientBuilder(resonance, orbital_elem_set, res_filepath)
             libration = libration_director.build(builder)
@@ -64,12 +79,12 @@ def find(start: int, stop: int, is_current: bool = False):
                 else:
                     logging.debug(
                         'A%i, NO RESONANCE, resonance = %s, max = %f',
-                        asteroid_num, str(resonance), libration.max_diff
+                        asteroid_num, resonance_str, libration.max_diff
                     )
                     session.expunge(libration)
 
         elif not libration.is_apocentric:
-            logging.info('A%i, pure resonance %s', asteroid_num, str(resonance))
+            logging.info('A%i, pure resonance %s', asteroid_num, resonance_str)
             rdb.add_string(libration.as_pure())
             continue
 
@@ -80,8 +95,7 @@ def find(start: int, stop: int, is_current: bool = False):
         if libration.is_pure:
             rdb.add_string(libration.as_pure_apocentric())
             logging.info('A%i, pure apocentric resonance %s', asteroid_num,
-                         str(resonance))
+                         resonance_str)
         else:
             session.expunge(libration)
-
     session.commit()
