@@ -1,14 +1,13 @@
 from typing import List
 
-from sqlalchemy import Table, Column, ForeignKey, Integer, Enum, Float, UniqueConstraint
+from entities.dbutills import Base
+from settings import Config
 from sqlalchemy import Boolean
+from sqlalchemy import Column, ForeignKey, Integer, Float
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, backref
-
 from .threebodyresonance import ThreeBodyResonance
-from entities.dbutills import Base
-from settings import Config
 
 
 CONFIG = Config.get_params()
