@@ -26,12 +26,12 @@ def test_init(path: str):
     os.removedirs(os.path.dirname(path))
 
 
-@pytest.mark.parametrize('ids, phase_arguments, result_years', [
-    ([1, 2, 3], [], None),
-    ([1, 2, 3], [
+@pytest.mark.parametrize('resonance_id, phase_arguments, result_years', [
+    (1, [], None),
+    (1, [
         {'year': 0.0, 'value': 1.32}
     ], []),
-    ([1, 2, 3], [
+    (1, [
         {'year': 0.0, 'value': -0.51},
         {'year': 3.0, 'value': 0.87},
         {'year': 6.0, 'value': 2.37},
@@ -39,10 +39,10 @@ def test_init(path: str):
     ], [6.])
 ])
 @mock.patch('entities.Phase')
-def test_getting_years(Phase, monkeypatch, ids, phase_arguments: List[Dict],
+def test_getting_years(Phase, monkeypatch, resonance_id, phase_arguments: List[Dict],
                        result_years: List[float]):
     class QueryMock:
-        def filter(self, *args):
+        def filter_by(self, *args, **kwargs):
             return self
 
         def order_by(self, *args):
@@ -63,7 +63,7 @@ def test_getting_years(Phase, monkeypatch, ids, phase_arguments: List[Dict],
         return QueryMock()
 
     monkeypatch.setattr(session, 'query', query)
-    finder = CirculationYearsFinder(ids)
+    finder = CirculationYearsFinder(resonance_id, False)
     if result_years is None:
         with pytest.raises(NoPhaseException):
             finder.get_years()

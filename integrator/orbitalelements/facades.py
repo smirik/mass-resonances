@@ -1,4 +1,4 @@
-from typing import List, Iterable, Dict
+from typing import List, Iterable, Dict, Tuple
 
 import os
 from abc import abstractmethod
@@ -139,6 +139,18 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
         super(ResonanceOrbitalElementSetFacade, self).__init__(
             secondbody_elements, firstbody_elements)
         self._resonance = resonance
+
+    def get_resonant_phases(self, aei_data: List[str]) -> Iterable[Tuple[float, float]]:
+        for orbital_elements in self._get_body_orbital_elements(aei_data):
+            resonant_phase = self._resonance.compute_resonant_phase(
+                {LONG: orbital_elements[FIRST_BODY].m_longitude,
+                 PERI: orbital_elements[FIRST_BODY].p_longitude},
+                {LONG: orbital_elements[SECOND_BODY].m_longitude,
+                 PERI: orbital_elements[SECOND_BODY].p_longitude},
+                {LONG: orbital_elements[SMALL_BODY].m_longitude,
+                 PERI: orbital_elements[SMALL_BODY].p_longitude}
+            )
+            yield orbital_elements[SMALL_BODY].time, cutoff_angle(resonant_phase)
 
     def get_elements(self, aei_data: List[str]) -> Iterable[str]:
         """

@@ -2,6 +2,7 @@ from typing import Tuple
 
 from sqlalchemy import create_engine, Integer, Column
 from sqlalchemy.ext.declarative import as_declarative
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import ClauseElement
 from alembic.config import Config as AlembicConfig
@@ -23,7 +24,7 @@ class Base(object):
 engine = create_engine(_config.get_main_option('sqlalchemy.url'))
 _Session = sessionmaker()
 _Session.configure(bind=engine)
-session = _Session()
+session = _Session()    # type: Session
 
 
 def get_or_create(cls: type, **kwargs):
