@@ -4,7 +4,7 @@ import math
 from abc import abstractmethod
 from entities.phase import Phase
 from settings import Config
-from utils.series import CirculationYearsFinder
+from datamining import CirculationYearsFinder
 from entities import Libration
 from integrator import IOrbitalElementSetFacade
 from entities import ThreeBodyResonance

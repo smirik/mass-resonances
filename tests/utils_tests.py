@@ -6,9 +6,7 @@ from os.path import exists as opexists
 import os
 from settings import Config
 from storage import ResonanceDatabase
-from utils.series import CirculationYearsFinder
-from utils.series import NoPhaseException
-from utils.series import session
+from datamining import CirculationYearsFinder, NoPhaseException, session
 
 CONFIG = Config.get_params()
 PROJECT_DIR = opjoin(Config.get_project_dir(), 'tests')
