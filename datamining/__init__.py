@@ -1,16 +1,9 @@
 import math
 from typing import List
+
+from entities import Phase
 from entities.dbutills import session
-from entities.phase import Phase
-from settings import Config
 from utils.shortcuts import cutoff_angle
-
-CONFIG = Config.get_params()
-PROJECT_DIR = Config.get_project_dir()
-
-
-class NoPhaseException(Exception):
-    pass
 
 
 class CirculationYearsFinder:
@@ -62,12 +55,6 @@ class CirculationYearsFinder:
 
         return result_breaks
 
-    # def get_first_years(self) -> float:
-    #     """
-    #     :return:
-    #     """
-    #     with open(self._in_filepath) as f:
-    #         for years, resonant_phase in self._get_line_data():
-    #             if resonant_phase:
-    #                 return years
 
+class NoPhaseException(Exception):
+    pass
