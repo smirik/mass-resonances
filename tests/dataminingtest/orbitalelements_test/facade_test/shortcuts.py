@@ -1,12 +1,15 @@
 from typing import List
+from typing import Tuple
 from unittest import mock
 
 import pytest
-from integrator import OrbitalElementSetCollection
-from integrator.orbitalelements.collection import OrbitalElementSet
+from datamining import OrbitalElementSet
+from datamining import OrbitalElementSetCollection
+from tests.shortcuts import get_class_path
 
 
-def build_orbital_collection(property_mock_values: List):
+def build_orbital_collection(property_mock_values: List) \
+        -> Tuple[OrbitalElementSetCollection, OrbitalElementSetCollection]:
     """
     :param property_mock_values:
     :return: objects of mock of the class OrbitalElementSetCollection.
@@ -21,10 +24,6 @@ def build_orbital_collection(property_mock_values: List):
             type(first_elems).orbital_elements = orbital_elements1
             type(second_elems).orbital_elements = orbital_elements2
             return first_elems, second_elems
-
-
-def get_class_path(cls: type) -> str:
-    return '%s.%s' % (cls.__module__, cls.__name__)
 
 
 @pytest.fixture()

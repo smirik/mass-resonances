@@ -1,10 +1,10 @@
-import pytest
-from os.path import join as opjoin
-from integrator import OrbitalElementSetCollection
-from integrator.orbitalelements.collection import OrbitalElementSet
-from settings import Config
 from math import radians
 
+import pytest
+from datamining import OrbitalElementSet
+from datamining import OrbitalElementSetCollection
+from os.path import join as opjoin
+from settings import Config
 
 PROJECT_DIR = Config.get_project_dir()
 PARAMS = Config.get_params()

@@ -5,3 +5,4 @@ from .facades import ResonanceOrbitalElementSetFacade
 from .facades import IOrbitalElementSetFacade
 from .facades import ElementCountException
 from .facades import PhaseCountException
+from .collection import OrbitalElementSet

@@ -6,7 +6,7 @@ import os
 from catalog import find_resonances
 from entities import ThreeBodyResonance, Phase
 from entities.dbutills import engine
-from integrator import build_bigbody_elements, ComputedOrbitalElementSetFacade, PhaseCountException
+from datamining import build_bigbody_elements, ComputedOrbitalElementSetFacade, PhaseCountException
 from os.path import join as opjoin
 from settings import Config
 

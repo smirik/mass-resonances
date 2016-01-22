@@ -1,14 +1,9 @@
-from typing import Tuple, List, Iterable
-import math
-
 from abc import abstractmethod
-from entities.phase import Phase
 from settings import Config
-from datamining import CirculationYearsFinder
+from .finder import CirculationYearsFinder
 from entities import Libration
-from integrator import IOrbitalElementSetFacade
+from datamining import IOrbitalElementSetFacade
 from entities import ThreeBodyResonance
-from utils.shortcuts import cutoff_angle
 
 PROJECT_DIR = Config.get_project_dir()
 CONFIG = Config.get_params()
@@ -16,13 +11,11 @@ X_STOP = CONFIG['gnuplot']['x_stop']
 OUTPUT_ANGLE = CONFIG['output']['angle']
 
 
-class AbstractLibrationBuilder:
+class _AbstractLibrationBuilder:
     def __init__(self, libration_resonance: ThreeBodyResonance,
-                 orbital_elem_set: IOrbitalElementSetFacade,
-                 res_filepath: str):
+                 orbital_elem_set: IOrbitalElementSetFacade):
         self._orbital_elem_set = orbital_elem_set
         self._resonance = libration_resonance
-        self._res_filepath = res_filepath
 
     def build(self) -> Libration:
         finder = self._get_finder()
@@ -38,7 +31,7 @@ class AbstractLibrationBuilder:
         pass
 
 
-class TransientBuilder(AbstractLibrationBuilder):
+class TransientBuilder(_AbstractLibrationBuilder):
     def _get_finder(self) -> CirculationYearsFinder:
         transient_finder = CirculationYearsFinder(self._resonance.id, self.is_apocetric())
         return transient_finder
@@ -47,7 +40,7 @@ class TransientBuilder(AbstractLibrationBuilder):
         return False
 
 
-class ApocentricBuilder(AbstractLibrationBuilder):
+class ApocentricBuilder(_AbstractLibrationBuilder):
     def _get_finder(self) -> CirculationYearsFinder:
         apocentric_finder = CirculationYearsFinder(self._resonance.id, self.is_apocetric())
         return apocentric_finder
@@ -57,6 +50,6 @@ class ApocentricBuilder(AbstractLibrationBuilder):
 
 
 class LibrationDirector:
-    def build(self, builder: AbstractLibrationBuilder):
+    def build(self, builder: _AbstractLibrationBuilder):
         libration = builder.build()
         return libration

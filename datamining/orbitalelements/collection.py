@@ -74,7 +74,6 @@ class OrbitalElementSetCollection:
     def __init__(self, filepath: str):
         """Caches aei data to internal field _set.
         :param filepath: path to aei file, that stores data about orbital elements.
-        :return:
         """
         self._filepath = filepath
         self._set = self._get_orbital_elements()
