@@ -14,9 +14,6 @@ class _Body(object):
     longitude_coeff = Column(Integer, nullable=False)
     perihelion_longitude_coeff = Column(Integer, nullable=False)
 
-    def __getitem__(self, item: str):
-        return getattr(self, item)
-
 
 class Planet(_Body, Base):
     __tablename__ = 'planet'
