@@ -2,13 +2,6 @@ from typing import List, Callable, TextIO, Iterable
 import os
 from os.path import join as opjoin
 from settings import Config
-from .orbitalelements import OrbitalElementSetCollection
-from .orbitalelements import ComputedOrbitalElementSetFacade
-from .orbitalelements import ResonanceOrbitalElementSetFacade
-from .orbitalelements import build_bigbody_elements
-from .orbitalelements import IOrbitalElementSetFacade
-from .orbitalelements import ElementCountException
-from .orbitalelements import PhaseCountException
 
 CONFIG = Config.get_params()
 INTEGRATOR_START = CONFIG['integrator']['start']
@@ -108,4 +101,3 @@ def set_time_interval(from_day: float, to_day: float):
 
     _edit_file(param_in_filepath, _update_params)
     _edit_file(big_in_filepath, _update_bigfile)
-

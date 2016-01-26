@@ -2,12 +2,13 @@ import logging
 from typing import List
 
 from catalog import find_resonances
-from commands.find.librationbuilder import ApocentricBuilder
-from commands.find.librationbuilder import TransientBuilder, LibrationDirector
+from datamining import ResonanceOrbitalElementSetFacade
+from datamining import build_bigbody_elements
+from datamining import ApocentricBuilder
+from datamining import TransientBuilder
+from datamining import LibrationDirector
 from entities import Phase
 from entities.dbutills import session
-from integrator import ResonanceOrbitalElementSetFacade
-from integrator import build_bigbody_elements
 from os.path import join as opjoin
 from settings import Config
 from storage import ResonanceDatabase
@@ -64,7 +65,7 @@ def find(start: int, stop: int, is_current: bool = False):
         _build_phases(aei_data, True, resonance)
         resonance_str = str(resonance)
         if not is_current and libration is None:
-            builder = TransientBuilder(resonance, orbital_elem_set, res_filepath)
+            builder = TransientBuilder(resonance, orbital_elem_set)
             libration = libration_director.build(builder)
         elif not libration:
             continue
@@ -89,7 +90,7 @@ def find(start: int, stop: int, is_current: bool = False):
             continue
 
         if not is_current and not libration.is_apocentric:
-            builder = ApocentricBuilder(resonance, orbital_elem_set, res_filepath)
+            builder = ApocentricBuilder(resonance, orbital_elem_set)
             libration = libration_director.build(builder)
 
         if libration.is_pure:
