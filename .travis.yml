@@ -1,13 +1,15 @@
 language: python
 python: 3.5
+sudo: false
 addons:
-  - postgresql: "9.4"
-
-before_install:
-  - sudo apt-get update -qq
+  postgresql: "9.4"
+  apt:
+    packages:
+      - gfortran
+      - gnuplot
+      - wget
 
 install:
-  - sudo apt-get install gfortran gnuplot wget
   - git submodule update --init
   - cd ./mercury
   - ./compile.sh
@@ -37,7 +39,7 @@ script:
   - python ./main.py package --res=1 --compress=1 --aei=1
   - python ./main.py find --reload-resonances=1
   - cat ./export/full.db | wc -l
-  - python -m pytest ./tests/**/*.py
+  - coverage run --omit='/home/travis/virtualenv/*,./tests/*' -m pytest `find ./tests -name '*.py'`
 
-#after_success:
-#  - coverage report -m
+after_success:
+  - coverage report -m

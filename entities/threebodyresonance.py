@@ -29,11 +29,11 @@ class ThreeBodyResonance(Base):
     ),)
 
     first_body_id = Column(Integer, ForeignKey('planet.id'), nullable=False)
-    first_body = relationship('Planet', foreign_keys=first_body_id)
+    first_body = relationship('Planet', foreign_keys=first_body_id)  # type: Planet
     second_body_id = Column(Integer, ForeignKey('planet.id'), nullable=False)
-    second_body = relationship('Planet', foreign_keys=second_body_id)
+    second_body = relationship('Planet', foreign_keys=second_body_id)  # type: Planet
     small_body_id = Column(Integer, ForeignKey('asteroid.id'), nullable=False)
-    small_body = relationship('Asteroid', foreign_keys=small_body_id,
+    small_body = relationship('Asteroid', foreign_keys=small_body_id,  # type: Asteroid
                               backref=backref('resonances'))
 
     @hybrid_property
@@ -47,12 +47,12 @@ class ThreeBodyResonance(Base):
 
     def __str__(self):
         return '[%i %i %i %i %i %i %f]' % (
-            self.first_body[LONG_COEFF],
-            self.second_body[LONG_COEFF],
-            self.small_body[LONG_COEFF],
-            self.first_body[PERI_COEFF],
-            self.second_body[PERI_COEFF],
-            self.small_body[PERI_COEFF],
+            self.first_body.longitude_coeff,
+            self.second_body.longitude_coeff,
+            self.small_body.longitude_coeff,
+            self.first_body.perihelion_longitude_coeff,
+            self.second_body.perihelion_longitude_coeff,
+            self.small_body.perihelion_longitude_coeff,
             self.small_body.axis
         )
 
@@ -67,12 +67,12 @@ class ThreeBodyResonance(Base):
         :param small_body:
         :return:
         """
-        return (self.first_body[LONG_COEFF] * first_body[LONG] +
-                self.first_body[PERI_COEFF] * first_body[PERI] +
-                self.second_body[LONG_COEFF] * second_body[LONG] +
-                self.second_body[PERI_COEFF] * second_body[PERI] +
-                self.small_body[LONG_COEFF] * small_body[LONG] +
-                self.small_body[PERI_COEFF] * small_body[PERI])
+        return (self.first_body.longitude_coeff * first_body[LONG] +
+                self.first_body.perihelion_longitude_coeff * first_body[PERI] +
+                self.second_body.longitude_coeff * second_body[LONG] +
+                self.second_body.perihelion_longitude_coeff * second_body[PERI] +
+                self.small_body.longitude_coeff * small_body[LONG] +
+                self.small_body.perihelion_longitude_coeff * small_body[PERI])
 
 
 def build_resonance(data: List[str], asteroid_num: int) -> ThreeBodyResonance:
