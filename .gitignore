@@ -9,3 +9,8 @@ input
 htmlcov
 alembic.ini
 .cache
+.pylintrc
+.ropeproject
+axis
+export
+output

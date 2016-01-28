@@ -8,6 +8,10 @@ addons:
       - gfortran
       - gnuplot
       - wget
+      - redis
+
+services:
+  - redis
 
 install:
   - git submodule update --init

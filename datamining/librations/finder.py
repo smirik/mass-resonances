@@ -1,8 +1,9 @@
 import math
+import json
 from typing import List
 
 from entities import Phase
-from entities.dbutills import session
+from entities.dbutills import REDIS
 from utils.shortcuts import cutoff_angle
 
 
@@ -19,21 +20,19 @@ class CirculationYearsFinder:
         previous_resonant_phase = None
         prev_year = None
 
-        phases = session.query(Phase).filter_by(
-            resonance_id=self._resonance_id,
-            is_for_apocentric=self._is_for_apocentric
-        ).order_by(Phase.year).yield_per(1000).all()
+        phases = REDIS.lrange('%s:%i' % (Phase.__tablename__, self._resonance_id), 0, -1)
         if not phases:
             raise NoPhaseException('no resonant phases for resonance_id: %i' %
                                    self._resonance_id)
 
-        for phase in phases:  # type: Phase
-            # If the distance (OY axis) between new point and previous more
+        for phase in phases:  # type: bytes
+            phase = json.loads(phase.decode('utf-8').replace('\'', '"'))  # Dict[str, float]
+            # If the distance (OY axis) between new point and previous morf
             # than PI then there is a break (circulation)
             if self._is_for_apocentric:
-                resonant_phase = cutoff_angle(phase.value + math.pi)
+                resonant_phase = cutoff_angle(phase['value'] + math.pi)
             else:
-                resonant_phase = phase.value
+                resonant_phase = phase['value']
             if resonant_phase:
                 if (previous_resonant_phase and
                         (abs(previous_resonant_phase - resonant_phase) >= math.pi)):
@@ -51,7 +50,7 @@ class CirculationYearsFinder:
                     p_break = c_break
 
             previous_resonant_phase = resonant_phase
-            prev_year = phase.year
+            prev_year = phase['year']
 
         return result_breaks
 

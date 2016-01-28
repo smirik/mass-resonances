@@ -2,16 +2,18 @@ import logging
 from typing import List
 
 from catalog import find_resonances
+from entities.dbutills import REDIS
 from datamining import ResonanceOrbitalElementSetFacade
 from datamining import build_bigbody_elements
 from datamining import ApocentricBuilder
 from datamining import TransientBuilder
 from datamining import LibrationDirector
-from entities import Phase
+from entities import Phase, Libration, ThreeBodyResonance
 from entities.dbutills import session
 from os.path import join as opjoin
 from settings import Config
 from storage import ResonanceDatabase
+
 
 PROJECT_DIR = Config.get_project_dir()
 CONFIG = Config.get_params()
@@ -20,6 +22,42 @@ BODY1 = CONFIG['resonance']['bodies'][0]
 BODY2 = CONFIG['resonance']['bodies'][1]
 MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 OUTPUT_ANGLE = CONFIG['output']['angle']
+
+
+def _build_redis_phases(by_aei_data: List[str], by_resonance: ThreeBodyResonance,
+                        orbital_elem_set: ResonanceOrbitalElementSetFacade) -> List[str]:
+    pipe = REDIS.pipeline()
+    resonance_id = by_resonance.id
+    keys = []
+    for year, value in orbital_elem_set.get_resonant_phases(by_aei_data):
+        key = '%s:%i' % (Phase.__tablename__, resonance_id)
+        pipe = pipe.rpush(key, '%s' % dict(year=year, value=value))
+        keys.append(key)
+    pipe.execute()
+    return keys
+
+
+class _NoTransientException(Exception):
+    pass
+
+
+def _save_as_transient(libration: Libration, resonance: ThreeBodyResonance, asteroid_num: int,
+                       resonance_str: str):
+    if not libration.is_pure:
+        if libration.is_transient:
+            if libration.percentage:
+                logging.info('A%i, %s, resonance = %s', asteroid_num,
+                             str(libration), str(resonance))
+                return True
+            else:
+                logging.debug(
+                    'A%i, NO RESONANCE, resonance = %s, max = %f',
+                    asteroid_num, resonance_str, libration.max_diff
+                )
+                session.expunge(libration)
+                raise _NoTransientException()
+        raise _NoTransientException()
+    return False
 
 
 def find(start: int, stop: int, is_current: bool = False):
@@ -31,72 +69,45 @@ def find(start: int, stop: int, is_current: bool = False):
     :return:
     """
     rdb = ResonanceDatabase('export/full.db')
-    # if not is_current:
-    #     try:
-    #         extract(start)
-    #     except FileNotFoundError as exc:
-    #         logging.info('Archive %s not found. Try command \'package\'',
-    #                      exc.filename)
 
     firstbody_elements, secondbody_elements = build_bigbody_elements(
         opjoin(MERCURY_DIR, '%s.aei' % BODY1),
         opjoin(MERCURY_DIR, '%s.aei' % BODY2))
     libration_director = LibrationDirector()
 
-    def _build_phases(by_aei_data: List[str], is_apocentric: bool, by_resonance):
-        objs = [
-            Phase(resonance_id=by_resonance.id, year=year, value=value,
-                  is_for_apocentric=is_apocentric)
-            for year, value in orbital_elem_set.get_resonant_phases(by_aei_data)
-        ]
-        session.bulk_save_objects(objs)
-        session.commit()
-        return [x.id for x in objs]
-
     for resonance, aei_data in find_resonances(start, stop):
+        resonance_str = str(resonance)
         asteroid_num = resonance.asteroid_number
         libration = resonance.libration
 
-        res_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE, 'A%i.res' % asteroid_num)
         orbital_elem_set = ResonanceOrbitalElementSetFacade(
             firstbody_elements, secondbody_elements, resonance)
+        _build_redis_phases(aei_data, resonance, orbital_elem_set)
 
-        _build_phases(aei_data, False, resonance)
-        _build_phases(aei_data, True, resonance)
-        resonance_str = str(resonance)
         if not is_current and libration is None:
             builder = TransientBuilder(resonance, orbital_elem_set)
             libration = libration_director.build(builder)
         elif not libration:
             continue
 
-        if not libration.is_pure:
-            if libration.is_transient:
-                if libration.percentage:
-                    logging.info('A%i, %s, resonance = %s', asteroid_num,
-                                 str(libration), str(resonance))
-                    rdb.add_string(libration.as_transient())
-                    continue
-                else:
-                    logging.debug(
-                        'A%i, NO RESONANCE, resonance = %s, max = %f',
-                        asteroid_num, resonance_str, libration.max_diff
-                    )
-                    session.expunge(libration)
+        try:
+            if _save_as_transient(libration, resonance, asteroid_num, resonance_str):
+                rdb.add_string(libration.as_transient())
+                continue
+            elif not libration.is_apocentric:
+                logging.info('A%i, pure resonance %s', asteroid_num, resonance_str)
+                rdb.add_string(libration.as_pure())
+                continue
+            raise _NoTransientException()
+        except _NoTransientException:
+            if not is_current and not libration.is_apocentric:
+                builder = ApocentricBuilder(resonance, orbital_elem_set)
+                libration = libration_director.build(builder)
 
-        elif not libration.is_apocentric:
-            logging.info('A%i, pure resonance %s', asteroid_num, resonance_str)
-            rdb.add_string(libration.as_pure())
-            continue
-
-        if not is_current and not libration.is_apocentric:
-            builder = ApocentricBuilder(resonance, orbital_elem_set)
-            libration = libration_director.build(builder)
-
-        if libration.is_pure:
-            rdb.add_string(libration.as_pure_apocentric())
-            logging.info('A%i, pure apocentric resonance %s', asteroid_num,
-                         resonance_str)
-        else:
-            session.expunge(libration)
+            if libration.is_pure:
+                rdb.add_string(libration.as_pure_apocentric())
+                logging.info('A%i, pure apocentric resonance %s', asteroid_num,
+                             resonance_str)
+            else:
+                session.expunge(libration)
     session.commit()

@@ -1,15 +1,17 @@
+import json
 import logging
 import subprocess
+from math import pi
 from typing import List
 
 import os
 from catalog import find_resonances
 from entities import ThreeBodyResonance, Phase
-from entities.dbutills import engine
+from entities.dbutills import REDIS
 from datamining import build_bigbody_elements, ComputedOrbitalElementSetFacade, PhaseCountException
 from os.path import join as opjoin
 from settings import Config
-
+from utils.shortcuts import cutoff_angle
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -38,6 +40,7 @@ def make_plots(start: int, stop: int, is_force: bool = False):
                    with_phases: List[float], is_for_apocentric: bool):
         res_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE, 'A%i.res' %
                               for_resonance.asteroid_number)
+
         orbital_elem_set = ComputedOrbitalElementSetFacade(
             firstbody_elements, secondbody_elements, with_phases)
         orbital_elem_set.write_to_resfile(res_filepath, by_aei_data)
@@ -53,20 +56,15 @@ def make_plots(start: int, stop: int, is_force: bool = False):
         with open(out_path, 'wb') as image_file:
             subprocess.call(['gnuplot', gnufile_path], stdout=image_file)
 
-    conn = engine.connect()
+    tablename = Phase.__tablename__
     for resonance, aei_data in find_resonances(start, stop):
         resonance_id = resonance.id
-        apocentric_phases = []
-        phases = []
 
-        result = conn.execute(
-            'SELECT value, is_for_apocentric FROM %s WHERE resonance_id=%i' %
-            (Phase.__tablename__, resonance_id))
-        for row in result:
-            if row['is_for_apocentric']:
-                apocentric_phases.append(row['value'])
-            else:
-                phases.append(row['value'])
+        phases = [
+            json.loads(x.decode('utf-8').replace('\'', '"'))['value']
+            for x in REDIS.lrange('%s:%i' % (tablename, resonance_id), 0, -1)
+        ]
+        apocentric_phases = [cutoff_angle(x + pi) for x in phases]
         try:
             if phases:
                 _make_plot(resonance, aei_data, phases, False)
@@ -83,7 +81,7 @@ OUTPUT_RES_PATH = opjoin(PROJECT_DIR, CONFIG['output']['angle'])
 
 
 def _create_gnuplot_file(body_number):
-    with open(os.path.join(PROJECT_DIR, 'output', 'multi.gnu')) as gnuplot_sample_file:
+    with open(os.path.join(PROJECT_DIR, 'view', 'multi.gnu')) as gnuplot_sample_file:
         content = gnuplot_sample_file.read()
 
     content = (
