@@ -1,4 +1,5 @@
 import logging
+import os
 
 import click
 from catalog import save_resonances
@@ -24,11 +25,15 @@ STEP = 100
 @click.group()
 @click.option('--loglevel', default='DEBUG', help='default: DEBUG',
               type=click.Choice(LEVELS))
-def cli(loglevel: str = 'DEBUG'):
+@click.option('--logfile', default=None, help='default: None',
+              type=str)
+def cli(loglevel: str = 'DEBUG', logfile: str = None):
     logging.basicConfig(
         format='%(asctime)s %(levelname)s %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
-        level=getattr(logging, loglevel)
+        level=getattr(logging, loglevel),
+        filename=os.path.join(PROJECT_DIR, logfile) if logfile else None,
+        filemode='w' if logfile else None
     )
 
 
