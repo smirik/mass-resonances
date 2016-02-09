@@ -8,6 +8,7 @@ This is Python fork of Three-body-resonances (https://github.com/smirik/Three-bo
 * virtualenv .venv
 * source .venv/bin/activate
 * pip install -r reqs.pip
+* If it needs, you can override settings by file config/local_config.yml
 * move alembic.ini.dist alembic.ini and point in this file path to database in parameter 
 `sqlalchemy.url` in section `[alembic]`
 

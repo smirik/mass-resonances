@@ -22,7 +22,7 @@ REPOSITORY_URL = 'https://github.com/4xxi/resonances.git'
 def resonances1():
     env.use_ssh_config = True
     env.user = 'deploy'
-    env.hosts = ['%s@resonances1.4xxi.com' % env.user]
+    env.hosts = ['%s@46.101.249.233' % env.user]
     env.name = 'resonances1'
     env.root = '/opt/resonances'
     env.activate = 'source ' + os.path.join(env.root, '.venv', 'bin', 'activate')
