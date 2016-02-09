@@ -28,24 +28,24 @@ class _IFacadeBuilder:
             x.compute_resonant_phase() for x in self._resonances]
 
     @abstractmethod
-    def build(self, second_bigbody_elems, first_bigbody_elems):
+    def build(self, first_bigbody_elems, second_bigbody_elems):
         pass
 
 
 class _ComputedFacadeBuilder(_IFacadeBuilder):
-    def build(self, second_bigbody_elems, first_bigbody_elems) \
+    def build(self, first_bigbody_elems, second_bigbody_elems) \
             -> ComputedOrbitalElementSetFacade:
         assert self._phases is not None
         return ComputedOrbitalElementSetFacade(
-            second_bigbody_elems, first_bigbody_elems, self._phases)
+            first_bigbody_elems, second_bigbody_elems, self._phases)
 
 
 class _ResonanceFacadeBuilder(_IFacadeBuilder):
-    def build(self, second_bigbody_elems, first_bigbody_elems) \
+    def build(self, first_bigbody_elems, second_bigbody_elems) \
             -> ResonanceOrbitalElementSetFacade:
         assert self._resonances is not None
-        return ResonanceOrbitalElementSetFacade(
-            second_bigbody_elems, first_bigbody_elems, self._resonances[0])
+        return ResonanceOrbitalElementSetFacade(first_bigbody_elems, second_bigbody_elems,
+                                                self._resonances[0])
 
 
 class _FacadeDirector:
@@ -54,8 +54,7 @@ class _FacadeDirector:
         self._second_bigbody_elems = second_bigbody_elems
 
     def build(self, builder: _IFacadeBuilder) -> IOrbitalElementSetFacade:
-        return builder.build(self._second_bigbody_elems,
-                             self._first_bigbody_elems)
+        return builder.build(self._first_bigbody_elems, self._second_bigbody_elems)
 
 
 @pytest.fixture()

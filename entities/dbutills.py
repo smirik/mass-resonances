@@ -1,4 +1,5 @@
 from typing import Tuple
+import redis
 
 from sqlalchemy import create_engine, Integer, Column
 from sqlalchemy.ext.declarative import as_declarative
@@ -25,6 +26,9 @@ engine = create_engine(_config.get_main_option('sqlalchemy.url'))
 _Session = sessionmaker()
 _Session.configure(bind=engine)
 session = _Session()    # type: Session
+
+_conn = redis.ConnectionPool(host='localhost', port=6379, db=0)
+REDIS = redis.Redis(connection_pool=_conn)
 
 
 def get_or_create(cls: type, **kwargs):

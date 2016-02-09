@@ -1,7 +1,6 @@
 import glob
 import logging
 import subprocess
-
 import os
 import shutil
 from integrator.programs import element6

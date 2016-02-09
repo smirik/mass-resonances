@@ -29,8 +29,8 @@ class IOrbitalElementSetFacade(object):
     General class that gives interface for representation set of orbital elements.
     """
 
-    def __init__(self, secondbody_elements: OrbitalElementSetCollection,
-                 firstbody_elements: OrbitalElementSetCollection):
+    def __init__(self, firstbody_elements: OrbitalElementSetCollection,
+                 secondbody_elements: OrbitalElementSetCollection):
         """
         :param secondbody_elements: must have same length with firstbody_elements.
         :param firstbody_elements: must have same length with secondbody_elements
@@ -86,8 +86,8 @@ class ComputedOrbitalElementSetFacade(IOrbitalElementSetFacade):
     phase. It represents elements by pointed sets of orbital elements of the
     planets and resonant phases.
     """
-    def __init__(self, secondbody_elements: OrbitalElementSetCollection,
-                 firstbody_elements: OrbitalElementSetCollection,
+    def __init__(self, firstbody_elements: OrbitalElementSetCollection,
+                 secondbody_elements: OrbitalElementSetCollection,
                  resonant_phases: List[float]):
         """
         :param secondbody_elements:
@@ -96,7 +96,7 @@ class ComputedOrbitalElementSetFacade(IOrbitalElementSetFacade):
         :return:
         """
         super(ComputedOrbitalElementSetFacade, self).__init__(
-            secondbody_elements, firstbody_elements)
+            firstbody_elements, secondbody_elements)
         second_elems = secondbody_elements.orbital_elements
         if not (len(resonant_phases) == len(second_elems)):
             raise PhaseCountException(
@@ -127,8 +127,8 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
     pointed resonance. It represents elements by pointed sets of orbital
     elements of the planets and computed resonant phases.
     """
-    def __init__(self, secondbody_elements: OrbitalElementSetCollection,
-                 firstbody_elements: OrbitalElementSetCollection,
+    def __init__(self, firstbody_elements: OrbitalElementSetCollection,
+                 secondbody_elements: OrbitalElementSetCollection,
                  resonance: ThreeBodyResonance):
         """
         :param secondbody_elements:
@@ -137,7 +137,7 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
         :return:
         """
         super(ResonanceOrbitalElementSetFacade, self).__init__(
-            secondbody_elements, firstbody_elements)
+            firstbody_elements, secondbody_elements)
         self._resonance = resonance
 
     def get_resonant_phases(self, aei_data: List[str]) -> Iterable[Tuple[float, float]]:

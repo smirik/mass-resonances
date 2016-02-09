@@ -1,9 +1,10 @@
+import json
 from typing import List, Dict
 from unittest import mock
 
 import pytest
 from datamining.librations.finder import CirculationYearsFinder, NoPhaseException
-from entities.dbutills import session
+from entities.dbutills import REDIS
 
 
 PHASES = [
@@ -40,28 +41,11 @@ RESONANCE_ID = 1
 @mock.patch('entities.Phase')
 def test_getting_years(Phase, monkeypatch, phase_arguments: List[Dict],
                        result_years: List[float], for_apocentric: bool):
-    class QueryMock:
-        def filter_by(self, *args, **kwargs):
-            return self
 
-        def order_by(self, *args):
-            return self
+    def query(*args, **kwargs):
+        return [json.dumps(x).encode() for x in phase_arguments]
 
-        def yield_per(self, number):
-            return self
-
-        def all(self):
-            phase = Phase()
-            year = mock.PropertyMock(side_effect=[x['year'] for x in phase_arguments])
-            value = mock.PropertyMock(side_effect=[x['value'] for x in phase_arguments])
-            type(phase).year = year
-            type(phase).value = value
-            return [phase for x in range(len(phase_arguments))]
-
-    def query(arg):
-        return QueryMock()
-
-    monkeypatch.setattr(session, 'query', query)
+    monkeypatch.setattr(REDIS, 'lrange', query)
     finder = CirculationYearsFinder(RESONANCE_ID, for_apocentric)
     if result_years is None:
         with pytest.raises(NoPhaseException):
