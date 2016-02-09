@@ -68,7 +68,7 @@ def find(start: int, stop: int, is_current: bool = False):
     :param start:
     :return:
     """
-    rdb = ResonanceDatabase('export/full.db')
+    rdb = ResonanceDatabase(CONFIG['resonance']['db_file'])
 
     firstbody_elements, secondbody_elements = build_bigbody_elements(
         opjoin(MERCURY_DIR, '%s.aei' % BODY1),
