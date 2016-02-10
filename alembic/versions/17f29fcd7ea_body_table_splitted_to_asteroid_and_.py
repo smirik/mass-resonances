@@ -13,7 +13,6 @@ branch_labels = None
 depends_on = None
 
 from alembic import op
-from sqlalchemy.dialects.postgresql import ARRAY
 import sqlalchemy as sa
 
 
@@ -28,7 +27,7 @@ def upgrade():
     op.create_table(
         'planet',
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('name', sa.String, nullable=False),
+        sa.Column('name', sa.String(255), nullable=False),
         sa.Column('longitude_coeff', sa.Integer, nullable=False),
         sa.Column('perihelion_longitude_coeff', sa.Integer, nullable=False)
     )
@@ -38,7 +37,7 @@ def upgrade():
     op.create_table(
         'asteroid',
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('name', sa.String, nullable=False),
+        sa.Column('name', sa.String(255), nullable=False),
         sa.Column('longitude_coeff', sa.Integer, nullable=False),
         sa.Column('perihelion_longitude_coeff', sa.Integer, nullable=False),
         sa.Column('axis', sa.Float, nullable=False)
@@ -78,7 +77,7 @@ def downgrade():
     op.create_table(
         'body',
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('name', sa.String, nullable=False),
+        sa.Column('name', sa.String(255), nullable=False),
         sa.Column('longitude_coeff', sa.Integer, nullable=False),
         sa.Column('perihelion_longitude_coeff', sa.Integer, nullable=False)
     )

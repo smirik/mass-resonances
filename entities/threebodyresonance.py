@@ -1,12 +1,12 @@
 from typing import Dict
 from typing import List
-
 from entities.body import LONG
 from entities.body import PERI
 from entities.body import LONG_COEFF
 from entities.body import PERI_COEFF
 from entities.body import Planet
 from entities.body import Asteroid
+from entities.epoch import Epoch
 from entities.dbutills import Base
 from entities.dbutills import get_or_create
 from sqlalchemy import Column, Float
@@ -35,6 +35,9 @@ class ThreeBodyResonance(Base):
     small_body_id = Column(Integer, ForeignKey('asteroid.id'), nullable=False)
     small_body = relationship('Asteroid', foreign_keys=small_body_id,  # type: Asteroid
                               backref=backref('resonances'))
+    epoch_id = Column(Integer, ForeignKey('epoch.id'), nullable=False)
+    epoch = relationship('Epoch', foreign_keys=epoch_id,  # type: Epoch
+                         backref=backref('resonances'))
 
     @hybrid_property
     def asteroid_axis(self):
@@ -75,9 +78,11 @@ class ThreeBodyResonance(Base):
                 self.small_body.perihelion_longitude_coeff * small_body[PERI])
 
 
-def build_resonance(data: List[str], asteroid_num: int) -> ThreeBodyResonance:
+def build_resonance(data: List[str], asteroid_num: int, in_epoch: Epoch)\
+        -> ThreeBodyResonance:
     """Builds instance of ThreeBodyResonance by passed list of string values.
 
+    :param in_epoch:
     :param asteroid_num:
     :param data:
     :return:
@@ -105,5 +110,5 @@ def build_resonance(data: List[str], asteroid_num: int) -> ThreeBodyResonance:
 
     resonance, is_new = get_or_create(
         ThreeBodyResonance, first_body=first_body, second_body=second_body,
-        small_body=small_body)
+        small_body=small_body, epoch=in_epoch)
     return resonance

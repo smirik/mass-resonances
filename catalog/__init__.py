@@ -4,6 +4,8 @@ import os
 import logging
 from entities import ThreeBodyResonance, build_resonance
 from entities.dbutills import session
+from entities.dbutills import get_or_create
+from entities.epoch import Epoch
 from settings import Config
 from .find_resonances import find_resonances
 
@@ -38,7 +40,7 @@ def find_by_number(number: int) -> List[float]:
         raise e
 
 
-def _build_resonances(from_filepath: str, for_asteroid_num: int) \
+def _build_resonances(from_filepath: str, for_asteroid_num: int, epoch: Epoch) \
         -> List[ThreeBodyResonance]:
     try:
         with open(from_filepath) as resonance_file:
@@ -48,7 +50,7 @@ def _build_resonances(from_filepath: str, for_asteroid_num: int) \
                 line_data = line.split()
                 resonant_asteroid_axis = float(line_data[AXIS_COLUMN_NUMBER])
                 if abs(resonant_asteroid_axis - asteroid_axis) <= AXIS_SWING:
-                    build_resonance(line_data, for_asteroid_num)
+                    build_resonance(line_data, for_asteroid_num, epoch)
     except FileNotFoundError:
         logging.error('File %s not found. Try command resonance_table.',
                       from_filepath)
@@ -57,16 +59,20 @@ def _build_resonances(from_filepath: str, for_asteroid_num: int) \
     session.commit()
 
 
-def save_resonances(from_filepath: str, start_asteroid: int, stop_asteroid: int):
+def save_resonances(from_filepath: str, start_asteroid: int, stop_asteroid: int,
+                    from_day: float, to_day: float) -> Epoch:
+    epoch, is_new = get_or_create(Epoch, start_day=from_day, end_day=to_day)
+
     divider = 2
     toolbar_width = (stop_asteroid + 1 - start_asteroid) // divider
     sys.stdout.write("Build resonances [%s]" % (" " * toolbar_width))
     sys.stdout.flush()
-    sys.stdout.write("\b" * (toolbar_width+1))
+    sys.stdout.write("\b" * (toolbar_width + 1))
 
     for i in range(start_asteroid, stop_asteroid + 1):
-        _build_resonances(from_filepath, i)
+        _build_resonances(from_filepath, i, epoch)
         if i % divider == 0:
             sys.stdout.write("#")
             sys.stdout.flush()
     sys.stdout.write("\n")
+    return epoch

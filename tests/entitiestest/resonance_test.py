@@ -6,6 +6,7 @@ from entities.body import Asteroid
 from entities.body import LONG
 from entities.body import PERI
 import pytest
+from entities.epoch import Epoch
 from tests.shortcuts import get_class_path
 from unittest import mock
 import math
@@ -70,7 +71,7 @@ def test_compute_resonant_phase(asteroid_mockcls, jupiter_mockcls, saturn_mockcl
     (['2', '-3', '-4', '1', '1', '2', '1.44125'], 1)
 ])
 def test_build_resonance(input_values: List[str], asteroid_num: int):
-    resonance = build_resonance(input_values, asteroid_num)
+    resonance = build_resonance(input_values, asteroid_num, Epoch(start_day=1, end_day=2))
     assert resonance.first_body.longitude_coeff == int(input_values[0])
     assert resonance.first_body.perihelion_longitude_coeff == int(input_values[3])
 

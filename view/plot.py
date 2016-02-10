@@ -9,6 +9,7 @@ from catalog import find_resonances
 from entities import ThreeBodyResonance, Phase
 from entities.dbutills import REDIS
 from datamining import build_bigbody_elements, ComputedOrbitalElementSetFacade, PhaseCountException
+from entities.epoch import Epoch
 from os.path import join as opjoin
 from settings import Config
 from utils.shortcuts import cutoff_angle
@@ -22,9 +23,10 @@ OUTPUT_ANGLE = CONFIG['output']['angle']
 OUTPUT_IMAGES = opjoin(PROJECT_DIR, CONFIG['output']['images'])
 
 
-def make_plots(start: int, stop: int, is_force: bool = False):
+def make_plots(start: int, stop: int, epoch: Epoch, is_force: bool = False):
     """Calculate resonances and plot the png files for given object.
 
+    :param epoch:
     :param is_force:
     :param int start:
     :param int stop:
@@ -57,7 +59,7 @@ def make_plots(start: int, stop: int, is_force: bool = False):
             subprocess.call(['gnuplot', gnufile_path], stdout=image_file)
 
     tablename = Phase.__tablename__
-    for resonance, aei_data in find_resonances(start, stop):
+    for resonance, aei_data in find_resonances(start, stop, epoch):
         resonance_id = resonance.id
 
         phases = [
