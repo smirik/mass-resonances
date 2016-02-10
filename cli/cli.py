@@ -1,6 +1,5 @@
 import logging
 import os
-
 import click
 from catalog import save_resonances
 from commands import calc as _calc
@@ -22,6 +21,31 @@ RESONANCE_FILEPATH = opjoin(PROJECT_DIR, 'axis', RESONANCE_TABLE_FILE)
 STEP = 100
 
 
+def _unite_decorators(*decorators):
+    def deco(decorated_function):
+        for dec in reversed(decorators):
+            decorated_function = dec(decorated_function)
+        return decorated_function
+    return deco
+
+
+def _asteroid_interval_options():
+    decs = (
+        click.option('--start', default=1),
+        click.option('--stop', default=101)
+    )
+    return _unite_decorators(*decs)
+
+
+def _asteroid_time_intervals_options():
+    decs = (
+        _asteroid_interval_options(),
+        click.option('--from-day', default=2451000.5),
+        click.option('--to-day', default=2501000.5)
+    )
+    return _unite_decorators(*decs)
+
+
 @click.group()
 @click.option('--loglevel', default='DEBUG', help='default: DEBUG',
               type=click.Choice(LEVELS))
@@ -38,10 +62,7 @@ def cli(loglevel: str = 'DEBUG', logfile: str = None):
 
 
 @cli.command()
-@click.option('--start', default=1)
-@click.option('--stop', default=101)
-@click.option('--from-day', default=2451000.5)
-@click.option('--to-day', default=2501000.5)
+@_asteroid_time_intervals_options()
 def calc(start: int, stop: int, from_day: float, to_day: float):
     set_time_interval(from_day, to_day)
     for i in range(start, stop, STEP):
@@ -50,10 +71,7 @@ def calc(start: int, stop: int, from_day: float, to_day: float):
 
 
 @cli.command()
-@click.option('--start', default=1)
-@click.option('--stop', default=101)
-@click.option('--from-day', default=2451000.5)
-@click.option('--to-day', default=2501000.5)
+@_asteroid_time_intervals_options()
 @click.option('--reload-resonances', default=False, type=bool)
 @click.option('--recalc', default=False, type=bool)
 @click.option('--is-current', default=False, type=bool)
@@ -71,16 +89,14 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
                   ' Libration can be created by command \'find\'.')
-@click.option('--start', default=1)
-@click.option('--stop', default=101)
+@_asteroid_interval_options()
 @click.option('--force', default=False, type=bool)
 def plot(start: int, stop: int, force: bool):
     _plot(start, stop, force)
 
 
 @cli.command()
-@click.option('--start', default=1)
-@click.option('--stop', default=101)
+@_asteroid_interval_options()
 def clean(start: int, stop: int):
     remove_export_directory(start, stop)
 
@@ -93,8 +109,7 @@ def extract(start: int, copy_aei: bool):
 
 
 @cli.command()
-@click.option('--start', default=1)
-@click.option('--stop', default=101)
+@_asteroid_interval_options()
 @click.option('--res', default=False, type=bool)
 @click.option('--aei', default=False, type=bool)
 @click.option('--compress', default=False, type=bool)
