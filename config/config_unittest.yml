@@ -109,3 +109,8 @@ constants:
     - 17.916
     - 4.257
     - 28.243
+
+redis:
+  host: localhost
+  port: 6379
+  db: 0

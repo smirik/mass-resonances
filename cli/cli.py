@@ -30,20 +30,16 @@ def _unite_decorators(*decorators):
 
 
 def _asteroid_interval_options():
-    decs = (
+    return _unite_decorators(
         click.option('--start', default=1),
-        click.option('--stop', default=101)
-    )
-    return _unite_decorators(*decs)
+        click.option('--stop', default=101))
 
 
 def _asteroid_time_intervals_options():
-    decs = (
+    return _unite_decorators(
         _asteroid_interval_options(),
         click.option('--from-day', default=2451000.5),
-        click.option('--to-day', default=2501000.5)
-    )
-    return _unite_decorators(*decs)
+        click.option('--to-day', default=2501000.5))
 
 
 @click.group()

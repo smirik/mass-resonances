@@ -27,7 +27,10 @@ _Session = sessionmaker()
 _Session.configure(bind=engine)
 session = _Session()    # type: Session
 
-_conn = redis.ConnectionPool(host='localhost', port=6379, db=0)
+_conn = redis.ConnectionPool(
+    host=Config.get_params()['redis']['host'],
+    port=Config.get_params()['redis']['port'],
+    db=Config.get_params()['redis']['db'])
 REDIS = redis.Redis(connection_pool=_conn)
 
 
