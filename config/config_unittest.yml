@@ -39,9 +39,9 @@ resonance:
     - 6
 
 output:
-  angle:   output/res
-  gnuplot: output/gnu
-  images:  output/images
+  angle:   tests/fixtures/output/res
+  gnuplot: tests/fixtures/output/gnu
+  images:  tests/fixtures/output/images
 
   format:  png
 
@@ -113,4 +113,4 @@ constants:
 redis:
   host: localhost
   port: 6379
-  db: 0
+  db: 1

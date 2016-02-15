@@ -24,6 +24,7 @@ This is Python fork of Three-body-resonances (https://github.com/smirik/Three-bo
 * libpq-dev
 * libpython3.5-dev
 * sed
+* redis
 
 # Deploy via fabric
 

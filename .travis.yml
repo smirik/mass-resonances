@@ -42,6 +42,7 @@ script:
   - python ./main.py calc
   - python ./main.py package --res=1 --compress=1 --aei=1
   - python ./main.py find --reload-resonances=1
+  - python ./main.py plot
   - cat ./export/full.db | wc -l
   - coverage run --omit='/home/travis/virtualenv/*,./tests/*' -m pytest `find ./tests -name '*.py'`
 
