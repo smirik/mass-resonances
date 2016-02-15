@@ -1,5 +1,5 @@
 import sys
-from typing import List
+from typing import List, Dict
 import os
 import logging
 from entities import ThreeBodyResonance, build_resonance
@@ -40,6 +40,7 @@ def find_by_number(number: int) -> List[float]:
 
 def _build_resonances(from_filepath: str, for_asteroid_num: int) \
         -> List[ThreeBodyResonance]:
+    res = []
     try:
         with open(from_filepath) as resonance_file:
             asteroid_parameters = find_by_number(for_asteroid_num)
@@ -48,25 +49,29 @@ def _build_resonances(from_filepath: str, for_asteroid_num: int) \
                 line_data = line.split()
                 resonant_asteroid_axis = float(line_data[AXIS_COLUMN_NUMBER])
                 if abs(resonant_asteroid_axis - asteroid_axis) <= AXIS_SWING:
-                    build_resonance(line_data, for_asteroid_num)
+                    res.append(build_resonance(line_data, for_asteroid_num))
     except FileNotFoundError:
         logging.error('File %s not found. Try command resonance_table.',
                       from_filepath)
         sys.exit(1)
 
     session.commit()
+    return res
 
 
-def save_resonances(from_filepath: str, start_asteroid: int, stop_asteroid: int):
+def save_resonances(from_filepath: str, start_asteroid: int, stop_asteroid: int) \
+        -> Dict[int, List[ThreeBodyResonance]]:
     divider = 2
     toolbar_width = (stop_asteroid + 1 - start_asteroid) // divider
     sys.stdout.write("Build resonances [%s]" % (" " * toolbar_width))
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width+1))
 
+    res = {}
     for i in range(start_asteroid, stop_asteroid + 1):
-        _build_resonances(from_filepath, i)
+        res[i] = _build_resonances(from_filepath, i)
         if i % divider == 0:
             sys.stdout.write("#")
             sys.stdout.flush()
     sys.stdout.write("\n")
+    return res
