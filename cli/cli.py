@@ -99,9 +99,8 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
                   ' Libration can be created by command \'find\'.')
 @_asteroid_interval_options()
-@click.option('--force', default=False, type=bool)
-def plot(start: int, stop: int, force: bool):
-    _plot(start, stop, force)
+def plot(start: int, stop: int):
+    _plot(start, stop)
 
 
 @cli.command()

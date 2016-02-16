@@ -23,10 +23,9 @@ OUTPUT_GNU_PATH = opjoin(PROJECT_DIR, CONFIG['output']['gnuplot'])
 OUTPUT_RES_PATH = opjoin(PROJECT_DIR, CONFIG['output']['angle'])
 
 
-def make_plots(start: int, stop: int, is_force: bool = False):
+def make_plots(start: int, stop: int):
     """Calculate resonances and plot the png files for given object.
 
-    :param is_force:
     :param int start:
     :param int stop:
     :raises ExtractError: if some problems has been appeared related to
