@@ -36,6 +36,7 @@ To run the script on the server please follow the instructions below:
 1. Run the script: `source .venv/bin/activate`
 2. Run the calc command: `./main.py calc`
 3. To find the resonances: `./main.py find`
+4. Make plots `./main.py plot`
 
 # pylint cheat sheet
 pylint -E `git ls | grep py$ | grep -v --regexp="\(alembic\|fabfile\.py\)"` --disable=E1136 --disable=E1126

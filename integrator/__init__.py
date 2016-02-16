@@ -88,16 +88,7 @@ def set_time_interval(from_day: float, to_day: float):
                 line = '%s%f\n' % (stopday_pattern, to_day)
             outfile.write(line)
 
-    def _update_bigfile(infile: Iterable[str], outfile: TextIO):
-        startday_pattern = ' epoch (in days) = '
-        for line in infile:
-            if line.startswith(startday_pattern):
-                line = '%s%f\n' % (startday_pattern, from_day)
-            outfile.write(line)
-
     integrator_path = opjoin(Config.get_project_dir(), CONFIG['integrator']['dir'])
     param_in_filepath = opjoin(integrator_path, CONFIG.INTEGRATOR_PARAM_FILENAME)
-    big_in_filepath = opjoin(integrator_path, CONFIG.INTEGRATOR_BIG_FILENAME)
 
     _edit_file(param_in_filepath, _update_params)
-    _edit_file(big_in_filepath, _update_bigfile)
