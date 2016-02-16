@@ -18,8 +18,9 @@ PROJECT_DIR = Config.get_project_dir()
 MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 BODY1 = CONFIG['resonance']['bodies'][0]
 BODY2 = CONFIG['resonance']['bodies'][1]
-OUTPUT_ANGLE = CONFIG['output']['angle']
 OUTPUT_IMAGES = opjoin(PROJECT_DIR, CONFIG['output']['images'])
+OUTPUT_GNU_PATH = opjoin(PROJECT_DIR, CONFIG['output']['gnuplot'])
+OUTPUT_RES_PATH = opjoin(PROJECT_DIR, CONFIG['output']['angle'])
 
 
 def make_plots(start: int, stop: int, is_force: bool = False):
@@ -38,8 +39,7 @@ def make_plots(start: int, stop: int, is_force: bool = False):
 
     def _make_plot(for_resonance: ThreeBodyResonance, by_aei_data: List[str],
                    with_phases: List[float], is_for_apocentric: bool):
-        res_filepath = opjoin(PROJECT_DIR, OUTPUT_ANGLE, 'A%i.res' %
-                              for_resonance.asteroid_number)
+        res_filepath = opjoin(OUTPUT_RES_PATH, 'A%i.res' % for_resonance.asteroid_number)
 
         orbital_elem_set = ComputedOrbitalElementSetFacade(
             firstbody_elements, secondbody_elements, with_phases)
@@ -72,12 +72,6 @@ def make_plots(start: int, stop: int, is_force: bool = False):
                 _make_plot(resonance, aei_data, apocentric_phases, True)
         except PhaseCountException as e:
             logging.error('%s, resonance_id = %i', str(e), resonance_id)
-
-
-CONFIG = Config.get_params()
-PROJECT_DIR = Config.get_project_dir()
-OUTPUT_GNU_PATH = opjoin(PROJECT_DIR, CONFIG['output']['gnuplot'])
-OUTPUT_RES_PATH = opjoin(PROJECT_DIR, CONFIG['output']['angle'])
 
 
 def _create_gnuplot_file(body_number):
