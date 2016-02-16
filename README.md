@@ -42,7 +42,7 @@ To run the script on the server please follow the instructions below:
 # pylint cheat sheet
 pylint -E `git ls | grep py$ | grep -v --regexp="\(alembic\|fabfile\.py\)"` --disable=E1136 --disable=E1126
 
-# Default integrator Mercury parameters for out purposes.
+# Default integrator Mercury parameters for our purposes.
 Take a look on files param.in, big.in, small.in.
 
 * `param.in` must contain algorithm `mvs`. `Start time` must be `2451000.5` and `stop time` must be
@@ -53,9 +53,9 @@ be `2455400.5`. This day is result of expression `55400.0 + 2400000.5`, where `5
 from astdys catalog (allnum.cat). This value must be changed in config.yml if you have different value
 in catalog.
 
-```
-Usage: main.py calc [OPTIONS]
+**Usage: main.py calc [OPTIONS]**
 
+```
   Launch integrator Mercury6 for computing orbital elements of asteroids and
   planets, that will be stored in aei files.
 
@@ -69,8 +69,11 @@ Options:
   --to-day FLOAT    This parameter will be passed to param.in file for
                     integrator Mercury6 as stop time pointed in days.
   --help            Show this message and exit.
-Usage: main.py find [OPTIONS]
+```
+  
+**Usage: main.py find [OPTIONS]**
 
+```
   Computes resonant phases, find in them circulations and saves to
   librations.
 
@@ -94,8 +97,11 @@ Options:
                                from database, it won't compute them from
                                phases
   --help                       Show this message and exit.
-Usage: main.py plot [OPTIONS]
+```
+  
+**Usage: main.py plot [OPTIONS]**
 
+```
   Build graphics for asteroids in pointed interval, that have libration.
   Libration can be created by command 'find'.
 
