@@ -39,8 +39,46 @@ To run the script on the server please follow the instructions below:
 3. To find the resonances: `./main.py find`
 4. Make plots `./main.py plot`
 
+For more details invoke --help or see [Usage](#usage)
+
+# Run over Docker
+
+The application also available over docker. Image for docker container is
+[here](https://hub.docker.com/r/amarkov/resonances/). It contains reference how to launch Resonances
+over container. Commonly it is very similar, but instead `main.py` you need `docker run --rm
+--volumes-from=resonances-data-container --link resonances-data-container:postgres
+--link some-redis:redis --name resonances -e RESONANCES_DB_NAME=resonances
+-e RESONANCES_DB_USER=postgres amarkov/resonances` after name of image `amarkov/resonances`
+container takes arguments for the application. If you type `--help` in tail (`docker run -it --rm
+--volumes-from=resonances-data-container --link resonances-data-container:postgres
+--link some-redis:redis --name resonances -e RESONANCES_DB_NAME=resonances
+-e RESONANCES_DB_USER=postgres amarkov/resonances --help`) you will get help message of the
+application, that also in [Usage](#usage) section.
+
+What about another parameters before image's name?
+---
+* `run` means launch container. If image, that pointed in tail, doesn't exist on computer, it will be loaded.
+* `--rm` means, that Docker will remove container after finishing process. E. g. if you invoke `--help`
+of the application, this shows you help message, after this container will be removed. It is not required,
+it is just for convinient. If you don't point this flag, you will remove container manually, when it will be need.
+* `--volumes-from=resonances-data-container` this marks, that volumes will be mounted from container
+`resonances-data-container`. This container must be launched before our target container and it must work
+all time. It contains Postgresql and volumes, that stores output data of the application.
+* `--link resonances-data-container:postgres` again `resonances-data-container`. This shows, that our container
+will be linked to this container. `postgres` just alias of link. The application's container also 
+will get environment variables of `resonances-data-container`.
+* `--link some-redis:redis` same as above point.
+* `--name resonances` sets name for our container. This values must be unique.
+* `-e RESONANCES_DB_NAME=resonances` sets environment variable `RESONANCES_DB_NAME`. By default
+`resonances-data-container` has database `resonances` and it is need to point this to the container
+of our application.
+* `-e RESONANCES_DB_USER=postgres` same as above point.
+* `amarkov/resonances` name of images, that will be loaded from hub.docker.com, if you don't have it.
+
+
+
 # pylint cheat sheet
-pylint -E `git ls | grep py$ | grep -v --regexp="\(alembic\|fabfile\.py\)"` --disable=E1136 --disable=E1126
+``pylint -E `git ls | grep py$ | grep -v --regexp="\(alembic\|fabfile\.py\)"` --disable=E1136 --disable=E1126``
 
 # Default integrator Mercury parameters for our purposes.
 Take a look on files param.in, big.in, small.in.
@@ -52,6 +90,8 @@ Take a look on files param.in, big.in, small.in.
 be `2455400.5`. This day is result of expression `55400.0 + 2400000.5`, where `55400.0` has been got
 from astdys catalog (allnum.cat). This value must be changed in config.yml if you have different value
 in catalog.
+
+# <a href="usage"></a>Usage
 
 **Usage: main.py calc [OPTIONS]**
 
