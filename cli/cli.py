@@ -31,15 +31,19 @@ def _unite_decorators(*decorators):
 
 def _asteroid_interval_options():
     return _unite_decorators(
-        click.option('--start', default=1),
-        click.option('--stop', default=101))
+        click.option('--start', default=1, help='Start asteroid number. Counting from 1.'),
+        click.option('--stop', default=101, help='Stop asteroid number. Excepts last. Means, that '
+                                                 'asteroid with number, that equals this parameter,'
+                                                 ' will not be integrated.'))
 
 
 def _asteroid_time_intervals_options():
+    prefix = 'This parameter will be passed to param.in file for integrator Mercury6 as'
     return _unite_decorators(
         _asteroid_interval_options(),
-        click.option('--from-day', default=2451000.5),
-        click.option('--to-day', default=2501000.5))
+        click.option('--from-day', default=2451000.5, help='%s start time pointed in days.' %
+                                                           prefix),
+        click.option('--to-day', default=2501000.5, help='%s stop time pointed in days.' % prefix))
 
 
 @click.group()
@@ -57,7 +61,8 @@ def cli(loglevel: str = 'DEBUG', logfile: str = None):
     )
 
 
-@cli.command()
+@cli.command(help='Launch integrator Mercury6 for computing orbital elements of asteroids and'
+                  ' planets, that will be stored in aei files.')
 @_asteroid_time_intervals_options()
 def calc(start: int, stop: int, from_day: float, to_day: float):
     set_time_interval(from_day, to_day)
@@ -66,11 +71,19 @@ def calc(start: int, stop: int, from_day: float, to_day: float):
         _calc(i, end)
 
 
-@cli.command()
+FIND_HELP_PREFIX = 'If true, the application will'
+
+
+@cli.command(help='Computes resonant phases, find in them circulations and saves to librations.')
 @_asteroid_time_intervals_options()
-@click.option('--reload-resonances', default=False, type=bool)
-@click.option('--recalc', default=False, type=bool)
-@click.option('--is-current', default=False, type=bool)
+@click.option('--reload-resonances', default=False, type=bool,
+              help='%s load integers, satisfying D\'Alamebrt rule, from %s.' %
+                   (FIND_HELP_PREFIX, RESONANCE_FILEPATH))
+@click.option('--recalc', default=False, type=bool, help='%s invoke calc method before' %
+                                                         FIND_HELP_PREFIX)
+@click.option('--is-current', default=False, type=bool,
+              help='%s librations only from database, it won\'t compute them from phases' %
+                   FIND_HELP_PREFIX)
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
          recalc: bool, is_current: bool):
     set_time_interval(from_day, to_day)
