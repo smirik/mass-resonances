@@ -73,7 +73,7 @@ def test_make_plots(ThreeBodyResonance_mock, monkeypatch, phase_arguments: List[
         return QueryMock()
 
     monkeypatch.setattr(session, 'query', query)
-    make_plots(1, 2, False)
+    make_plots(1, 2)
 
     if not folders_exist:
         assert not os.path.exists(OUTPUT_IMAGES)
