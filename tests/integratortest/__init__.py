@@ -1,5 +1,3 @@
-import pytest
-from unittest import mock
 from os.path import join as opjoin
 from shutil import copyfile
 import os
@@ -20,7 +18,6 @@ def test_set_time_interval():
         return path
 
     param_in_filepath = _copyfile(PARAMS.INTEGRATOR_PARAM_FILENAME)
-    big_in_filepath = _copyfile(PARAMS.INTEGRATOR_BIG_FILENAME)
 
     set_time_interval(1, 2)
 
@@ -34,14 +31,5 @@ def test_set_time_interval():
     assert startday_assert_flag
     assert stopday_assert_flag
 
-    startday_assert_flag = False
-    with open(big_in_filepath) as f:
-        for line in f:
-            startday_assert_flag = startday_assert_flag or (' epoch (in days) = 1' in line)
-
-    assert startday_assert_flag
-
     os.remove(param_in_filepath)
     os.rename(param_in_filepath + '.backup', param_in_filepath)
-    os.remove(big_in_filepath)
-    os.rename(big_in_filepath + '.backup', big_in_filepath)
