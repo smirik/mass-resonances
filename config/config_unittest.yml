@@ -7,7 +7,7 @@ resonance_table:
   file: resonances
   
 catalog:
-  file: catalog/allnum.cat
+  file: tests/fixtures/allnum.cat
   type: astdys
   
   astdys:
