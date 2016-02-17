@@ -1,12 +1,16 @@
 import logging
 import subprocess
 import os
+from os.path import join as opjoin
+from glob import glob
 
 from settings import Config
 
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
+INTEGRATOR_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
+EXTENSIONS = ['dmp', 'clo', 'out', 'tmp']
 
 
 def _execute_programm(name: str) -> int:
@@ -25,14 +29,22 @@ def _execute_programm(name: str) -> int:
     return res
 
 
-def simple_clean() -> int:
+def aei_clean():
+    for filename in glob(opjoin(INTEGRATOR_DIR, '*.aei')):
+        os.remove(filename)
+
+
+def simple_clean(with_aei=True):
     """Execute simple_clean.sh
 
-    :rtype int:
-    :return: finish code of programm.
-    :raises: MercuryProgramNotFoundException
+    :param with_aei:
+    :rtype bool:
     """
-    return _execute_programm('simple_clean.sh')
+    for ext in EXTENSIONS:
+        for filename in glob(opjoin(INTEGRATOR_DIR, '*.%s' % ext)):
+            os.remove(filename)
+    if with_aei:
+        aei_clean()
 
 
 def mercury6() -> int:
