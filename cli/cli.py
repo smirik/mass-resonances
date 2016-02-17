@@ -18,7 +18,7 @@ CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 RESONANCE_TABLE_FILE = CONFIG['resonance_table']['file']
 RESONANCE_FILEPATH = opjoin(PROJECT_DIR, 'axis', RESONANCE_TABLE_FILE)
-STEP = 100
+STEP = CONFIG['integrator']['number_of_bodies']
 
 
 def _unite_decorators(*decorators):
@@ -26,15 +26,17 @@ def _unite_decorators(*decorators):
         for dec in reversed(decorators):
             decorated_function = dec(decorated_function)
         return decorated_function
+
     return deco
 
 
 def _asteroid_interval_options():
     return _unite_decorators(
         click.option('--start', default=1, help='Start asteroid number. Counting from 1.'),
-        click.option('--stop', default=101, help='Stop asteroid number. Excepts last. Means, that '
-                                                 'asteroid with number, that equals this parameter,'
-                                                 ' will not be integrated.'))
+        click.option('--stop', default=101,
+                     help='Stop asteroid number. Excepts last. Means, that '
+                          'asteroid with number, that equals this parameter,'
+                          ' will not be integrated.'))
 
 
 def _asteroid_time_intervals_options():
@@ -43,7 +45,8 @@ def _asteroid_time_intervals_options():
         _asteroid_interval_options(),
         click.option('--from-day', default=2451000.5, help='%s start time pointed in days.' %
                                                            prefix),
-        click.option('--to-day', default=2501000.5, help='%s stop time pointed in days.' % prefix))
+        click.option('--to-day', default=2501000.5,
+                     help='%s stop time pointed in days.' % prefix))
 
 
 @click.group()
@@ -66,15 +69,14 @@ def cli(loglevel: str = 'DEBUG', logfile: str = None):
 @_asteroid_time_intervals_options()
 def calc(start: int, stop: int, from_day: float, to_day: float):
     set_time_interval(from_day, to_day)
-    for i in range(start, stop, STEP):
-        end = i + STEP if i + STEP < stop else stop
-        _calc(i, end)
+    _calc(start, stop, STEP)
 
 
 FIND_HELP_PREFIX = 'If true, the application will'
 
 
-@cli.command(help='Computes resonant phases, find in them circulations and saves to librations.')
+@cli.command(
+    help='Computes resonant phases, find in them circulations and saves to librations.')
 @_asteroid_time_intervals_options()
 @click.option('--reload-resonances', default=False, type=bool,
               help='%s load integers, satisfying D\'Alamebrt rule, from %s.' %
@@ -87,10 +89,10 @@ FIND_HELP_PREFIX = 'If true, the application will'
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
          recalc: bool, is_current: bool):
     set_time_interval(from_day, to_day)
+    if recalc:
+        _calc(start, stop, STEP)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
-        if recalc:
-            _calc(i, end)
         if reload_resonances:
             save_resonances(RESONANCE_FILEPATH, i, end)
         _find(i, end, is_current)

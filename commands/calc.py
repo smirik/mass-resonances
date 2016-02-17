@@ -4,7 +4,7 @@ import os
 from settings import Config
 from catalog import find_by_number
 from integrator import SmallBodiesFileBuilder
-from integrator.programs import simple_clean
+from integrator.programs import simple_clean, aei_clean
 from integrator.programs import mercury6
 from integrator.programs import element6
 
@@ -23,7 +23,7 @@ def _execute_mercury():
     :raises FileNotFoundError: if mercury not installed.
     """
     try:
-        simple_clean()
+        simple_clean(False)
         code = mercury6()
         code += element6()
         if code:
@@ -33,7 +33,14 @@ def _execute_mercury():
         raise e
 
 
-def calc(start: int, stop: int):
+def calc(start: int, stop: int, step: int):
+    aei_clean()
+    for i in range(start, stop, step):
+        end = i + step if i + step < stop else stop
+        _calc(i, end)
+
+
+def _calc(start: int, stop: int):
     """Gets from astdys catalog parameters of orbital elements. Represents them
     to small.in file and makes symlink of this file in directory of application
     mercury6.
