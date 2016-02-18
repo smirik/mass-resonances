@@ -76,7 +76,8 @@ FIND_HELP_PREFIX = 'If true, the application will'
 
 
 @cli.command(
-    help='Computes resonant phases, find in them circulations and saves to librations.')
+    help='Computes resonant phases, find in them circulations and saves to librations.'
+         ' Parameters --from-day and --to-day are use only --recalc option is true.')
 @_asteroid_time_intervals_options()
 @click.option('--reload-resonances', default=False, type=bool,
               help='%s load integers, satisfying D\'Alamebrt rule, from %s.' %
@@ -86,23 +87,27 @@ FIND_HELP_PREFIX = 'If true, the application will'
 @click.option('--is-current', default=False, type=bool,
               help='%s librations only from database, it won\'t compute them from phases' %
                    FIND_HELP_PREFIX)
+@click.option('--migrate-phases', default=False, type=bool,
+              help='will loads phases to postgres from redis')
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
-         recalc: bool, is_current: bool):
-    set_time_interval(from_day, to_day)
+         recalc: bool, is_current: bool, migrate_phases: bool):
     if recalc:
+        set_time_interval(from_day, to_day)
         _calc(start, stop, STEP)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
         if reload_resonances:
             save_resonances(RESONANCE_FILEPATH, i, end)
-        _find(i, end, is_current)
+        _find(i, end, is_current, migrate_phases)
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
                   ' Libration can be created by command \'find\'.')
 @_asteroid_interval_options()
-def plot(start: int, stop: int):
-    _plot(start, stop)
+@click.option('--from-db', default=False, type=bool,
+              help='If true, applicatioin will loads resonant phases from database instead redis.')
+def plot(start: int, stop: int, from_db: bool):
+    _plot(start, stop, from_db)
 
 
 @cli.command()

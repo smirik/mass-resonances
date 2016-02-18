@@ -83,7 +83,7 @@ of our application.
 # Default integrator Mercury parameters for our purposes.
 Take a look on files param.in, big.in, small.in.
 
-* `param.in` must contain algorithm `mvs`. `Start time` must be `2451000.5` and `stop time` must be
+* `param.in` must contain algorithm `mvs`. `--from-day` must be `2451000.5` and `--to-day` must be
 `38976000.5`, they passed by arguments for `calc` command. Make `./main.py calc --help` for more.
 * `big.in` must contain `epoch` that equals `2451000.5`.
 * `small.in` lists asteroids. For every asteroid it stores `ep` (means epoch), this parameter must
@@ -115,7 +115,8 @@ Options:
 
 ```
   Computes resonant phases, find in them circulations and saves to
-  librations.
+  librations. Parameters --from-day and --to-day are use only --recalc
+  option is true.
 
 Options:
   --start INTEGER              Start asteroid number. Counting from 1.
@@ -136,20 +137,22 @@ Options:
   --is-current BOOLEAN         If true, the application will librations only
                                from database, it won't compute them from
                                phases
+  --migrate-phases BOOLEAN     will loads phases to postgres from redis
   --help                       Show this message and exit.
 ```
   
 **Usage: main.py plot [OPTIONS]**
 
 ```
-  Build graphics for asteroids in pointed interval, that have libration.
+Build graphics for asteroids in pointed interval, that have libration.
   Libration can be created by command 'find'.
 
 Options:
-  --start INTEGER  Start asteroid number. Counting from 1.
-  --stop INTEGER   Stop asteroid number. Excepts last. Means, that asteroid
-                   with number, that equals this parameter, will not be
-                   integrated.
-  --force BOOLEAN
-  --help           Show this message and exit.
+  --start INTEGER    Start asteroid number. Counting from 1.
+  --stop INTEGER     Stop asteroid number. Excepts last. Means, that asteroid
+                     with number, that equals this parameter, will not be
+                     integrated.
+  --from-db BOOLEAN  If true, applicatioin will loads resonant phases from
+                     database instead redis.
+  --help             Show this message and exit.
 ```
