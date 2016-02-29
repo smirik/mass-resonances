@@ -11,6 +11,21 @@ PROJECT_DIR = Config.get_project_dir()
 MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 
 
+def get_resonances(start: int, stop: int) -> Iterable[ThreeBodyResonance]:
+    names = ['A%i' % x for x in range(start, stop)]
+    resonances = session.query(ThreeBodyResonance).join(ThreeBodyResonance.small_body) \
+        .filter(Asteroid.name.in_(names)).all()
+
+    resonances = [x for x in resonances]
+    resonances = sorted(resonances, key=lambda x: x.asteroid_number)
+
+    if not resonances:
+        logging.info('We have no resonances, try option --reload-resonances=1')
+
+    for resonance in resonances:
+        yield resonance
+
+
 def find_resonances(start: int, stop: int) -> Iterable[Tuple[ThreeBodyResonance, List[str]]]:
     """Find resonances from /axis/resonances by asteroid axis. Currently
     described by 7 items list of floats. 6 is integers satisfying
@@ -21,16 +36,6 @@ def find_resonances(start: int, stop: int) -> Iterable[Tuple[ThreeBodyResonance,
     :param start:
     :return:
     """
-
-    names = ['A%i' % x for x in range(start, stop)]
-    resonances = session.query(ThreeBodyResonance).join(ThreeBodyResonance.small_body) \
-        .filter(Asteroid.name.in_(names)).all()
-
-    resonances = [x for x in resonances]
-    resonances = sorted(resonances, key=lambda x: x.asteroid_number)
-
-    if not resonances:
-        logging.info('We have no resonances, try option --reload-resonances=1')
 
     class _DataGetter:
         def __init__(self):
@@ -50,7 +55,7 @@ def find_resonances(start: int, stop: int) -> Iterable[Tuple[ThreeBodyResonance,
             return self._aei_data
 
     aei_getter = _DataGetter()
-    for resonance in resonances:
+    for resonance in get_resonances(start, stop):
         aei_data = aei_getter.get_aei_data(resonance.asteroid_number)
         assert len(aei_data) > 0
         yield resonance, aei_data

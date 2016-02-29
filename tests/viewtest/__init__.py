@@ -5,8 +5,9 @@ from random import random
 from math import pi
 import pytest
 from tests.shortcuts import get_class_path
-from view import make_plots
-from entities.dbutills import REDIS
+from view import make_plots_from_db
+from view import make_plots_from_redis
+from entities.dbutills import REDIS, engine
 from entities.dbutills import session
 import json
 from unittest import mock
@@ -42,38 +43,65 @@ def folderfixture(request):
     request.addfinalizer(tear_down)
 
 
+def _build_query_method():
+    with mock.patch(get_class_path(ThreeBodyResonance)) as ThreeBodyResonance_mock:
+        class QueryMock:
+            def filter(self, *args, **kwargs):
+                return self
+
+            def join(self, *args, **kwargs):
+                return self
+
+            def all(self):
+                resonance = ThreeBodyResonance_mock()
+                resonance.__str__ = mock.MagicMock(return_value='[4 -2 -1 0 0 2.1468]')
+                resonance.asteroid_number = 1
+                return [resonance]
+
+        def query(arg):
+            return QueryMock()
+
+        return query
+
+
 @pytest.mark.parametrize('phase_arguments, folders_exist', [
     (PHASES, False),
     ([{'year': x * 3, 'value': random() * 2 * pi - pi} for x in range(33334)], True)
 ])
-@mock.patch(get_class_path(ThreeBodyResonance))
-def test_make_plots(ThreeBodyResonance_mock, monkeypatch, phase_arguments: List[Dict[str, float]],
-                    folders_exist: bool, folderfixture):
+def test_make_plots_from_database(monkeypatch, phase_arguments: List[Dict[str, float]],
+                                  folders_exist: bool, folderfixture):
+    class ConnectMock:
+        def execute(self, *args, **kwargs):
+            return phase_arguments
+
+    def connect():
+        return ConnectMock()
+
+    monkeypatch.setattr(engine, 'connect', connect)
+    monkeypatch.setattr(session, 'query', _build_query_method())
+    make_plots_from_db(1, 2)
+
+    if not folders_exist:
+        assert not os.path.exists(OUTPUT_IMAGES)
+    else:
+        assert len(os.listdir(OUTPUT_IMAGES)) == 2
+        assert len(os.listdir(OUTPUT_GNU_PATH)) == 1
+        assert len(os.listdir(OUTPUT_RES_PATH)) == 1
+
+
+@pytest.mark.parametrize('phase_arguments, folders_exist', [
+    (PHASES, False),
+    ([{'year': x * 10, 'value': random() * 2 * pi - pi} for x in range(33334)], True)
+])
+def test_make_plots_from_redis(monkeypatch, phase_arguments: List[Dict[str, float]],
+                               folders_exist: bool, folderfixture):
+    monkeypatch.setattr(session, 'query', _build_query_method())
+
     def lrange(*args, **kwargs):
         return [json.dumps(x).encode() for x in phase_arguments]
 
     monkeypatch.setattr(REDIS, 'lrange', lrange)
-
-    class QueryMock:
-        def filter(self, *args, **kwargs):
-            return self
-
-        def join(self, *args, **kwargs):
-            return self
-
-        def all(self):
-            resonance = ThreeBodyResonance_mock()
-            resonance.__str__ = mock.MagicMock(return_value='[4 -2 -1 0 0 2.1468]')
-            resonance.asteroid_number = 1
-            # value = mock.PropertyMock(side_effect=[x['value'] for x in phase_arguments])
-            # type(phase).value = value
-            return [resonance]
-
-    def query(arg):
-        return QueryMock()
-
-    monkeypatch.setattr(session, 'query', query)
-    make_plots(1, 2)
+    make_plots_from_redis(1, 2)
 
     if not folders_exist:
         assert not os.path.exists(OUTPUT_IMAGES)
