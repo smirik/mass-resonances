@@ -75,6 +75,15 @@ def calc(start: int, stop: int, from_day: float, to_day: float):
 FIND_HELP_PREFIX = 'If true, the application will'
 
 
+@cli.command()
+@_asteroid_interval_options()
+def reload_resonances(start: int, stop: int):
+    for i in range(start, stop, STEP):
+        end = i + STEP if i + STEP < stop else stop
+        if reload_resonances:
+            save_resonances(RESONANCE_FILEPATH, i, end)
+
+
 @cli.command(
     help='Computes resonant phases, find in them circulations and saves to librations.'
          ' Parameters --from-day and --to-day are use only --recalc option is true.')
