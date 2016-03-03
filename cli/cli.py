@@ -32,8 +32,9 @@ def _unite_decorators(*decorators):
 
 def _asteroid_interval_options():
     return _unite_decorators(
-        click.option('--start', default=1, help='Start asteroid number. Counting from 1.'),
-        click.option('--stop', default=101,
+        click.option('--start', default=1, type=int,
+                     help='Start asteroid number. Counting from 1.'),
+        click.option('--stop', default=101, type=int,
                      help='Stop asteroid number. Excepts last. Means, that '
                           'asteroid with number, that equals this parameter,'
                           ' will not be integrated.'))
@@ -77,11 +78,10 @@ FIND_HELP_PREFIX = 'If true, the application will'
 
 @cli.command()
 @_asteroid_interval_options()
-def reload_resonances(start: int, stop: int):
+def load_resonances(start: int, stop: int):
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
-        if reload_resonances:
-            save_resonances(RESONANCE_FILEPATH, i, end)
+        save_resonances(RESONANCE_FILEPATH, i, end)
 
 
 @cli.command(
