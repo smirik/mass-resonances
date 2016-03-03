@@ -142,6 +142,7 @@ def find(start: int, stop: int, is_current: bool = False, migrate_phases_to_db: 
     finder = _LibrationClassifyier(is_current)
 
     for resonance, aei_data in find_resonances(start, stop):
+        logging.debug('Analyze asteroid %s, resonance %s' % (resonance.small_body.name, resonance))
         resonance_id = resonance.id
         finder.set_resonance(resonance)
 
