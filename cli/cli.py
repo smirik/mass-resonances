@@ -2,6 +2,7 @@ import logging
 import os
 import click
 from catalog import save_resonances
+from logging.handlers import RotatingFileHandler
 from commands import calc as _calc
 from commands import find as _find
 from commands import plot as _plot
@@ -50,19 +51,36 @@ def _asteroid_time_intervals_options():
                      help='%s stop time pointed in days.' % prefix))
 
 
+def _build_logging(loglevel: str, logfile: str, message_format: str, time_format: str):
+    if logfile:
+        logpath = opjoin(PROJECT_DIR, 'logs')
+        if not os.path.exists(logpath):
+            os.mkdir(logpath)
+        path = opjoin(logpath, logfile)
+        loghandler = RotatingFileHandler(path, mode='a', maxBytes=10*1024*1024,
+                                         backupCount=10, encoding=None, delay=0)
+        loghandler.setFormatter(logging.Formatter(message_format, time_format))
+        loghandler.setLevel(loglevel)
+
+        logger = logging.getLogger()
+        logger.setLevel(loglevel)
+        logger.addHandler(loghandler)
+    else:
+        logging.basicConfig(
+            format=message_format,
+            datefmt=time_format,
+            level=loglevel,
+        )
+
+
 @click.group()
 @click.option('--loglevel', default='DEBUG', help='default: DEBUG',
               type=click.Choice(LEVELS))
 @click.option('--logfile', default=None, help='default: None',
               type=str)
 def cli(loglevel: str = 'DEBUG', logfile: str = None):
-    logging.basicConfig(
-        format='%(asctime)s %(levelname)s %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-        level=getattr(logging, loglevel),
-        filename=os.path.join(PROJECT_DIR, logfile) if logfile else None,
-        filemode='w' if logfile else None
-    )
+    _build_logging(getattr(logging, loglevel), logfile, '%(asctime)s %(levelname)s %(message)s',
+                   '%Y-%m-%d %H:%M:%S')
 
 
 @cli.command(help='Launch integrator Mercury6 for computing orbital elements of asteroids and'
