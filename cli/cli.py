@@ -8,6 +8,7 @@ from commands import find as _find
 from commands import plot as _plot
 from commands import package as _package
 from commands import remove_export_directory
+from commands.show_broken_bodies import show_broken_bodies
 from integrator import set_time_interval
 from storage import extract as _extract
 from settings import Config
@@ -157,3 +158,8 @@ def extract(start: int, copy_aei: bool):
 @click.option('--compress', default=False, type=bool)
 def package(start: int, stop: int, res: bool, aei: bool, compress: bool):
     _package(start, stop, res, aei, compress)
+
+
+@cli.command()
+def broken_bodies():
+    show_broken_bodies()
