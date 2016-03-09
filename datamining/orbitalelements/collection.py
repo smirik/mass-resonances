@@ -16,6 +16,10 @@ SMALL_BODIES_FILENAME = CONFIG['integrator']['files']['small_bodies']
 HEADER_LINE_COUNT = 4
 
 
+class AEIValueError(ValueError):
+    pass
+
+
 class OrbitalElementSet:
     _TIME = 0
     _PERIHELLION_LONGITUDE = 1
@@ -28,17 +32,20 @@ class OrbitalElementSet:
     def __init__(self, data_string: str):
         """Data string must be formated as data in aei file, that generates by element6.
         :param data_string:
+        :except ValueError: if data from data_string has incorrect values.
         :return:
         """
-        datas = [float(x) for x in data_string.split()]
-
-        self.time = datas[self._TIME]
-        self.p_longitude = radians(datas[self._PERIHELLION_LONGITUDE])
-        self.mean_anomaly = radians(datas[self._MEAN_ANOMALY])
-        self.semi_axis = datas[self._SEMIMAJOR_AXIS]
-        self.eccentricity = datas[self._ECCENTRICITY]
-        self.inclination = radians(int(datas[self._INCLINATION]))
-        self.node = radians(int(datas[self._NODE]))
+        try:
+            datas = [float(x) for x in data_string.split()]
+            self.time = datas[self._TIME]
+            self.p_longitude = radians(datas[self._PERIHELLION_LONGITUDE])
+            self.mean_anomaly = radians(datas[self._MEAN_ANOMALY])
+            self.semi_axis = datas[self._SEMIMAJOR_AXIS]
+            self.eccentricity = datas[self._ECCENTRICITY]
+            self.inclination = radians(int(datas[self._INCLINATION]))
+            self.node = radians(int(datas[self._NODE]))
+        except ValueError:
+            raise AEIValueError()
 
     @property
     def m_longitude(self) -> float:

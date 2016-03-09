@@ -28,3 +28,9 @@ class Asteroid(_Body, Base):
         *UNIQUE_FIELDS, 'axis', name='uc_name_long_peri_axis'
     ),)
     axis = Column(Float, nullable=False)
+
+
+class BrokenAsteroid(Base):
+    __tablename__ = 'broken_asteroid'
+    __table_args__ = (UniqueConstraint('name'),)
+    name = Column(String(255), nullable=False)
