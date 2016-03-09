@@ -3,6 +3,7 @@ from math import radians
 import pytest
 from datamining import OrbitalElementSet
 from datamining import OrbitalElementSetCollection
+from datamining.orbitalelements.collection import AEIValueError
 from os.path import join as opjoin
 from settings import Config
 
@@ -50,7 +51,7 @@ def test_init():
     with pytest.raises(IndexError):
         OrbitalElementSet('')
 
-    with pytest.raises(ValueError):
+    with pytest.raises(AEIValueError):
         OrbitalElementSet('qw')
 
 

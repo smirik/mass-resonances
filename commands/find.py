@@ -2,7 +2,9 @@ import logging
 from typing import List, Dict
 
 from catalog import find_resonances
-from entities.dbutills import REDIS
+from datamining.orbitalelements.collection import AEIValueError
+from entities.body import BrokenAsteroid
+from entities.dbutills import REDIS, get_or_create
 from datamining import ResonanceOrbitalElementSetFacade
 from datamining import build_bigbody_elements
 from datamining import ApocentricBuilder
@@ -13,6 +15,7 @@ from entities import Phase, Libration, ThreeBodyResonance
 from entities.dbutills import session
 from os.path import join as opjoin
 from settings import Config
+from sqlalchemy import exists
 from storage import ResonanceDatabase
 
 PROJECT_DIR = Config.get_project_dir()
@@ -60,7 +63,7 @@ def _save_as_transient(libration: Libration, resonance: ThreeBodyResonance, aste
     return False
 
 
-class _LibrationClassifyier:
+class _LibrationClassifier:
     """
     Class is need for determining type of libration. If it needs, class will build libration by
     resonances and orbital elements of related sky bodies.
@@ -125,6 +128,17 @@ class _LibrationClassifyier:
         return False
 
 
+class _BrokenAsteroidMediator:
+    def __init__(self, asteroid_name: str):
+        self._asteroid_name = asteroid_name
+
+    def check(self):
+        return session.query(exists().where(BrokenAsteroid.name == self._asteroid_name)).scalar()
+
+    def save(self):
+        get_or_create(BrokenAsteroid, name=self._asteroid_name)
+
+
 def find(start: int, stop: int, is_current: bool = False, migrate_phases_to_db: bool = False):
     """Find all possible resonances for all asteroids from start to stop.
 
@@ -134,27 +148,42 @@ def find(start: int, stop: int, is_current: bool = False, migrate_phases_to_db: 
     :param migrate_phases_to_db: needs for auto migration from redis to postgres
     :return:
     """
+    firstbody_elements, secondbody_elements = None, None
+    firstbody_aei = opjoin(MERCURY_DIR, '%s.aei' % BODY1)
+    secondbody_aei = opjoin(MERCURY_DIR, '%s.aei' % BODY2)
+    try:
+        firstbody_elements, secondbody_elements = build_bigbody_elements(
+            firstbody_aei, secondbody_aei)
+    except AEIValueError:
+        logging.error('Incorrect data in %s or in %s' % (firstbody_aei, secondbody_aei))
+        exit(-1)
 
-    firstbody_elements, secondbody_elements = build_bigbody_elements(
-        opjoin(MERCURY_DIR, '%s.aei' % BODY1),
-        opjoin(MERCURY_DIR, '%s.aei' % BODY2))
-
-    finder = _LibrationClassifyier(is_current)
+    classifier = _LibrationClassifier(is_current)
 
     for resonance, aei_data in find_resonances(start, stop):
+        broken_asteroid_mediator = _BrokenAsteroidMediator(resonance.small_body.name)
+        if broken_asteroid_mediator.check():
+            continue
+
         logging.debug('Analyze asteroid %s, resonance %s' % (resonance.small_body.name, resonance))
         resonance_id = resonance.id
-        finder.set_resonance(resonance)
+        classifier.set_resonance(resonance)
 
         orbital_elem_set = ResonanceOrbitalElementSetFacade(
             firstbody_elements, secondbody_elements, resonance)
 
         phases_rediskey = '%s:%i' % (Phase.__tablename__, resonance_id)
-        serialized_phases = _build_redis_phases(aei_data, phases_rediskey, orbital_elem_set)
+
+        try:
+            serialized_phases = _build_redis_phases(aei_data, phases_rediskey, orbital_elem_set)
+        except AEIValueError:
+            broken_asteroid_mediator.save()
+            REDIS.delete(phases_rediskey)
+            continue
 
         if migrate_phases_to_db:
             save_phases(serialized_phases, resonance_id)
-        finder.classify(orbital_elem_set)
+        classifier.classify(orbital_elem_set)
         if migrate_phases_to_db and phases_rediskey:
             REDIS.delete(phases_rediskey)
 
