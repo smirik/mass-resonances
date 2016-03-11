@@ -9,7 +9,7 @@ from entities.dbutills import session
 from settings import Config
 from entities import ThreeBodyResonance
 from sqlalchemy import delete
-from catalog import find_resonances
+from datamining import get_aggregated_resonances
 from tests.shortcuts import get_class_path
 
 CONFIG = Config.get_params()
@@ -75,7 +75,7 @@ def test_find_resonances(resonancesfixture, start, stop, resonances_str,
 
     monkeypatch.setattr(session, 'query', query)
     if not resonances_str:
-        assert [x for x in find_resonances(start, stop)] == []
+        assert [x for x in get_aggregated_resonances(start, stop)] == []
     else:
-        for i, (resonance, aei_data) in enumerate(find_resonances(start, stop)):
+        for i, (resonance, aei_data) in enumerate(get_aggregated_resonances(start, stop)):
             assert str(resonance) == resonances_str[i]

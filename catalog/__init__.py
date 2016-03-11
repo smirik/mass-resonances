@@ -1,12 +1,11 @@
+import logging
 import sys
 from typing import List, Dict
+
 import os
-import logging
 from entities import ThreeBodyResonance, build_resonance
 from entities.dbutills import session
 from settings import Config
-from .find_resonances import find_resonances
-from .find_resonances import get_resonances
 
 CONFIG = Config.get_params()
 SKIP_LINES = CONFIG['catalog']['astdys']['skip']

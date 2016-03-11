@@ -12,6 +12,12 @@ MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 
 
 def get_resonances(start: int, stop: int) -> Iterable[ThreeBodyResonance]:
+    """
+    Returns resonances related to asteroid in pointer interval from start to stop.
+    :param start: start of interval of asteroid numbers.
+    :param stop: finish of interval of asteroid numbers.
+    :return:
+    """
     names = ['A%i' % x for x in range(start, stop)]
     resonances = session.query(ThreeBodyResonance).join(ThreeBodyResonance.small_body) \
         .filter(Asteroid.name.in_(names)).all()
@@ -20,20 +26,22 @@ def get_resonances(start: int, stop: int) -> Iterable[ThreeBodyResonance]:
     resonances = sorted(resonances, key=lambda x: x.asteroid_number)
 
     if not resonances:
-        logging.info('We have no resonances, try option --reload-resonances=1')
+        logging.info('We have no resonances, try command load-resonances --start=%i --stop=%i'
+                     % (start, stop))
 
     for resonance in resonances:
         yield resonance
 
 
-def find_resonances(start: int, stop: int) -> Iterable[Tuple[ThreeBodyResonance, List[str]]]:
+def get_aggregated_resonances(from_asteroid: int, to_asteroid: int)\
+        -> Iterable[Tuple[ThreeBodyResonance, List[str]]]:
     """Find resonances from /axis/resonances by asteroid axis. Currently
     described by 7 items list of floats. 6 is integers satisfying
     D'Alembert rule. First 3 for longitutes, and second 3 for longitutes
     perihilion. Seventh value is asteroid axis.
 
-    :param stop:
-    :param start:
+    :param to_asteroid:
+    :param from_asteroid:
     :return:
     """
 
@@ -55,7 +63,7 @@ def find_resonances(start: int, stop: int) -> Iterable[Tuple[ThreeBodyResonance,
             return self._aei_data
 
     aei_getter = _DataGetter()
-    for resonance in get_resonances(start, stop):
+    for resonance in get_resonances(from_asteroid, to_asteroid):
         aei_data = aei_getter.get_aei_data(resonance.asteroid_number)
         assert len(aei_data) > 0
         yield resonance, aei_data

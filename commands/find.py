@@ -1,7 +1,7 @@
 import logging
 from typing import List, Dict
 
-from catalog import find_resonances
+from datamining import get_aggregated_resonances
 from datamining.orbitalelements.collection import AEIValueError
 from entities.body import BrokenAsteroid
 from entities.dbutills import REDIS, get_or_create
@@ -160,7 +160,7 @@ def find(start: int, stop: int, is_current: bool = False, migrate_phases_to_db: 
 
     classifier = _LibrationClassifier(is_current)
 
-    for resonance, aei_data in find_resonances(start, stop):
+    for resonance, aei_data in get_aggregated_resonances(start, stop):
         broken_asteroid_mediator = _BrokenAsteroidMediator(resonance.small_body.name)
         if broken_asteroid_mediator.check():
             continue
