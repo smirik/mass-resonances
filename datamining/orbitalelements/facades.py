@@ -2,12 +2,12 @@ from typing import List, Iterable, Dict, Tuple
 
 import os
 from abc import abstractmethod
-from .collection import OrbitalElementSetCollection
-from .collection import OrbitalElementSet
 from entities import PERI
-from entities.body import LONG
 from entities import ThreeBodyResonance
-from utils.shortcuts import cutoff_angle
+from entities.body import LONG
+from shortcuts import cutoff_angle
+from .collection import OrbitalElementSet
+from .collection import OrbitalElementSetCollection
 
 
 SMALL_BODY = 'small_body'
