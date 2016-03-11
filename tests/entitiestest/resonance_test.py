@@ -1,16 +1,15 @@
+import math
 from typing import List
+from unittest import mock
 
+import pytest
 from entities import ThreeBodyResonance, build_resonance
-from entities.body import Planet
 from entities.body import Asteroid
 from entities.body import LONG
 from entities.body import PERI
-import pytest
+from entities.body import Planet
+from shortcuts import cutoff_angle
 from tests.shortcuts import get_class_path
-from unittest import mock
-import math
-
-from utils.shortcuts import cutoff_angle
 
 
 @mock.patch(get_class_path(Planet))

@@ -6,12 +6,12 @@ from typing import List
 
 import os
 from catalog import find_resonances
+from datamining import build_bigbody_elements, ComputedOrbitalElementSetFacade, PhaseCountException
 from entities import ThreeBodyResonance, Phase
 from entities.dbutills import engine, REDIS
-from datamining import build_bigbody_elements, ComputedOrbitalElementSetFacade, PhaseCountException
 from os.path import join as opjoin
 from settings import Config
-from utils.shortcuts import cutoff_angle
+from shortcuts import cutoff_angle
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()

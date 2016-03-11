@@ -1,10 +1,10 @@
-import math
 import json
+import math
 from typing import List
 
 from entities import Phase
 from entities.dbutills import REDIS
-from utils.shortcuts import cutoff_angle
+from shortcuts import cutoff_angle
 
 
 class CirculationYearsFinder:

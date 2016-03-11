@@ -1,12 +1,12 @@
+import glob
 import logging
+
 import os
 import shutil
-from os.path import join as opjoin
-import glob
 import tarfile
-
+from os.path import join as opjoin
 from settings import Config
-from utils.shortcuts import logging_done
+from shortcuts import logging_done
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
