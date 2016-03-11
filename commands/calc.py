@@ -4,9 +4,10 @@ import os
 from settings import Config
 from catalog import find_by_number
 from integrator import SmallBodiesFileBuilder
-from integrator.programs import simple_clean, aei_clean
-from integrator.programs import mercury6
-from integrator.programs import element6
+from integrator import simple_clean
+from integrator import aei_clean
+from integrator import mercury6
+from integrator import element6
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
