@@ -3,8 +3,8 @@ import logging
 import subprocess
 import os
 import shutil
-from integrator.programs import element6
-from integrator.programs import simple_clean
+from integrator import element6
+from integrator import simple_clean
 from os.path import join as opjoin
 from settings import Config
 
