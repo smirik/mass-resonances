@@ -1,9 +1,6 @@
 import os
 
 from settings import Config
-from entities import RDB_Asteroid
-
-from typing import List
 
 
 class ResonanceDatabase(object):
@@ -19,28 +16,6 @@ class ResonanceDatabase(object):
 
         self.db_file = db_file
         self._create_if_not_exists()
-
-    def find_between(self, start: int, stop: int) -> List[RDB_Asteroid]:
-        """Find all asteroids in resonances for given interval [start, stop]
-        in body numbers.
-
-        :param int start: start of the interval
-        :param int stop: stop of the interval
-        :rtype list:
-        :return: list of instances of the Asteroid.
-        """
-        asteroids = []
-
-        with open(self.db_file) as f:
-            for line in f:
-                arr = line.split(';')
-                tmp = int(arr[0].strip())
-                if (tmp >= start) and (tmp <= stop):
-                    resonance = arr[1]
-                    resonance = resonance.replace('[', '').replace(']', '')
-                    resonance = [float(x) for x in resonance.split(',')]
-                    asteroids.append(RDB_Asteroid(int(arr[0]), resonance))
-        return asteroids
 
     def add_string(self, value: str):
         tmp = value.split(';')
