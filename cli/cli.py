@@ -94,7 +94,9 @@ def calc(start: int, stop: int, from_day: float, to_day: float):
 FIND_HELP_PREFIX = 'If true, the application will'
 
 
-@cli.command(name='load-resonances')
+@cli.command(help='Loads integers, satisfying D\'Alambert rule, from %s and build potentially' %
+                  RESONANCE_FILEPATH + 'resonances, that related to asteroid from catalog by' +
+                  ' comparing axis from this file and catalog', name='load-resonances')
 @_asteroid_interval_options()
 def load_resonances(start: int, stop: int):
     for i in range(start, stop, STEP):
@@ -136,7 +138,8 @@ def plot(start: int, stop: int, from_db: bool):
     _plot(start, stop, from_db)
 
 
-@cli.command(name='clear-phases')
+@cli.command(name='clear-phases', help='Clears phases from database and Redis, which related to '
+                                       'pointed asteroids.')
 @_asteroid_interval_options()
 def clear_phases(start: int, stop: int):
     _clear_phases(start, stop)
@@ -164,6 +167,7 @@ def package(start: int, stop: int, res: bool, aei: bool, compress: bool):
     _package(start, stop, res, aei, compress)
 
 
-@cli.command(name='broken-bodies')
+@cli.command(help='Shows names of asteroid, that has got incorrect data in aei files.',
+             name='broken-bodies')
 def broken_bodies():
     show_broken_bodies()

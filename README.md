@@ -3,6 +3,7 @@
 
 # resonances
 This is Python fork of Three-body-resonances (https://github.com/smirik/Three-body-resonances).
+Technical documentation is in docs directory.
 
 # Installation
 * virtualenv .venv
@@ -26,18 +27,28 @@ This is Python fork of Three-body-resonances (https://github.com/smirik/Three-bo
 * sed
 * redis
 
-# Deploy via fabric
-
-...
-
 # Run
 
-To run the script on the server please follow the instructions below:
+This example of usecase of the application. It computes aei files for time interval from from day
+2451000.5 to 38976000.5. Gets librations and makes plots for asteroids, which has numbers, match
+pointed half-interval from 1 to 101 (101 will be excluded).
 
 1. Run the script: `source .venv/bin/activate`
-2. Run the calc command: `./main.py calc`
-3. To find the resonances: `./main.py find`
-4. Make plots `./main.py plot`
+2. To find the resonances: `./main.py find --recalc=1 --from-day=2451000.5 --to-day=38976000.5
+--start=1 --stop=101 --reload-resonances=1`
+3. Make plots `./main.py plot --start=1 --stop=101`
+
+This example has same effect.
+
+1. Run the script: `source .venv/bin/activate`
+2. Calculate aei files: `./main.py calc --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101`
+3. To load possible resonances `./main.py load-resonances --start=1 --stop=101`
+4. To find the resonances: `./main.py find --start=1 --stop=101`
+5. Make plots `./main.py plot --start=1 --stop=101`
+
+If you need to clear computed resonant phases `./main.py clear-phases --start=1 --stop=101`
+
+Plots will be in /path/to/app/output/images/
 
 For more details invoke --help or see [Usage](#usage)
 
@@ -74,8 +85,6 @@ will get environment variables of `resonances-data-container`.
 of our application.
 * `-e RESONANCES_DB_USER=postgres` same as above point.
 * `amarkov/resonances` name of images, that will be loaded from hub.docker.com, if you don't have it.
-
-
 
 # pylint cheat sheet
 ``pylint -E `git ls | grep py$ | grep -v --regexp="\(alembic\|fabfile\.py\)"` --disable=E1136 --disable=E1126``
@@ -129,9 +138,6 @@ Options:
   --to-day FLOAT               This parameter will be passed to param.in file
                                for integrator Mercury6 as stop time pointed in
                                days.
-  --reload-resonances BOOLEAN  If true, the application will load integers,
-                               satisfying D'Alamebrt rule, from /media/storage
-                               /develop/resonances/axis/resonances.
   --recalc BOOLEAN             If true, the application will invoke calc
                                method before
   --is-current BOOLEAN         If true, the application will librations only
@@ -155,4 +161,32 @@ Options:
   --from-db BOOLEAN  If true, applicatioin will loads resonant phases from
                      database instead redis.
   --help             Show this message and exit.
+```
+
+**Usage: main.py load-resonances [OPTIONS]**
+
+```
+  Loads integers, satisfying D'Alambert rule, from axis/resonances and build
+  potentiallyresonances, that related to asteroid from catalog by comparing
+  axis from this file and catalog.
+
+Options:
+  --start INTEGER  Start asteroid number. Counting from 1.
+  --stop INTEGER   Stop asteroid number. Excepts last. Means, that asteroid
+                   with number, that equals this parameter, will not be
+                   integrated.
+  --help           Show this message and exit.
+```
+
+**Usage: main.py clear-phases [OPTIONS]**
+
+```
+  Clears phases from database and Redis, which related to pointed asteroids.
+
+Options:
+  --start INTEGER  Start asteroid number. Counting from 1.
+  --stop INTEGER   Stop asteroid number. Excepts last. Means, that asteroid
+                   with number, that equals this parameter, will not be
+                   integrated.
+  --help           Show this message and exit.
 ```
