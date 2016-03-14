@@ -9,6 +9,7 @@ from commands import plot as _plot
 from commands import package as _package
 from commands import remove_export_directory
 from commands.show_broken_bodies import show_broken_bodies
+from commands.cleaning import clear_phases as _clear_phases
 from integrator import set_time_interval
 from storage import extract as _extract
 from settings import Config
@@ -95,7 +96,7 @@ def calc(start: int, stop: int, from_day: float, to_day: float):
 FIND_HELP_PREFIX = 'If true, the application will'
 
 
-@cli.command()
+@cli.command(name='load-resonances')
 @_asteroid_interval_options()
 def load_resonances(start: int, stop: int):
     for i in range(start, stop, STEP):
@@ -138,6 +139,12 @@ def plot(start: int, stop: int, from_db: bool):
     _plot(start, stop, from_db)
 
 
+@cli.command(name='clear-phases')
+@_asteroid_interval_options()
+def clear_phases(start: int, stop: int):
+    _clear_phases(start, stop)
+
+
 @cli.command()
 @_asteroid_interval_options()
 def clean(start: int, stop: int):
@@ -160,6 +167,6 @@ def package(start: int, stop: int, res: bool, aei: bool, compress: bool):
     _package(start, stop, res, aei, compress)
 
 
-@cli.command()
+@cli.command(name='broken-bodies')
 def broken_bodies():
     show_broken_bodies()
