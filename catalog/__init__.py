@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import List, Dict
+from typing import List
 
 import os
 from entities import ThreeBodyResonance, build_resonance
@@ -16,10 +16,10 @@ AXIS_SWING = CONFIG['resonance']['axis_error']
 
 
 def find_by_number(number: int) -> List[float]:
-    """Find asteroid parameters by number.
+    """Find asteroid parameters by number in catalog.
 
     :param int number: num for search.
-    :return list: array contains parameters of asteroid.
+    :return: list contains parameters of asteroid.
     """
 
     try:
@@ -38,8 +38,16 @@ def find_by_number(number: int) -> List[float]:
         raise e
 
 
-def _build_resonances(from_filepath: str, for_asteroid_num: int) \
+def build_possible_resonances(from_filepath: str, for_asteroid_num: int) \
         -> List[ThreeBodyResonance]:
+    """
+    Builds resonances, that can be for pointed asteroid. Resonance is considering if it's semi major
+    axis similar to semi major axis of asteroid from catalog. Them compares with some swing, which
+    which pointed in settings.
+    :param from_filepath: filepath to catalog of asteroids.
+    :param for_asteroid_num: number of asteroid.
+    :return: list of resonances.
+    """
     res = []
     try:
         with open(from_filepath) as resonance_file:
@@ -59,19 +67,3 @@ def _build_resonances(from_filepath: str, for_asteroid_num: int) \
     return res
 
 
-def save_resonances(from_filepath: str, start_asteroid: int, stop_asteroid: int) \
-        -> Dict[int, List[ThreeBodyResonance]]:
-    divider = 2
-    toolbar_width = (stop_asteroid + 1 - start_asteroid) // divider
-    sys.stdout.write("Build resonances [%s]" % (" " * toolbar_width))
-    sys.stdout.flush()
-    sys.stdout.write("\b" * (toolbar_width+1))
-
-    res = {}
-    for i in range(start_asteroid, stop_asteroid + 1):
-        res[i] = _build_resonances(from_filepath, i)
-        if i % divider == 0:
-            sys.stdout.write("#")
-            sys.stdout.flush()
-    sys.stdout.write("\n")
-    return res

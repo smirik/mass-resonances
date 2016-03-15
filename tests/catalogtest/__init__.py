@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 from catalog import find_by_number
-from catalog import save_resonances
+from commands.load_resonances import load_resonances
 import os
 from entities.dbutills import session
 from settings import Config
@@ -36,8 +36,8 @@ def resonancesfixture(request):
 
 
 @pytest.mark.parametrize('start, stop, len_resonances', [(1, 1, 8), (3, 3, 0)])
-def test_save_resonances(resonancesfixture, start, stop, len_resonances):
-    resonances = save_resonances(os.path.join(PROJECT_DIR, 'tests', 'fixtures', 'resonances'),
+def test_load_resonances(resonancesfixture, start, stop, len_resonances):
+    resonances = load_resonances(os.path.join(PROJECT_DIR, 'tests', 'fixtures', 'resonances'),
                                  start, stop)
 
     assert len(resonances) == 1

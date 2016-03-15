@@ -140,10 +140,13 @@ class _BrokenAsteroidMediator:
 
 
 def find(start: int, stop: int, is_current: bool = False, migrate_phases_to_db: bool = False):
-    """Find all possible resonances for all asteroids from start to stop.
+    """Analyze resonances for pointed half-interval of numbers of asteroids. It gets resonances
+    aggregated to asteroids. Computes resonant phase by orbital elements from prepared aei files of
+    three bodies (asteroid and two planets). After this it finds circulations in vector of resonant
+    phases and solves, based in circulations, libration does exists or no.
 
-    :param start:
-    :param stop:
+    :param start: start point of half-interval.
+    :param stop: stop point of half-interval. It will be excluded.
     :param is_current:
     :param migrate_phases_to_db: needs for auto migration from redis to postgres
     :return:

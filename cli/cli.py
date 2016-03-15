@@ -1,15 +1,15 @@
 import logging
 import os
 import click
-from catalog import save_resonances
 from logging.handlers import RotatingFileHandler
+from commands import load_resonances as _load_resonances
 from commands import calc as _calc
 from commands import find as _find
 from commands import plot as _plot
 from commands import package as _package
 from commands import remove_export_directory
-from commands.show_broken_bodies import show_broken_bodies
-from commands.cleaning import clear_phases as _clear_phases
+from commands import show_broken_bodies
+from commands import clear_phases as _clear_phases
 from integrator import set_time_interval
 from storage import extract as _extract
 from settings import Config
@@ -101,7 +101,7 @@ FIND_HELP_PREFIX = 'If true, the application will'
 def load_resonances(start: int, stop: int):
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
-        save_resonances(RESONANCE_FILEPATH, i, end)
+        _load_resonances(RESONANCE_FILEPATH, i, end)
 
 
 @cli.command(
@@ -126,7 +126,7 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
         if reload_resonances:
-            save_resonances(RESONANCE_FILEPATH, i, end)
+            _load_resonances(RESONANCE_FILEPATH, i, end)
         _find(i, end, is_current, migrate_phases)
 
 
