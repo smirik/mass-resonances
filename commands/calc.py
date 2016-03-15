@@ -3,7 +3,7 @@ import os
 
 from settings import Config
 from catalog import find_by_number
-from integrator import SmallBodiesFileBuilder
+from integrator import SmallBodiesFileBuilder, set_time_interval
 from integrator import simple_clean
 from integrator import aei_clean
 from integrator import mercury6
@@ -34,7 +34,8 @@ def _execute_mercury():
         raise e
 
 
-def calc(start: int, stop: int, step: int):
+def calc(start: int, stop: int, step: int, from_day: float, to_day: float):
+    set_time_interval(from_day, to_day)
     aei_clean()
     for i in range(start, stop, step):
         end = i + step if i + step < stop else stop
