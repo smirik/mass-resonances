@@ -10,8 +10,7 @@ from commands import package as _package
 from commands import remove_export_directory
 from commands import show_broken_bodies
 from commands import clear_phases as _clear_phases
-from integrator import set_time_interval
-from storage import extract as _extract
+from commands import extract as _extract
 from settings import Config
 from os.path import join as opjoin
 
@@ -59,7 +58,7 @@ def _build_logging(loglevel: str, logfile: str, message_format: str, time_format
         if not os.path.exists(logpath):
             os.mkdir(logpath)
         path = opjoin(logpath, logfile)
-        loghandler = RotatingFileHandler(path, mode='a', maxBytes=10*1024*1024,
+        loghandler = RotatingFileHandler(path, mode='a', maxBytes=10 * 1024 * 1024,
                                          backupCount=10, encoding=None, delay=0)
         loghandler.setFormatter(logging.Formatter(message_format, time_format))
         loghandler.setLevel(loglevel)
@@ -89,8 +88,7 @@ def cli(loglevel: str = 'DEBUG', logfile: str = None):
                   ' planets, that will be stored in aei files.')
 @_asteroid_time_intervals_options()
 def calc(start: int, stop: int, from_day: float, to_day: float):
-    set_time_interval(from_day, to_day)
-    _calc(start, stop, STEP)
+    _calc(start, stop, STEP, from_day, to_day)
 
 
 FIND_HELP_PREFIX = 'If true, the application will'
@@ -121,8 +119,7 @@ def load_resonances(start: int, stop: int):
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
          recalc: bool, is_current: bool, migrate_phases: bool):
     if recalc:
-        set_time_interval(from_day, to_day)
-        _calc(start, stop, STEP)
+        _calc(start, stop, STEP, from_day, to_day)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
         if reload_resonances:
