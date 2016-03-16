@@ -39,11 +39,13 @@ before_script:
   - alembic -c ./alembic.test.ini upgrade head
 
 script:
+  - python ./main.py --help
   - python ./main.py calc
   - python ./main.py package --res=1 --compress=1 --aei=1
-  - python ./main.py find --reload-resonances=1
+  - python ./main.py load-resonances --start=1 --stop=101
+  - python ./main.py find
   - python ./main.py plot
-  - python ./main.py clear-phases
+  - python ./main.py clear-phases --start=1 --stop=101
   - coverage run --omit='/home/travis/virtualenv/*,./tests/*' -m pytest `find ./tests -name '*.py'`
 
 after_success:
