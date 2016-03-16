@@ -1,6 +1,8 @@
 import glob
 import logging
 
+import sys
+
 import os
 import shutil
 import tarfile
@@ -79,12 +81,10 @@ def package(start: int, stop: int, do_copy_res: bool, do_copy_aei: bool,
         logging_done()
 
     def _copy_output_file(with_extension: str, with_index: int):
-        path = opjoin(PROJECT_DIR, 'output', with_extension, 'A%i.%s' %
+        path = opjoin(PROJECT_DIR, 'output', with_extension, 'A%i*.%s' %
                       (with_index, with_extension))
-        if os.path.exists(path):
-            shutil.copy(path, opjoin(export_dir, with_extension))
-        else:
-            logging.warning('%s not found' % path)
+        for filename in glob.glob(path):
+            shutil.copy(filename, opjoin(export_dir, with_extension))
 
     logging.info('Creating archive directories for asteroids %i—%i' %
                  (start, stop))
@@ -109,20 +109,29 @@ def package(start: int, stop: int, do_copy_res: bool, do_copy_aei: bool,
     _copy_out_files()
 
     if do_copy_res:
-        logging.info('Copy res, gnu and png files...')
+        divider = 2
+        toolbar_width = (stop + 1 - start) // divider
+        sys.stdout.write("Copy res, gnu, png [%s]" % (" " * toolbar_width))
+        sys.stdout.flush()
+        sys.stdout.write("\b" * (toolbar_width + 1))
 
         for i in range(start, stop):
             _copy_output_file('res', i)
             _copy_output_file('gnu', i)
             _copy_output_file('png', i)
-            logging_done()
+
+            if i % divider == 0:
+                sys.stdout.write("#")
+                sys.stdout.flush()
+        sys.stdout.write("\n")
 
     if do_gzip:
         logging.info('Archive files...')
         archive_name = 'integration%i-%i.tar.gz' % (start, stop)
         directory_name = '%i-%i' % (start, stop)
-        with tarfile.open(opjoin(EXPORT_BASE_DIR, archive_name), 'w:gz') as tarf:
+        tafile_path = opjoin(EXPORT_BASE_DIR, archive_name)
+        with tarfile.open(tafile_path, 'w:gz') as tarf:
             tarf.add(opjoin(EXPORT_BASE_DIR, directory_name))
-        logging_done()
+        logging.info('Your %s is ready' % tafile_path)
 
     return True
