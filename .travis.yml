@@ -44,7 +44,6 @@ script:
   - python ./main.py find --reload-resonances=1
   - python ./main.py plot
   - python ./main.py clear-phases
-  - cat ./export/full.db | wc -l
   - coverage run --omit='/home/travis/virtualenv/*,./tests/*' -m pytest `find ./tests -name '*.py'`
 
 after_success:
