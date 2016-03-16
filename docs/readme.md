@@ -1,4 +1,4 @@
-# Architecture of the application.
+# Architecture of the application
 Application has 9 modules.
 
 * CLI — makes interface for user it calls scenarios from Commands module.
@@ -13,13 +13,13 @@ Application has 9 modules.
 
 ![Package diagram](https://raw.githubusercontent.com/4xxi/resonances/feature/documentation/docs/package.jpeg)
 
-## Running tests and coverage
+# Running tests and coverage
 For running tests you need [pytest](http://pytest.org/latest/) and [coverage](https://github.com/nedbat/coveragepy)
 
 * Run tests `coverage run --omit='./.venv/*,./tests/*' -m pytest -vv ./tests/**/*.py -s`
 * Get report `coverage report`
 
-## Database relational model.
+# Database relational model
 ![Relational model](https://raw.githubusercontent.com/4xxi/resonances/feature/documentation/docs/db.jpg)
 
 * planet — table contains integers, satisfying D'Alambert rule for longitude and perihellion
