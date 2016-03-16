@@ -16,7 +16,6 @@ from entities.dbutills import session
 from os.path import join as opjoin
 from settings import Config
 from sqlalchemy import exists
-from storage import ResonanceDatabase
 
 PROJECT_DIR = Config.get_project_dir()
 CONFIG = Config.get_params()
@@ -71,7 +70,6 @@ class _LibrationClassifier:
     def __init__(self, get_from_db):
         self._get_from_db = get_from_db
         self._libration_director = LibrationDirector()
-        self._rdb = ResonanceDatabase(CONFIG['resonance']['db_file'])
         self._resonance = None  # type: ThreeBodyResonance
         self._resonance_str = None  # type: str
         self._asteroid_num = None   # type: int
@@ -106,11 +104,9 @@ class _LibrationClassifier:
         try:
             if _save_as_transient(self._libration, self._resonance, self._asteroid_num,
                                   self._resonance_str):
-                self._rdb.add_string(self._libration.as_transient())
                 return True
             elif not self._libration.is_apocentric:
                 logging.info('A%i, pure resonance %s', self._asteroid_num, self._resonance_str)
-                self._rdb.add_string(self._libration.as_pure())
                 return True
             raise _NoTransientException()
         except _NoTransientException:
@@ -119,7 +115,6 @@ class _LibrationClassifier:
                 self._libration = self._libration_director.build(builder)
 
             if self._libration.is_pure:
-                self._rdb.add_string(self._libration.as_pure_apocentric())
                 logging.info('A%i, pure apocentric resonance %s', self._asteroid_num,
                              self._resonance_str)
                 return True

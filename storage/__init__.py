@@ -1,1 +1,0 @@
-from .resonancedatabase import ResonanceDatabase
