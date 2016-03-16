@@ -13,8 +13,7 @@ class Phase(Base):
                              backref=backref('phases'))
     year = sa.Column(sa.Float, nullable=False)
     value = sa.Column(sa.Float, nullable=False)
-    is_for_apocentric = sa.Column(sa.Boolean, nullable=False)
 
     __table_args__ = (sa.UniqueConstraint(
-        'resonance_id', 'year', 'is_for_apocentric', name='uc_time_resonance_id'
+        'resonance_id', 'year', name='uc_time_resonance_id'
     ),)
