@@ -11,7 +11,7 @@ Application has 9 modules.
 * Entities — module contains representations and utilities for working with database and Redis.
 * Settings — collect settings for running the application and unit tests.
 
-![Package diagram](https://raw.githubusercontent.com/4xxi/resonances/feature/documentation/docs/package.jpeg)
+![Package diagram](https://raw.githubusercontent.com/4xxi/resonances/develop/docs/package.jpeg)
 
 # Running tests and coverage
 For running tests you need [pytest](http://pytest.org/latest/) and [coverage](https://github.com/nedbat/coveragepy)
@@ -20,7 +20,7 @@ For running tests you need [pytest](http://pytest.org/latest/) and [coverage](ht
 * Get report `coverage report`
 
 # Database relational model
-![Relational model](https://raw.githubusercontent.com/4xxi/resonances/feature/documentation/docs/db.jpg)
+![Relational model](https://raw.githubusercontent.com/4xxi/resonances/develop/docs/db.jpg)
 
 * planet — table contains integers, satisfying D'Alambert rule for longitude and perihellion
 longitude, name of planet
