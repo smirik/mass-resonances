@@ -2,19 +2,17 @@ import json
 import os
 from math import pi
 
+from datamining import PhaseLoader, PhaseStorage
 from os.path import join as opjoin
 from typing import List
 
 from datamining import get_aggregated_resonances
 from datamining import ComputedOrbitalElementSetFacade
 from datamining import build_bigbody_elements
-from entities import Phase
-from entities.dbutills import REDIS, engine
 from settings import Config
 from shortcuts import cutoff_angle
 from view import make_plot
 
-TABLENAME = Phase.__tablename__
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
@@ -25,7 +23,7 @@ OUTPUT_IMAGES = opjoin(PROJECT_DIR, CONFIG['output']['images'])
 OUTPUT_GNU_PATH = opjoin(PROJECT_DIR, CONFIG['output']['gnuplot'])
 
 
-def plot(start: int, stop: int, from_db: bool):
+def plot(start: int, stop: int, phase_storage: PhaseStorage):
     resmaker = _ResfileMaker()
 
     if not os.path.exists(OUTPUT_IMAGES):
@@ -34,8 +32,9 @@ def plot(start: int, stop: int, from_db: bool):
     if not os.path.exists(OUTPUT_GNU_PATH):
         os.makedirs(OUTPUT_GNU_PATH)
 
+    phase_loader = PhaseLoader(phase_storage)
     for resonance, aei_data in get_aggregated_resonances(start, stop):
-        phases = _get_phases(resonance.id, from_db)
+        phases = phase_loader.load(resonance.id)
         apocentric_phases = [cutoff_angle(x + pi) for x in phases]
         res_filepath = opjoin(OUTPUT_RES_PATH, 'A%i.res' % resonance.asteroid_number)
         gnu_filepath = opjoin(OUTPUT_GNU_PATH, 'A%i.gnu' % resonance.asteroid_number)
@@ -63,15 +62,3 @@ class _ResfileMaker:
         orbital_elem_set.write_to_resfile(filepath, by_aei_data)
 
 
-def _get_phases(resonance_id: int, from_db: bool) -> List[float]:
-    if from_db:
-        conn = engine.connect()
-        result = conn.execute('SELECT value FROM %s WHERE resonance_id=%i' %
-                              (TABLENAME, resonance_id))
-        phases = [x['value'] for x in result]
-    else:
-        phases = [
-            json.loads(x.decode('utf-8').replace('\'', '"'))['value']
-            for x in REDIS.lrange('%s:%i' % (TABLENAME, resonance_id), 0, -1)
-        ]
-    return phases

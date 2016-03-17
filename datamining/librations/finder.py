@@ -1,18 +1,16 @@
-import json
 import math
 from typing import List
 
-from entities import Phase
-from entities.dbutills import REDIS
 from shortcuts import cutoff_angle
 
 
 class CirculationYearsFinder:
-    def __init__(self, resonance_id: int, is_for_apocentric: bool):
+    def __init__(self, resonance_id: int, is_for_apocentric: bool, in_serialized_phases):
+        self._in_serialized_phases = in_serialized_phases
         self._is_for_apocentric = is_for_apocentric
         self._resonance_id = resonance_id
 
-    def get_years(self) -> List[float]:
+    def get_time_breaks(self) -> List[float]:
         """Find circulations in file.
         """
         result_breaks = []  # circulation breaks by OX
@@ -20,13 +18,11 @@ class CirculationYearsFinder:
         previous_resonant_phase = None
         prev_year = None
 
-        phases = REDIS.lrange('%s:%i' % (Phase.__tablename__, self._resonance_id), 0, -1)
-        if not phases:
+        if not self._in_serialized_phases:
             raise NoPhaseException('no resonant phases for resonance_id: %i' %
                                    self._resonance_id)
 
-        for phase in phases:  # type: bytes
-            phase = json.loads(phase.decode('utf-8').replace('\'', '"'))  # Dict[str, float]
+        for phase in self._in_serialized_phases:
             # If the distance (OY axis) between new point and previous morf
             # than PI then there is a break (circulation)
             if self._is_for_apocentric:

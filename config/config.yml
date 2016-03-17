@@ -38,6 +38,8 @@ resonance:
     - 5
     - 6
 
+phases_dir: 'phases_dir'
+
 output:
   angle:   output/res
   gnuplot: output/gnu

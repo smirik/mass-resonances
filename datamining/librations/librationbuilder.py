@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 from abc import abstractmethod
 from settings import Config
 from .finder import CirculationYearsFinder
@@ -13,13 +15,15 @@ OUTPUT_ANGLE = CONFIG['output']['angle']
 
 class _AbstractLibrationBuilder:
     def __init__(self, libration_resonance: ThreeBodyResonance,
-                 orbital_elem_set: IOrbitalElementSetFacade):
+                 orbital_elem_set: IOrbitalElementSetFacade,
+                 serialized_phases: List[Dict[str, float]]):
+        self._serialized_phases = serialized_phases
         self._orbital_elem_set = orbital_elem_set
         self._resonance = libration_resonance
 
     def build(self) -> Libration:
         finder = self._get_finder()
-        years = finder.get_years()
+        years = finder.get_time_breaks()
         return Libration(self._resonance, years, X_STOP, self.is_apocetric())
 
     @abstractmethod
@@ -33,7 +37,8 @@ class _AbstractLibrationBuilder:
 
 class TransientBuilder(_AbstractLibrationBuilder):
     def _get_finder(self) -> CirculationYearsFinder:
-        transient_finder = CirculationYearsFinder(self._resonance.id, self.is_apocetric())
+        transient_finder = CirculationYearsFinder(self._resonance.id, self.is_apocetric(),
+                                                  self._serialized_phases)
         return transient_finder
 
     def is_apocetric(self) -> bool:
@@ -42,7 +47,8 @@ class TransientBuilder(_AbstractLibrationBuilder):
 
 class ApocentricBuilder(_AbstractLibrationBuilder):
     def _get_finder(self) -> CirculationYearsFinder:
-        apocentric_finder = CirculationYearsFinder(self._resonance.id, self.is_apocetric())
+        apocentric_finder = CirculationYearsFinder(self._resonance.id, self.is_apocetric(),
+                                                   self._serialized_phases)
         return apocentric_finder
 
     def is_apocetric(self) -> bool:
