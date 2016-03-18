@@ -1,4 +1,4 @@
-from datamining.resonances import get_resonances
+from datamining import get_resonances
 from entities import Phase
 from entities.dbutills import engine, REDIS
 

@@ -5,6 +5,7 @@ from logging.handlers import RotatingFileHandler
 from commands import load_resonances as _load_resonances
 from commands import calc as _calc
 from commands import find as _find
+from commands import PhaseStorage
 from commands import plot as _plot
 from commands import package as _package
 from commands import remove_export_directory
@@ -15,6 +16,7 @@ from settings import Config
 from os.path import join as opjoin
 
 LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+PHASE_STORAGE = ['REDIS', 'DB', 'FILE']
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -116,26 +118,26 @@ def load_resonances(start: int, stop: int):
 @click.option('--is-current', default=False, type=bool,
               help='%s librations only from database, it won\'t compute them from phases' %
                    FIND_HELP_PREFIX)
-@click.option('--migrate-phases', default=False, type=bool,
-              help='will loads phases to postgres from redis')
+@click.option('--phase-storage', default='REDIS', type=click.Choice(PHASE_STORAGE),
+              help='will save phases to redis or postgres or file')
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
-         recalc: bool, is_current: bool, migrate_phases: bool):
+         recalc: bool, is_current: bool, phase_storage: str):
     if recalc:
         _calc(start, stop, STEP, from_day, to_day)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
         if reload_resonances:
             _load_resonances(RESONANCE_FILEPATH, i, end)
-        _find(i, end, is_current, migrate_phases)
+        _find(i, end, is_current, PhaseStorage(PHASE_STORAGE.index(phase_storage)))
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
                   ' Libration can be created by command \'find\'.')
 @_asteroid_interval_options()
-@click.option('--from-db', default=False, type=bool,
-              help='If true, applicatioin will loads resonant phases from database instead redis.')
-def plot(start: int, stop: int, from_db: bool):
-    _plot(start, stop, from_db)
+@click.option('--phase-storage', default='REDIS', type=click.Choice(PHASE_STORAGE),
+              help='will load phases for plotting from redis or postgres or file')
+def plot(start: int, stop: int, phase_storage: str):
+    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)))
 
 
 @cli.command(name='clear-phases', help='Clears phases from database and Redis, which related to '

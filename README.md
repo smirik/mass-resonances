@@ -128,39 +128,45 @@ Options:
   option is true.
 
 Options:
-  --start INTEGER              Start asteroid number. Counting from 1.
-  --stop INTEGER               Stop asteroid number. Excepts last. Means, that
-                               asteroid with number, that equals this
-                               parameter, will not be integrated.
-  --from-day FLOAT             This parameter will be passed to param.in file
-                               for integrator Mercury6 as start time pointed
-                               in days.
-  --to-day FLOAT               This parameter will be passed to param.in file
-                               for integrator Mercury6 as stop time pointed in
-                               days.
-  --recalc BOOLEAN             If true, the application will invoke calc
-                               method before
-  --is-current BOOLEAN         If true, the application will librations only
-                               from database, it won't compute them from
-                               phases
-  --migrate-phases BOOLEAN     will loads phases to postgres from redis
-  --help                       Show this message and exit.
+  --start INTEGER                 Start asteroid number. Counting from 1.
+  --stop INTEGER                  Stop asteroid number. Excepts last. Means,
+                                  that asteroid with number, that equals this
+                                  parameter, will not be integrated.
+  --from-day FLOAT                This parameter will be passed to param.in
+                                  file for integrator Mercury6 as start time
+                                  pointed in days.
+  --to-day FLOAT                  This parameter will be passed to param.in
+                                  file for integrator Mercury6 as stop time
+                                  pointed in days.
+  --reload-resonances BOOLEAN     If true, the application will load integers,
+                                  satisfying D'Alamebrt rule, from /media/stor
+                                  age/develop/resonances/axis/resonances.
+  --recalc BOOLEAN                If true, the application will invoke calc
+                                  method before
+  --is-current BOOLEAN            If true, the application will librations
+                                  only from database, it won't compute them
+                                  from phases
+  --phase-storage [REDIS|DB|FILE]
+                                  will save phases to redis or postgres or
+                                  file
+  --help                          Show this message and exit.
 ```
   
 **Usage: main.py plot [OPTIONS]**
 
 ```
-Build graphics for asteroids in pointed interval, that have libration.
+  Build graphics for asteroids in pointed interval, that have libration.
   Libration can be created by command 'find'.
 
 Options:
-  --start INTEGER    Start asteroid number. Counting from 1.
-  --stop INTEGER     Stop asteroid number. Excepts last. Means, that asteroid
-                     with number, that equals this parameter, will not be
-                     integrated.
-  --from-db BOOLEAN  If true, applicatioin will loads resonant phases from
-                     database instead redis.
-  --help             Show this message and exit.
+  --start INTEGER                 Start asteroid number. Counting from 1.
+  --stop INTEGER                  Stop asteroid number. Excepts last. Means,
+                                  that asteroid with number, that equals this
+                                  parameter, will not be integrated.
+  --phase-storage [REDIS|DB|FILE]
+                                  will load phases for plotting from redis or
+                                  postgres or file
+  --help                          Show this message and exit.
 ```
 
 **Usage: main.py load-resonances [OPTIONS]**
