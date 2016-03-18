@@ -8,6 +8,11 @@ from entities.dbutills import session
 from entities import Phase
 from enum import Enum
 from enum import unique
+from settings import Config
+
+PROJECT_DIR = Config.get_project_dir()
+CONFIG = Config.get_params()
+PHASE_DIR = CONFIG['phases_dir']
 
 TABLENAME = Phase.__tablename__
 
@@ -30,7 +35,7 @@ class PhaseCleaner:
             conn = engine.connect()
             conn.execute("DELETE FROM %s WHERE resonance_id = %s;" % (TABLENAME, for_resonance_id))
         elif self._phase_storage == PhaseStorage.file:
-            os.remove(_get_file_name(for_resonance_id))
+            os.remove(get_file_name(for_resonance_id))
 
 
 class PhaseLoader:
@@ -50,7 +55,7 @@ class PhaseLoader:
                                   (TABLENAME, resonance_id))
             phases = [x['value'] for x in result]
         elif self._phase_storage == PhaseStorage.file:
-            with open(_get_file_name(resonance_id)) as f:
+            with open(get_file_name(resonance_id)) as f:
                 phases = [json.loads(x.replace('\'', '"'))['value'] for x in f]
         return phases
 
@@ -70,13 +75,13 @@ class PhaseBuilder:
         elif self._phase_storage == PhaseStorage.db:
             _save_db(serialized_phases, resonance_id)
         elif self._phase_storage == PhaseStorage.file:
-            _save_file(serialized_phases, _get_file_name(resonance_id))
+            _save_file(serialized_phases, get_file_name(resonance_id))
 
         return serialized_phases
 
 
-def _get_file_name(for_resonance_id: int) -> str:
-    return '%s:%i.rphs' % (TABLENAME, for_resonance_id)
+def get_file_name(for_resonance_id: int) -> str:
+    return os.path.join(PROJECT_DIR, PHASE_DIR, '%s:%i.rphs' % (TABLENAME, for_resonance_id))
 
 
 def _get_rediskey_name(for_resonance_id: int) -> str:
@@ -95,11 +100,13 @@ def _save_db(serialized_phases: List[Dict[str, float]], for_resonance_id: int):
         Phase(resonance_id=for_resonance_id, year=x['year'], value=x['value'],
               is_for_apocentric=False)
         for x in serialized_phases
-        ]
+    ]
     session.bulk_save_objects(objs)
 
 
 def _save_file(serialized_phases: List[Dict[str, float]], filename: str):
+    if not os.path.exists(os.path.dirname(filename)):
+        os.mkdir(os.path.dirname(filename))
     with open(filename, 'w') as f:
         for i, phase in enumerate(serialized_phases):
             if i > 0:
