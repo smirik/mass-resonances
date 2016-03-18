@@ -64,6 +64,9 @@ def test_find_resonances(resonancesfixture, start, stop, resonances_str,
         def join(self, *args, **kwargs):
             return self
 
+        def options(self, *args, **kwargs):
+            return self
+
         def all(self):
             res = []
             for i, resonance_str in enumerate(resonances_str):
@@ -75,7 +78,7 @@ def test_find_resonances(resonancesfixture, start, stop, resonances_str,
 
     monkeypatch.setattr(session, 'query', query)
     if not resonances_str:
-        assert [x for x in get_aggregated_resonances(start, stop)] == []
+        assert [x for x in get_aggregated_resonances(start, stop, False)] == []
     else:
-        for i, (resonance, aei_data) in enumerate(get_aggregated_resonances(start, stop)):
+        for i, (resonance, aei_data) in enumerate(get_aggregated_resonances(start, stop, False)):
             assert str(resonance) == resonances_str[i]

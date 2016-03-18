@@ -5,25 +5,28 @@ from entities.body import Asteroid
 from entities.dbutills import session
 from os.path import join as opjoin
 from settings import Config
+from sqlalchemy.orm import joinedload
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 
 
-def get_resonances(start: int, stop: int) -> Iterable[ThreeBodyResonance]:
+def get_resonances(start: int, stop: int, only_librations: bool) -> Iterable[ThreeBodyResonance]:
     """
     Returns resonances related to asteroid in pointer interval from start to stop.
     :param start: start of interval of asteroid numbers.
     :param stop: finish of interval of asteroid numbers.
+    :param only_librations: flag indicates about getting resonances, that has related librations.
     :return:
     """
     names = ['A%i' % x for x in range(start, stop)]
-    resonances = session.query(ThreeBodyResonance).join(ThreeBodyResonance.small_body) \
-        .filter(Asteroid.name.in_(names)).all()
-
-    resonances = [x for x in resonances]
-    resonances = sorted(resonances, key=lambda x: x.asteroid_number)
+    resonances = session.query(ThreeBodyResonance)\
+        .options(joinedload('small_body')).join(ThreeBodyResonance.small_body)\
+        .filter(Asteroid.name.in_(names))
+    if only_librations:
+        resonances = resonances.options(joinedload('libration')).join('libration')
+    resonances = sorted(resonances.all(), key=lambda x: x.asteroid_number)
 
     if not resonances:
         logging.info('We have no resonances, try command load-resonances --start=%i --stop=%i'
@@ -33,13 +36,14 @@ def get_resonances(start: int, stop: int) -> Iterable[ThreeBodyResonance]:
         yield resonance
 
 
-def get_aggregated_resonances(from_asteroid: int, to_asteroid: int)\
+def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librations: bool)\
         -> Iterable[Tuple[ThreeBodyResonance, List[str]]]:
     """Find resonances from /axis/resonances by asteroid axis. Currently
     described by 7 items list of floats. 6 is integers satisfying
     D'Alembert rule. First 3 for longitutes, and second 3 for longitutes
     perihilion. Seventh value is asteroid axis.
 
+    :param only_librations: flag indicates about getting resonances, that has related librations.
     :param to_asteroid:
     :param from_asteroid:
     :return:
@@ -63,7 +67,7 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int)\
             return self._aei_data
 
     aei_getter = _DataGetter()
-    for resonance in get_resonances(from_asteroid, to_asteroid):
+    for resonance in get_resonances(from_asteroid, to_asteroid, only_librations):
         aei_data = aei_getter.get_aei_data(resonance.asteroid_number)
         assert len(aei_data) > 0
         yield resonance, aei_data

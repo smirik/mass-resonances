@@ -14,3 +14,7 @@ alembic.ini
 axis
 export
 output
+local_config.yml
+*.lprof
+logs
+catalog/*.cat
