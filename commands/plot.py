@@ -23,7 +23,7 @@ OUTPUT_IMAGES = opjoin(PROJECT_DIR, CONFIG['output']['images'])
 OUTPUT_GNU_PATH = opjoin(PROJECT_DIR, CONFIG['output']['gnuplot'])
 
 
-def plot(start: int, stop: int, phase_storage: PhaseStorage):
+def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: bool):
     resmaker = _ResfileMaker()
 
     if not os.path.exists(OUTPUT_IMAGES):
@@ -33,7 +33,7 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage):
         os.makedirs(OUTPUT_GNU_PATH)
 
     phase_loader = PhaseLoader(phase_storage)
-    for resonance, aei_data in get_aggregated_resonances(start, stop):
+    for resonance, aei_data in get_aggregated_resonances(start, stop, for_librations):
         phases = phase_loader.load(resonance.id)
         apocentric_phases = [cutoff_angle(x + pi) for x in phases]
         res_filepath = opjoin(OUTPUT_RES_PATH, 'A%i.res' % resonance.asteroid_number)

@@ -11,7 +11,7 @@ TABLENAME = Phase.__tablename__
 def clear_phases(start: int, stop: int):
     conn = engine.connect()
     resonance_ids = []
-    for resonance in get_resonances(start, stop):
+    for resonance in get_resonances(start, stop, False):
         REDIS.delete('%s:%i' % (TABLENAME, resonance.id))
         resonance_ids.append(str(resonance.id))
 

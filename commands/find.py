@@ -54,7 +54,7 @@ def find(start: int, stop: int, is_current: bool = False,
     phase_builder = PhaseBuilder(phase_storage)
     phase_cleaner = PhaseCleaner(phase_storage)
 
-    for resonance, aei_data in get_aggregated_resonances(start, stop):
+    for resonance, aei_data in get_aggregated_resonances(start, stop, False):
         broken_asteroid_mediator = _BrokenAsteroidMediator(resonance.small_body.name)
         if broken_asteroid_mediator.check():
             continue

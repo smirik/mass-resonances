@@ -136,8 +136,10 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
 @_asteroid_interval_options()
 @click.option('--phase-storage', default='REDIS', type=click.Choice(PHASE_STORAGE),
               help='will load phases for plotting from redis or postgres or file')
-def plot(start: int, stop: int, phase_storage: str):
-    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)))
+@click.option('--only-librations', default=False, type=bool,
+              help='flag indicates about plotting only for resonances, that librates')
+def plot(start: int, stop: int, phase_storage: str, only_librations: bool):
+    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations)
 
 
 @cli.command(name='clear-phases', help='Clears phases from database and Redis, which related to '
