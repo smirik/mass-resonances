@@ -35,7 +35,9 @@ class PhaseCleaner:
             conn = engine.connect()
             conn.execute("DELETE FROM %s WHERE resonance_id = %s;" % (TABLENAME, for_resonance_id))
         elif self._phase_storage == PhaseStorage.file:
-            os.remove(get_file_name(for_resonance_id))
+            filepath = get_file_name(for_resonance_id)
+            if os.path.exists(filepath):
+                os.remove(filepath)
 
 
 class PhaseLoader:
