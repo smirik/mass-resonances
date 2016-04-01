@@ -4,7 +4,6 @@ from typing import List
 
 import os
 from entities import ThreeBodyResonance, build_resonance
-from entities.dbutills import session
 from settings import Config
 
 CONFIG = Config.get_params()
@@ -63,7 +62,6 @@ def build_possible_resonances(from_filepath: str, for_asteroid_num: int) \
                       from_filepath)
         sys.exit(1)
 
-    session.commit()
     return res
 
 

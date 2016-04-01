@@ -14,7 +14,7 @@ Technical documentation is in docs directory.
 `sqlalchemy.url` in section `[alembic]`
 
 # Requirements
-* postgresql 9.4
+* postgresql 9.5
 * python 3.5
 * pip 7.1.2
 * gfortran

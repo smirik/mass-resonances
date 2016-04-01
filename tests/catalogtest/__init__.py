@@ -8,9 +8,9 @@ import os
 from entities.dbutills import session
 from settings import Config
 from entities import ThreeBodyResonance
-from sqlalchemy import delete
 from datamining import get_aggregated_resonances
 from tests.shortcuts import get_class_path
+from tests.shortcuts import resonancesfixture
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -25,23 +25,6 @@ PROJECT_DIR = Config.get_project_dir()
                                0.11])])
 def test_find_by_number(number: int, catalog_values: List[float]):
     assert find_by_number(number) == catalog_values
-
-
-@pytest.fixture()
-def resonancesfixture(request):
-    def tear_down():
-        return delete(ThreeBodyResonance.__tablename__)
-
-    request.addfinalizer(tear_down)
-
-
-@pytest.mark.parametrize('start, stop, len_resonances', [(1, 1, 8), (3, 3, 0)])
-def test_load_resonances(resonancesfixture, start, stop, len_resonances):
-    resonances = load_resonances(os.path.join(PROJECT_DIR, 'tests', 'fixtures', 'resonances'),
-                                 start, stop)
-
-    assert len(resonances) == 1
-    assert len(resonances[start]) == len_resonances
 
 
 def _resonance_mock(resonance_str, asteroid_number):
