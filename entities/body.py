@@ -34,3 +34,9 @@ class BrokenAsteroid(Base):
     __tablename__ = 'broken_asteroid'
     __table_args__ = (UniqueConstraint('name'),)
     name = Column(String(255), nullable=False)
+
+
+class PlanetName(Base):
+    __tablename__ = 'planet_name'
+    __table_args__ = (UniqueConstraint('name'),)
+    name = Column(String(255), nullable=False)

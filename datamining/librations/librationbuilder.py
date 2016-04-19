@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 from abc import abstractmethod
+from entities.body import PlanetName
 from settings import Config
 from .finder import CirculationYearsFinder
 from entities import Libration
@@ -21,10 +22,10 @@ class _AbstractLibrationBuilder:
         self._orbital_elem_set = orbital_elem_set
         self._resonance = libration_resonance
 
-    def build(self) -> Libration:
+    def build(self, bodyname1: PlanetName, bodyname2: PlanetName) -> Libration:
         finder = self._get_finder()
         years = finder.get_time_breaks()
-        return Libration(self._resonance, years, X_STOP, self.is_apocetric())
+        return Libration(self._resonance, years, X_STOP, self.is_apocetric(), bodyname1, bodyname2)
 
     @abstractmethod
     def _get_finder(self) -> CirculationYearsFinder:
@@ -56,6 +57,10 @@ class ApocentricBuilder(_AbstractLibrationBuilder):
 
 
 class LibrationDirector:
-    def build(self, builder: _AbstractLibrationBuilder):
-        libration = builder.build()
+    def __init__(self, bodyname1: PlanetName, bodyname2: PlanetName):
+        self._body2 = bodyname2
+        self._body1 = bodyname1
+
+    def build(self, builder: _AbstractLibrationBuilder) -> Libration:
+        libration = builder.build(self._body1, self._body2)
         return libration

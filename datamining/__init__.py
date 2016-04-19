@@ -10,6 +10,7 @@ from .orbitalelements import OrbitalElementSet
 from .librations import ApocentricBuilder
 from .librations import TransientBuilder
 from .librations import LibrationDirector
+from .librations import LibrationClassifier
 
 from .resonances import get_aggregated_resonances
 from .resonances import get_resonances
