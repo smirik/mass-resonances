@@ -1,6 +1,8 @@
 import warnings
 from typing import Dict
 from typing import List
+
+from settings import Config
 from sqlalchemy import exc as sa_exc
 from entities.body import LONG
 from entities.body import PERI
@@ -30,6 +32,9 @@ from sqlalchemy.sql.expression import Executable, ClauseElement
 _conflict_action = None
 _planet_table = Planet.__table__  # type: Table
 _asteroid_table = Asteroid.__table__  # type: Table
+CONFIG = Config.get_params()
+BODY1 = CONFIG['resonance']['bodies'][0]
+BODY2 = CONFIG['resonance']['bodies'][1]
 
 
 def _get_conflict_action():

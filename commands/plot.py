@@ -1,4 +1,3 @@
-import json
 import os
 from math import pi
 
@@ -60,5 +59,3 @@ class _ResfileMaker:
         orbital_elem_set = ComputedOrbitalElementSetFacade(
             self._firstbody_elements, self._secondbody_elements, with_phases)
         orbital_elem_set.write_to_resfile(filepath, by_aei_data)
-
-

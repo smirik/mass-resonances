@@ -20,8 +20,7 @@ MORE_PHASES = [
 
 RESONANCE_ID = 1
 
-
-@pytest.mark.parametrize('phase_arguments, result_years, for_apocentric', [
+VALUES = [
     ([], None, False),
     ([{'year': 0.0, 'value': 1.32}], [], False),
     (PHASES, [PHASES[2]['year']], False),
@@ -35,7 +34,11 @@ RESONANCE_ID = 1
     (PHASES + [MORE_PHASES[0]], [PHASES[0]['year']], True),
     (PHASES + MORE_PHASES, [MORE_PHASES[0]['year']], True),
     (PHASES + [{'year': 12.0, 'value': 0.01}], [PHASES[0]['year'], PHASES[3]['year']], True),
-])
+]
+
+
+@pytest.mark.parametrize('phase_arguments, result_years, for_apocentric', VALUES,
+                         ids=VALUES)
 @mock.patch('entities.Phase')
 def test_getting_years(Phase, phase_arguments: List[Dict],
                        result_years: List[float], for_apocentric: bool):
