@@ -1,15 +1,18 @@
 import logging
 from typing import Iterable, Tuple, List
-from entities import ThreeBodyResonance
-from entities.body import Asteroid
+from entities import ThreeBodyResonance, Libration
+from entities.body import Asteroid, PlanetName
 from entities.dbutills import session
 from os.path import join as opjoin
 from settings import Config
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, aliased
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
+
+BODY1 = CONFIG['resonance']['bodies'][0]
+BODY2 = CONFIG['resonance']['bodies'][1]
 
 
 def get_resonances(start: int, stop: int, only_librations: bool) -> Iterable[ThreeBodyResonance]:
@@ -17,7 +20,8 @@ def get_resonances(start: int, stop: int, only_librations: bool) -> Iterable[Thr
     Returns resonances related to asteroid in pointer interval from start to stop.
     :param start: start of interval of asteroid numbers.
     :param stop: finish of interval of asteroid numbers.
-    :param only_librations: flag indicates about getting resonances, that has related librations.
+    :param only_librations: flag indicates about getting resonances, that has related librations
+    with pointed planets in settings.
     :return:
     """
     names = ['A%i' % x for x in range(start, stop)]
@@ -26,7 +30,12 @@ def get_resonances(start: int, stop: int, only_librations: bool) -> Iterable[Thr
         .options(joinedload('first_body')).options(joinedload('second_body')) \
         .filter(Asteroid.name.in_(names)).options(joinedload('librations'))
     if only_librations:
-        resonances = resonances.options(joinedload('libration')).join('libration')
+        t1 = aliased(PlanetName)
+        t2 = aliased(PlanetName)
+        resonances = resonances.join('librations')\
+            .join(t1, Libration.first_planet_name_id == t1.id)\
+            .join(t2, Libration.second_planet_name_id == t2.id)\
+            .filter(t1.name == BODY1, t2.name == BODY2)
     resonances = sorted(resonances.all(), key=lambda x: x.asteroid_number)
 
     if not resonances:
