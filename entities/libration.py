@@ -33,8 +33,10 @@ class Libration(Base):
     _percentage = Column('percentage', Float)
     _circulation_breaks = Column('circulation_breaks', ARRAY(Float), nullable=False)
     _is_apocentric = Column('is_apocentric', Boolean, nullable=False)
+
     _first_planet_name_id = Column('first_planet_name_id', Integer, ForeignKey('planet_name.id'),
                                    nullable=False)
+
     first_planet_name = relationship(PlanetName, backref=backref('librations', uselist=True),
                                      foreign_keys=_first_planet_name_id)
     _second_planet_name_id = Column('second_planet_name_id', Integer, ForeignKey('planet_name.id'),
@@ -151,3 +153,12 @@ class Libration(Base):
     def as_pure_apocentric(self) -> str:
         return '%s;%s;%i' % (self.asteroid_number, str(self._resonance),
                              self.APOCENTRIC_PURE_ID)
+
+    @hybrid_property
+    def first_planet_name_id(self):
+        return self._first_planet_name_id
+
+    @hybrid_property
+    def second_planet_name_id(self):
+        return self._second_planet_name_id
+
