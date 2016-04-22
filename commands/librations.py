@@ -11,17 +11,19 @@ def show_librations():
     ).join(ThreeBodyResonance).join()
 
     table = Texttable(max_width=120)
-    table.set_cols_width([10, 10, 10, 30, 15])
+    table.set_cols_width([10, 10, 10, 30, 15, 10])
     table.add_row(['First planet',
                    'Second second',
                    'Asteroid',
                    'Integers and semi major axis of asteroid',
-                   'apocentric'])
+                   'apocentric',
+                   'pure'])
     for libration in librations:
         table.add_row([libration.first_planet_name,
                        libration.second_planet_name,
                        libration.resonance.small_body.name,
                        libration.resonance,
-                       '%sapocentric' % 'not ' if not libration.is_apocentric else '', ])
+                       '%sapocentric' % ('not ' if not libration.is_apocentric else ''),
+                       '%spure' % ('not ' if not libration.is_pure else '')])
 
     print(table.draw())
