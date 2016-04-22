@@ -26,7 +26,8 @@ class _ParamBridge:
                 except Exception as e:
                     raise e
 
-            self._params = self._merge(local_params, self._params)
+            if local_params:
+                self._params = self._merge(local_params, self._params)
 
     def _merge(self, source: Dict, destination: Dict) -> Dict:
         for key, value in source.items():
