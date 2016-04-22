@@ -40,3 +40,6 @@ class PlanetName(Base):
     __tablename__ = 'planet_name'
     __table_args__ = (UniqueConstraint('name'),)
     name = Column(String(255), nullable=False)
+
+    def __str__(self):
+        return self.name
