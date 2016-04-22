@@ -11,6 +11,7 @@ from commands import package as _package
 from commands import remove_export_directory
 from commands import show_broken_bodies
 from commands import clear_phases as _clear_phases
+from commands import show_librations as _show_librations
 from commands import extract as _extract
 from settings import Config
 from os.path import join as opjoin
@@ -175,3 +176,8 @@ def package(start: int, stop: int, res: bool, aei: bool, compress: bool):
              name='broken-bodies')
 def broken_bodies():
     show_broken_bodies()
+
+
+@cli.command(help='Shows librations')
+def librations():
+    _show_librations()
