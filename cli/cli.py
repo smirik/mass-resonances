@@ -101,10 +101,15 @@ FIND_HELP_PREFIX = 'If true, the application will'
                   RESONANCE_FILEPATH + 'resonances, that related to asteroid from catalog by' +
                   ' comparing axis from this file and catalog', name='load-resonances')
 @_asteroid_interval_options()
-def load_resonances(start: int, stop: int):
+@click.option('--file', default=RESONANCE_FILEPATH,
+              help='Name of file in axis directory with resonances default: %s' % RESONANCE_FILEPATH,
+              type=str)
+def load_resonances(start: int, stop: int, file: str):
+    if not os.path.isabs(file):
+        file = os.path.normpath(opjoin(os.getcwd(), file))
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
-        _load_resonances(RESONANCE_FILEPATH, i, end)
+        _load_resonances(file, i, end)
 
 
 @cli.command(
