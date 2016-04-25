@@ -1,7 +1,8 @@
 import logging
 from typing import Iterable, Tuple, List
 from entities import ThreeBodyResonance, Libration
-from entities.body import Asteroid, PlanetName
+from entities.body import Asteroid
+from entities.body import Planet
 from entities.dbutills import session
 from os.path import join as opjoin
 from settings import Config
@@ -25,17 +26,17 @@ def get_resonances(start: int, stop: int, only_librations: bool) -> Iterable[Thr
     :return:
     """
     names = ['A%i' % x for x in range(start, stop)]
+    t1 = aliased(Planet)
+    t2 = aliased(Planet)
     resonances = session.query(ThreeBodyResonance)\
         .options(joinedload('small_body')).join(ThreeBodyResonance.small_body) \
         .options(joinedload('first_body')).options(joinedload('second_body')) \
-        .filter(Asteroid.name.in_(names)).options(joinedload('librations'))
+        .join(t1, ThreeBodyResonance.first_body_id == t1.id) \
+        .join(t2, ThreeBodyResonance.second_body_id == t2.id) \
+        .filter(Asteroid.name.in_(names)).options(joinedload('libration'))\
+        .filter(t1.name == BODY1, t2.name == BODY2)
     if only_librations:
-        t1 = aliased(PlanetName)
-        t2 = aliased(PlanetName)
-        resonances = resonances.join('librations')\
-            .join(t1, Libration.first_planet_name_id == t1.id)\
-            .join(t2, Libration.second_planet_name_id == t2.id)\
-            .filter(t1.name == BODY1, t2.name == BODY2)
+        resonances = resonances.join('libration')
     resonances = sorted(resonances.all(), key=lambda x: x.asteroid_number)
 
     if not resonances:

@@ -7,10 +7,8 @@ from .librationbuilder import LibrationDirector
 from datamining import ResonanceOrbitalElementSetFacade
 from entities import Libration
 from entities import ThreeBodyResonance
-from entities.body import PlanetName
 from entities.dbutills import session
 from settings import Config
-from sqlalchemy import or_
 
 CONFIG = Config.get_params()
 BODIES_COUNTER = CONFIG['integrator']['number_of_bodies']
@@ -21,14 +19,9 @@ class LibrationClassifier:
     Class is need for determining type of libration. If it needs, class will build libration by
     resonances and orbital elements of related sky bodies.
     """
-    def __init__(self, get_from_db, bodyname1, bodyname2):
-        self._bodyname1, self._bodyname2 = bodyname1, bodyname2
+    def __init__(self, get_from_db):
         self._get_from_db = get_from_db
-        bodynames = session.query(PlanetName).filter(
-            or_(PlanetName.name == bodyname1, PlanetName.name == bodyname2)).all()
-        bodyname1 = [x for x in bodynames if x.name == bodyname1][0]
-        bodyname2 = [x for x in bodynames if x.name == bodyname2][0]
-        self._libration_director = LibrationDirector(bodyname1, bodyname2)
+        self._libration_director = LibrationDirector()
         self._resonance = None  # type: ThreeBodyResonance
         self._resonance_str = None  # type: str
         self._asteroid_num = None  # type: int
@@ -44,11 +37,7 @@ class LibrationClassifier:
         self._resonance = resonance
         self._resonance_str = str(resonance)
         self._asteroid_num = self._resonance.asteroid_number
-        librations = [x for x in self._resonance.librations if (
-            x.first_planet_name.name == self._bodyname1 and
-            x.second_planet_name.name == self._bodyname2
-        )]
-        self._libration = librations[0] if librations else None
+        self._libration = self._resonance.libration
 
     def classify(self, orbital_elem_set: ResonanceOrbitalElementSetFacade,
                  serialized_phases: List[Dict[str, float]]) -> bool:

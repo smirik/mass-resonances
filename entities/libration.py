@@ -1,6 +1,5 @@
 from typing import List
 
-from entities.body import PlanetName
 from entities.dbutills import Base
 from settings import Config
 from sqlalchemy import Boolean, UniqueConstraint
@@ -25,42 +24,23 @@ class Libration(Base):
     MIN_BREAKS = 2
 
     __tablename__ = 'libration'
-    __table_args__ = (UniqueConstraint('resonance_id', 'first_planet_name_id',
-                                       'second_planet_name_id', name='uc_resonance_planet_names'),)
-    _resonance_id = Column('resonance_id', Integer, ForeignKey('resonance.id'), nullable=False)
-    _resonance = relationship(ThreeBodyResonance, backref=backref('librations', uselist=True))
+    _resonance_id = Column('resonance_id', Integer, ForeignKey('resonance.id'), nullable=False,
+                           unique=True)
+    _resonance = relationship(ThreeBodyResonance, backref=backref('libration', uselist=False))
     _average_delta = Column('average_delta', Float)
     _percentage = Column('percentage', Float)
     _circulation_breaks = Column('circulation_breaks', ARRAY(Float), nullable=False)
     _is_apocentric = Column('is_apocentric', Boolean, nullable=False)
 
-    _first_planet_name_id = Column('first_planet_name_id', Integer, ForeignKey('planet_name.id'),
-                                   nullable=False)
-
-    first_planet_name = relationship(PlanetName, backref=backref('librations', uselist=True),
-                                     foreign_keys=_first_planet_name_id)
-    _second_planet_name_id = Column('second_planet_name_id', Integer, ForeignKey('planet_name.id'),
-                                    nullable=False)
-    second_planet_name = relationship(PlanetName, backref=backref('librations2', uselist=True),
-                                      foreign_keys=_second_planet_name_id)
-
     def __init__(self, resonance: ThreeBodyResonance, circulation_breaks: List[float],
-                 body_count: int, is_apocentric: bool,
-                 first_planet_name: PlanetName, second_planet_name: PlanetName):
+                 body_count: int, is_apocentric: bool):
         """
         :param resonance: related resonance.
         :param circulation_breaks: Years of breaks in resonant phases of pointed resonance.
         :param body_count:
         :param is_apocentric: flag indicates about swift by Pi (3.14)
-        :param first_planet_name:
-        :param second_planet_name:
         :return:
         """
-        self.second_planet_name = second_planet_name
-        self._second_planet_name_id = second_planet_name.id
-        self.first_planet_name = first_planet_name
-        self._first_planet_name_id = first_planet_name.id
-
         self._is_apocentric = is_apocentric
         self._resonance = resonance
         self._circulation_breaks = circulation_breaks
@@ -153,12 +133,3 @@ class Libration(Base):
     def as_pure_apocentric(self) -> str:
         return '%s;%s;%i' % (self.asteroid_number, str(self._resonance),
                              self.APOCENTRIC_PURE_ID)
-
-    @hybrid_property
-    def first_planet_name_id(self):
-        return self._first_planet_name_id
-
-    @hybrid_property
-    def second_planet_name_id(self):
-        return self._second_planet_name_id
-
