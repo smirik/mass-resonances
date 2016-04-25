@@ -1,8 +1,7 @@
-from typing import Callable, Tuple, List
 from unittest import mock
 
 import pytest
-from entities.body import Planet, Asteroid, PlanetName
+from entities.body import Planet, Asteroid
 from settings import Config
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import aliased
@@ -35,26 +34,18 @@ def libration_resonance_fixture(request):
         Asteroid.perihelion_longitude_coeff == 3) \
         .first()
 
-    conn = engine.connect()
-    conn.execute('SELECT setval(\'planet_name_id_seq\', MAX(id)) FROM %s;' %
-                 PlanetName.__tablename__)
-    bodyname1 = PlanetName(name='JUPITER_test')
-    bodyname2 = PlanetName(name='SATURN_test')
-    session.add(bodyname1)
-    session.add(bodyname2)
     session.commit()
 
     def tear_down():
         conn = engine.connect()
         conn.execute(Libration.__table__.delete())
-        conn.execute(PlanetName.__table__.delete())
         conn.execute(ThreeBodyResonance.__table__.delete())
         conn.execute(Planet.__table__.delete())
         conn.execute(Asteroid.__table__.delete())
 
     request.addfinalizer(tear_down)
 
-    return [resonance, bodyname1, bodyname2]
+    return resonance
 
 
 @pytest.mark.parametrize('circulation_breaks, is_apocentric', [
@@ -64,17 +55,17 @@ def libration_resonance_fixture(request):
 ])
 @mock.patch(get_class_path(ResonanceOrbitalElementSetFacade))
 @pytest.mark.usefixtures('libration_resonance_fixture')
-def test_classify_from_db(ResonanceOrbitalElementSetFacadeMock, libration_resonance_fixture: List,
+def test_classify_from_db(ResonanceOrbitalElementSetFacadeMock,
+                          libration_resonance_fixture: ThreeBodyResonance,
                           circulation_breaks, is_apocentric):
     orbital_element_set = ResonanceOrbitalElementSetFacadeMock()
 
-    resonance, bodyname1, bodyname2 = libration_resonance_fixture
-    libration = Libration(resonance, circulation_breaks, X_STOP, is_apocentric,
-                          bodyname1, bodyname2)
-    resonance.librations.append(libration)
+    resonance = libration_resonance_fixture
+    libration = Libration(resonance, circulation_breaks, X_STOP, is_apocentric)
+    resonance.libration = libration
     session.commit()
 
-    classifier = LibrationClassifier(True, bodyname1.name, bodyname2.name)
+    classifier = LibrationClassifier(True)
     classifier.set_resonance(resonance)
     resonant_phases = [
         {'year': 0.0, 'value': 0.0},
@@ -111,39 +102,17 @@ SIMPLE_PHASES = [
 @mock.patch(get_class_path(ResonanceOrbitalElementSetFacade))
 @pytest.mark.usefixtures('libration_resonance_fixture')
 def test_classify_without_db(ResonanceOrbitalElementSetFacadeMock,
-                             libration_resonance_fixture: List,
+                             libration_resonance_fixture: ThreeBodyResonance,
                              resonant_phases, is_apocentric):
     orbital_element_set = ResonanceOrbitalElementSetFacadeMock()
-    resonance, jupiter, saturn = libration_resonance_fixture
-    classifier = LibrationClassifier(False, jupiter.name, saturn.name)
+    resonance = libration_resonance_fixture
+    classifier = LibrationClassifier(False)
     classifier.set_resonance(resonance)
 
     res = classifier.classify(orbital_element_set, resonant_phases)
     assert res is True
     assert len(session.new) == 1
     libration = [x for x in session.new][0]
-    assert libration.first_planet_name == jupiter
-    assert libration.second_planet_name == saturn
     assert libration.resonance == resonance
-    assert len(resonance.librations) == 1
-    session.commit()
-
-    uranus = PlanetName(name='URANUS_test')
-    neptune = PlanetName(name='NEPTUNE_test')
-    session.add(uranus)
-    session.add(neptune)
-    session.commit()
-
-    same_resonance = session.query(ThreeBodyResonance).filter_by(id=resonance.id).first()
-    another_classifier = LibrationClassifier(False, uranus.name, neptune.name)
-    another_classifier.set_resonance(same_resonance)
-    res = another_classifier.classify(orbital_element_set, resonant_phases)
-
-    assert res is True
-    assert len(session.new) == 1
-    libration = [x for x in session.new][0]
-    assert libration.first_planet_name == uranus
-    assert libration.second_planet_name == neptune
-    assert libration.resonance == same_resonance
-    assert len(resonance.librations) == 2
+    assert libration == resonance.libration
     session.commit()

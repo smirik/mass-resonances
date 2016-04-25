@@ -47,7 +47,7 @@ def find(start: int, stop: int, is_current: bool = False,
         logging.error('Incorrect data in %s or in %s' % (firstbody_aei, secondbody_aei))
         exit(-1)
 
-    classifier = LibrationClassifier(is_current, BODY1, BODY2)
+    classifier = LibrationClassifier(is_current)
     phase_builder = PhaseBuilder(phase_storage)
     phase_cleaner = PhaseCleaner(phase_storage)
 

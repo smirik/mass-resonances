@@ -115,12 +115,12 @@ def build_resonance(data: List[str], asteroid_num: int) -> ThreeBodyResonance:
     """
     conn = engine.connect()
     first_body = {
-        'name': 'JUPITER',
+        'name': BODY1,
         LONG_COEFF: int(data[0]),
         PERI_COEFF: int(data[3])
     }
     second_body = {
-        'name': 'SATURN',
+        'name': BODY2,
         LONG_COEFF: int(data[1]),
         PERI_COEFF: int(data[4])
     }
