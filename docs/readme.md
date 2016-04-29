@@ -38,3 +38,7 @@ more that option `resonance.libration.min`, represented in percents. Column `is_
 indicates that resonant phases have been shifted `Pi`.
 * broken_asteroid — contains names of asteroids, that have broken aei data.
 * alembic_version — contains migrations.
+
+# How to use
+
+* [Useful SQL queries](sql.md) to get information about resonances, asteroids e.t.c.
