@@ -46,6 +46,7 @@ script:
   - python ./main.py plot
   - python ./main.py package --res=1 --compress=1 --aei=1
   - python ./main.py clear-phases --start=1 --stop=101
+  - python ./main.py librations
   - coverage run --omit='/home/travis/virtualenv/*,./tests/*' -m pytest `find ./tests -name '*.py'`
 
 after_success:

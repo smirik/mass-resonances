@@ -1,8 +1,11 @@
 import logging
+from typing import Tuple
+
 import os
 import click
 from logging.handlers import RotatingFileHandler
-from commands import load_resonances as _load_resonances
+
+from commands import load_resonances as _load_resonances, AsteroidCondition
 from commands import calc as _calc
 from commands import find as _find
 from commands import PhaseStorage
@@ -13,6 +16,7 @@ from commands import show_broken_bodies
 from commands import clear_phases as _clear_phases
 from commands import show_librations as _show_librations
 from commands import extract as _extract
+from commands import PlanetCondition, AxisInterval, ResonanceIntegers
 from settings import Config
 from os.path import join as opjoin
 
@@ -35,11 +39,11 @@ def _unite_decorators(*decorators):
     return deco
 
 
-def _asteroid_interval_options():
+def _asteroid_interval_options(default_start=1, default_stop=101):
     return _unite_decorators(
-        click.option('--start', default=1, type=int,
+        click.option('--start', default=default_start, type=int,
                      help='Start asteroid number. Counting from 1.'),
-        click.option('--stop', default=101, type=int,
+        click.option('--stop', default=default_stop, type=int,
                      help='Stop asteroid number. Excepts last. Means, that '
                           'asteroid with number, that equals this parameter,'
                           ' will not be integrated.'))
@@ -186,6 +190,26 @@ def broken_bodies():
     show_broken_bodies()
 
 
-@cli.command(help='Shows librations')
-def librations():
-    _show_librations()
+@cli.command(help='Shows librations. Below options are need for filtering.')
+@_asteroid_interval_options(None, None)
+@click.option('--first-planet', default=None, type=str, help='Example: JUPITER')
+@click.option('--second-planet', default=None, type=str, help='Example: SATURN')
+@click.option('--pure', default=None, type=bool, help='Example: 0')
+@click.option('--apocentric', default=None, type=bool, help='Example: 0')
+@click.option('--axis-interval', nargs=2, default=None, type=float,
+              help='Interval is pointing by two values separated by space. Example: 0.0 180.0')
+@click.option('--integers', nargs=3, default=None, type=int,
+              help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
+def librations(start: int, stop: int, first_planet: str, second_planet: str, pure: bool,
+               apocentric: bool, axis_interval: Tuple[float], integers: Tuple[int]):
+    kwargs = {}
+    if start and stop:
+        kwargs['asteroid_condition'] = AsteroidCondition(start, stop)
+    kwargs['planet_condtion'] = PlanetCondition(first_planet, second_planet)
+    kwargs['is_pure'] = pure
+    kwargs['is_apocentric'] = apocentric
+    if axis_interval:
+        kwargs['axis_interval'] = AxisInterval(*axis_interval)
+    if integers:
+        kwargs['integers'] = ResonanceIntegers(*integers)
+    _show_librations(**kwargs)
