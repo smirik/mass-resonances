@@ -2,13 +2,14 @@ from typing import List
 
 from entities.dbutills import Base
 from settings import Config
-from sqlalchemy import Boolean, UniqueConstraint
+from sqlalchemy import Boolean, UniqueConstraint, or_
 from sqlalchemy import Column, ForeignKey, Integer, Float
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 from .threebodyresonance import ThreeBodyResonance
-
+from sqlalchemy.sql.expression import func
 
 CONFIG = Config.get_params()
 LIBRATION_MIN = CONFIG['resonance']['libration']['min']
@@ -71,7 +72,7 @@ class Libration(Base):
                 self._average_delta = average_delta
                 self._percentage = libration_percent
 
-    @property
+    @hybrid_property
     def is_apocentric(self) -> bool:
         return self._is_apocentric
 
@@ -122,9 +123,14 @@ class Libration(Base):
             self._average_delta, self.max_diff
         )
 
-    @property
+    @hybrid_property
     def is_pure(self):
-        return len(self._circulation_breaks) < self.MIN_BREAKS
+        if type(self._circulation_breaks) == InstrumentedAttribute:
+            res = or_(func.array_length(self._circulation_breaks, 1) < self.MIN_BREAKS,
+                      func.array_length(self._circulation_breaks, 1).is_(None))
+        else:
+            res = len(self._circulation_breaks) < self.MIN_BREAKS
+        return res
 
     def as_pure(self) -> str:
         return '%s;%s;%i' % (self.asteroid_number, str(self._resonance),
