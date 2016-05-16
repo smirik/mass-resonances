@@ -35,7 +35,7 @@ def show_librations(asteroid_condition: AsteroidCondition = None,
                     planet_condtion: PlanetCondition = None,
                     is_pure: bool = None, is_apocentric: bool = None,
                     axis_interval: AxisInterval = None,
-                    integers: ResonanceIntegers = None):
+                    integers: ResonanceIntegers = None, limit=100, offset=0):
     t1 = aliased(Planet)
     t2 = aliased(Planet)
     librations = session.query(Libration).options(joinedload('resonance'))\
@@ -45,7 +45,8 @@ def show_librations(asteroid_condition: AsteroidCondition = None,
         .join(Asteroid, ThreeBodyResonance.small_body_id == Asteroid.id) \
         .options(joinedload('resonance.first_body')) \
         .options(joinedload('resonance.second_body')) \
-        .options(joinedload('resonance.small_body'))
+        .options(joinedload('resonance.small_body')) \
+        .limit(limit).offset(offset)
 
     if asteroid_condition:
         names = ['A%i' % x for x in range(asteroid_condition.start, asteroid_condition.stop)]

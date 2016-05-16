@@ -200,14 +200,19 @@ def broken_bodies():
               help='Interval is pointing by two values separated by space. Example: 0.0 180.0')
 @click.option('--integers', nargs=3, default=None, type=int,
               help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
+@click.option('--limit', default=100, type=int, help='Example: 100')
+@click.option('--offset', default=0, type=int, help='Example: 100')
 def librations(start: int, stop: int, first_planet: str, second_planet: str, pure: bool,
-               apocentric: bool, axis_interval: Tuple[float], integers: Tuple[int]):
+               apocentric: bool, axis_interval: Tuple[float], integers: Tuple[int], limit,
+               offset):
     kwargs = {}
     if start and stop:
         kwargs['asteroid_condition'] = AsteroidCondition(start, stop)
     kwargs['planet_condtion'] = PlanetCondition(first_planet, second_planet)
     kwargs['is_pure'] = pure
     kwargs['is_apocentric'] = apocentric
+    kwargs['offset'] = offset
+    kwargs['limit'] = limit
     if axis_interval:
         kwargs['axis_interval'] = AxisInterval(*axis_interval)
     if integers:
