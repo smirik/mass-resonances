@@ -46,7 +46,6 @@ def show_librations(asteroid_condition: AsteroidCondition = None,
         .options(joinedload('resonance.first_body')) \
         .options(joinedload('resonance.second_body')) \
         .options(joinedload('resonance.small_body')) \
-        .limit(limit).offset(offset)
 
     if asteroid_condition:
         names = ['A%i' % x for x in range(asteroid_condition.start, asteroid_condition.stop)]
@@ -74,6 +73,8 @@ def show_librations(asteroid_condition: AsteroidCondition = None,
             t2.longitude_coeff == integers.second,
             Asteroid.longitude_coeff == integers.third
         )
+
+    librations = librations.limit(limit).offset(offset)
 
     table = Texttable(max_width=120)
     table.set_cols_width([10, 10, 10, 30, 15, 10, 10])
