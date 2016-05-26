@@ -24,12 +24,15 @@ alembic.test.ini
 deploy_programs
 catalog/aws_s3_aei_files.txt
 dump.rdb
+.docker_env
 
 # special
 .git
 .gitignore
+.gitmodules
 .travis
 githooks
+Dockerfile
 
 # mercury
 mercury/*.dmp
