@@ -18,9 +18,30 @@ local_config.yml
 *.lprof
 logs
 catalog/*.cat
-phases_dir
 .s3cfg
+phases_dir
 alembic.test.ini
 deploy_programs
 catalog/aws_s3_aei_files.txt
 dump.rdb
+
+# special
+.git
+.gitignore
+.travis
+githooks
+
+# mercury
+mercury/*.dmp
+mercury/*.tmp
+mercury/*.in
+mercury/*.out
+mercury/*.clo
+mercury/*.aei
+mercury/*.gnu
+mercury/element6
+mercury/mercury6
+mercury/close6
+
+# helpers
+entrypoint.sh
