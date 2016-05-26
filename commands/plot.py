@@ -35,8 +35,10 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
     for resonance, aei_data in get_aggregated_resonances(start, stop, for_librations):
         phases = phase_loader.load(resonance.id)
         apocentric_phases = [cutoff_angle(x + pi) for x in phases]
-        res_filepath = opjoin(OUTPUT_RES_PATH, 'A%i.res' % resonance.asteroid_number)
-        gnu_filepath = opjoin(OUTPUT_GNU_PATH, 'A%i.gnu' % resonance.asteroid_number)
+        res_filepath = opjoin(OUTPUT_RES_PATH, 'A%i_%i.res' %
+                              (resonance.asteroid_number, resonance.id))
+        gnu_filepath = opjoin(OUTPUT_GNU_PATH, 'A%i_%i.gnu' %
+                              (resonance.asteroid_number, resonance.id))
 
         resmaker.make(phases, aei_data, res_filepath)
         png_path = opjoin(PROJECT_DIR, OUTPUT_IMAGES, 'A%i-res%i%s.png' % (
