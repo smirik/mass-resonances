@@ -219,7 +219,7 @@ class ProgramRunner:
                         os.remove(item)
                     symlink_paths.clear()
                 else:
-                    self._raw_log('Something wrong during loading %s' % s3_path)
+                    self._raw_log('Something wrong during loading %s' % s3_path, False)
                     continue
 
     def run_full_stack(self, from_day: float, phase_storage: str = 'REDIS',
