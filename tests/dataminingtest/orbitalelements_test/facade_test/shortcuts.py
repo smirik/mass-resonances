@@ -9,7 +9,7 @@ from tests.shortcuts import get_class_path
 
 
 def build_orbital_collection(property_mock_values: List) \
-        -> Tuple[OrbitalElementSetCollection, OrbitalElementSetCollection]:
+        -> List[OrbitalElementSetCollection]:
     """
     :param property_mock_values:
     :return: objects of mock of the class OrbitalElementSetCollection.
@@ -22,8 +22,15 @@ def build_orbital_collection(property_mock_values: List) \
             first_elems = mock1_OrbitalElementSetCollection()
             second_elems = mock2_OrbitalElementSetCollection()
             type(first_elems).orbital_elements = orbital_elements1
+            type(first_elems).__len__ = mock.MagicMock(return_value=len(property_mock_values[0]))
+            type(first_elems).__getitem__ = mock.MagicMock(
+                return_value=property_mock_values[0][0])
+
             type(second_elems).orbital_elements = orbital_elements2
-            return first_elems, second_elems
+            type(second_elems).__len__ = mock.MagicMock(return_value=len(property_mock_values[1]))
+            type(second_elems).__getitem__ = mock.MagicMock(
+                return_value=property_mock_values[1][0])
+            return [first_elems, second_elems]
 
 
 @pytest.fixture()

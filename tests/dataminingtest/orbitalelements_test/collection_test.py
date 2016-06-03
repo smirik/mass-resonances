@@ -16,8 +16,10 @@ def test_orbital_elements():
     filepath = opjoin(PROJECT_DIR, PARAMS['integrator']['dir'], 'A1.aei')
     collection = OrbitalElementSetCollection(filepath)
     assert len(collection.orbital_elements) == A1_AEI_FILE_LEN
+    assert len(collection) == A1_AEI_FILE_LEN
     orbitalelements = collection.orbital_elements[0]
 
+    assert orbitalelements == collection[0]
     assert orbitalelements.time == 0.0000000
     assert orbitalelements.p_longitude == radians(1.541309E+02)
     assert orbitalelements.mean_anomaly == radians(3.172742E+02)

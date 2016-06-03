@@ -31,9 +31,6 @@ resonance:
   libration:
     min: 20000
   db_file: export/full.db
-  bodies:
-    - JUPITER
-    - SATURN
   bodies_numbers:
     - 5
     - 6

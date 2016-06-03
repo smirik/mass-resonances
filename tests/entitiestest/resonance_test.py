@@ -1,8 +1,8 @@
-from typing import List, Dict
-
+from typing import List, Dict, Tuple
+from entities import get_resonance_factory, ResonanceFactory
+from entities import BodyNumberEnum
 import math
 from unittest import mock
-
 import pytest
 from entities import ThreeBodyResonance, build_resonance
 from entities.body import Asteroid
@@ -11,11 +11,15 @@ from entities.body import PERI
 from entities.body import LONG_COEFF
 from entities.body import PERI_COEFF
 from entities.body import Planet
-from entities.dbutills import session, engine
+from entities.dbutills import session
 from shortcuts import cutoff_angle
-from sqlalchemy import and_, delete
+from sqlalchemy.orm import Query
+from sqlalchemy import and_
 from sqlalchemy.orm import joinedload, aliased
 from tests.shortcuts import resonancesfixture, get_class_path
+
+
+BODY_FOREIGNS = ['first_body', 'second_body']
 
 
 @mock.patch(get_class_path(Planet))
@@ -26,22 +30,22 @@ from tests.shortcuts import resonancesfixture, get_class_path
      'jupiter_coeffs', 'saturn_coeffs', 'asteroid_coeffs'],
     [
         (
-            {LONG: 2.856034797, PERI: math.radians(70.12327)},
-            {LONG: 3.339293952, PERI: math.radians(124.8056)},
-            {LONG: 6.551616946, PERI: math.radians(103.9978)},
-            -3.137910531830559,
-            {LONG: 3, PERI: 0},
-            {LONG: -1, PERI: 0},
-            {LONG: -1, PERI: -1}
+                {LONG: 2.856034797, PERI: math.radians(70.12327)},
+                {LONG: 3.339293952, PERI: math.radians(124.8056)},
+                {LONG: 6.551616946, PERI: math.radians(103.9978)},
+                -3.137910531830559,
+                {LONG: 3, PERI: 0},
+                {LONG: -1, PERI: 0},
+                {LONG: -1, PERI: -1}
         ),
         (
-            {LONG: 6.093856353, PERI: math.radians(15.66345)},
-            {LONG: 6.836146629, PERI: math.radians(88.52425)},
-            {LONG: 2.795411134, PERI: math.radians(21.54496)},
-            -2.8669537513497794,
-            {LONG: 7, PERI: 0},
-            {LONG: -2, PERI: 0},
-            {LONG: -2, PERI: -3}
+                {LONG: 6.093856353, PERI: math.radians(15.66345)},
+                {LONG: 6.836146629, PERI: math.radians(88.52425)},
+                {LONG: 2.795411134, PERI: math.radians(21.54496)},
+                -2.8669537513497794,
+                {LONG: 7, PERI: 0},
+                {LONG: -2, PERI: 0},
+                {LONG: -2, PERI: -3}
         ),
     ]
 )
@@ -70,58 +74,76 @@ def test_compute_resonant_phase(asteroid_mockcls, jupiter_mockcls, saturn_mockcl
     assert cutoff_angle(resonant_phase) == cutoffed_resonant_phase
 
 
-@pytest.mark.parametrize('input_values, asteroid_num', [
-    (['2', '-1', '-2', '0', '0', '3', '2.44125'], 2),
-    (['2', '-3', '-4', '1', '1', '2', '1.44125'], 1)
-])
-def test_build_resonance(input_values: List[str], asteroid_num: int, resonancesfixture):
-    build_resonance(input_values, asteroid_num)
-    Planet1 = aliased(Planet)
-    Planet2 = aliased(Planet)
+def _build_resonances_query(body_number: BodyNumberEnum, input_values: List[str],
+                            asteroid_num: int, factory: ResonanceFactory) -> Query:
+    planet_tables = [aliased(Planet) for _ in range(body_number.value - 1)]
+    resonance_cls = factory.resonance_cls
+
+    resonances_q = session.query(resonance_cls)
+    for planet_table, body_foreign in zip(planet_tables, BODY_FOREIGNS):
+        resonances_q = resonances_q \
+            .join(planet_table, getattr(resonance_cls, body_foreign)) \
+            .options(joinedload(body_foreign))
+
+    and_args = []
+    for planet_table, body_foreign in zip(planet_tables, BODY_FOREIGNS):
+        body_data = factory.bodies[body_foreign]
+        and_args.append(planet_table.longitude_coeff == body_data[LONG_COEFF])
+        and_args.append(planet_table.perihelion_longitude_coeff == body_data[PERI_COEFF])
+
+    body_data = factory.bodies['small_body']
+    and_args += [
+        Asteroid.longitude_coeff == body_data[LONG_COEFF],
+        Asteroid.perihelion_longitude_coeff == body_data[PERI_COEFF],
+        Asteroid.axis == body_data['axis'],
+    ]
+
+    resonances_q.join(resonance_cls.small_body).options(joinedload('small_body')) \
+        .filter(and_(*and_args))
+    return resonances_q
+
+
+@pytest.mark.parametrize(
+    'input_values, asteroid_num, asteroid_indicies, planets', [
+        (['2', '-1', '-2', '0', '0', '3', '2.44125'], 2, [2, 5, 6], ('JUPITER', 'SATURN')),
+        (['2', '-3', '-4', '1', '1', '2', '1.44125'], 1, [2, 5, 6], ('MARS', 'SATURN')),
+        (['2', '-3', '1', '2', '1.44125'], 1, [1, 3, 4], ('JUPITER',)),
+        (['2', '-3', '0', '2', '1.44125'], 2, [1, 3, 4], ('MARS',)),
+    ]
+)
+def test_build_resonance(input_values: List[str], asteroid_num: int, asteroid_indicies: List[int],
+                         planets: Tuple[str], resonancesfixture):
+    factory = get_resonance_factory(planets, input_values, asteroid_num)
+    build_resonance(factory)
     planet_q = session.query(Planet)
     asteroid_q = session.query(Asteroid)
-    resonances_q = session.query(ThreeBodyResonance) \
-        .join(Planet1, ThreeBodyResonance.first_body).options(joinedload('first_body')) \
-        .join(Planet2, ThreeBodyResonance.second_body).options(joinedload('second_body')) \
-        .join(ThreeBodyResonance.small_body).options(joinedload('small_body')) \
-        .filter(and_(
-        Planet1.longitude_coeff == int(input_values[0]),
-        Planet1.perihelion_longitude_coeff == int(input_values[3]),
-
-        Planet2.longitude_coeff == int(input_values[1]),
-        Planet2.perihelion_longitude_coeff == int(input_values[4]),
-
-        Asteroid.longitude_coeff == int(input_values[2]),
-        Asteroid.perihelion_longitude_coeff == int(input_values[5]),
-        Asteroid.axis == float(input_values[6]),
-    ))
+    body_count = BodyNumberEnum(len(planets) + 1)
+    resonances_q = _build_resonances_query(body_count, input_values, asteroid_num, factory)
 
     def _check_bodies():
         """
         check values of entities from database with input values.
         :return:
         """
-        resonances = resonances_q.all()  # type: List[ThreeBodyResonance]
+        resonances = resonances_q.all()
         assert len(resonances) == 1
-        planets = planet_q.all()  # type: List[Planet]
-        assert len(planets) == 2
-        _check(planets[0], {'name': 'JUPITER', LONG_COEFF: int(input_values[0]),
-                            PERI_COEFF: int(input_values[3])})
-        _check(planets[1], {'name': 'SATURN', LONG_COEFF: int(input_values[1]),
-                            PERI_COEFF: int(input_values[4])})
+        db_planets = planet_q.all()  # type: List[Planet]
+        assert len(db_planets) == body_count.value - 1
+
+        for planet, foreign in zip(db_planets, BODY_FOREIGNS):
+            _check(planet, factory.bodies[foreign])
+            assert getattr(resonances[0], foreign) == planet
 
         asteroids = asteroid_q.all()  # type: List[Asteroid]
-        _check(asteroids[0], {'name': 'A%i' % asteroid_num, LONG_COEFF: int(input_values[2]),
-                              PERI_COEFF: int(input_values[5])})
-        assert asteroids[0].axis == float(input_values[6])
+        _check(asteroids[0], {'name': 'A%i' % asteroid_num,
+                              LONG_COEFF: int(input_values[asteroid_indicies[0]]),
+                              PERI_COEFF: int(input_values[asteroid_indicies[1]])})
+        assert asteroids[0].axis == float(input_values[asteroid_indicies[2]])
         assert len(asteroids) == 1
-
-        assert resonances[0].first_body == planets[0]
-        assert resonances[0].second_body == planets[1]
         assert resonances[0].small_body == asteroids[0]
 
     _check_bodies()
-    build_resonance(input_values, asteroid_num)
+    build_resonance(factory)
     _check_bodies()
 
 

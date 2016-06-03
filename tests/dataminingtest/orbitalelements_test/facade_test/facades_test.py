@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 from abc import abstractmethod
 from entities import ThreeBodyResonance
-from datamining import ComputedOrbitalElementSetFacade
+from datamining import ComputedOrbitalElementSetFacade, OrbitalElementSetCollection
 from datamining import IOrbitalElementSetFacade
 from datamining import ResonanceOrbitalElementSetFacade
 from datamining import ElementCountException
@@ -28,33 +28,30 @@ class _IFacadeBuilder:
             x.compute_resonant_phase() for x in self._resonances]
 
     @abstractmethod
-    def build(self, first_bigbody_elems, second_bigbody_elems):
+    def build(self, planet_elems: List[OrbitalElementSetCollection]):
         pass
 
 
 class _ComputedFacadeBuilder(_IFacadeBuilder):
-    def build(self, first_bigbody_elems, second_bigbody_elems) \
+    def build(self, planet_elems: List[OrbitalElementSetCollection])\
             -> ComputedOrbitalElementSetFacade:
         assert self._phases is not None
-        return ComputedOrbitalElementSetFacade(
-            first_bigbody_elems, second_bigbody_elems, self._phases)
+        return ComputedOrbitalElementSetFacade(planet_elems, self._phases)
 
 
 class _ResonanceFacadeBuilder(_IFacadeBuilder):
-    def build(self, first_bigbody_elems, second_bigbody_elems) \
+    def build(self, planet_elems: List[OrbitalElementSetCollection])\
             -> ResonanceOrbitalElementSetFacade:
         assert self._resonances is not None
-        return ResonanceOrbitalElementSetFacade(first_bigbody_elems, second_bigbody_elems,
-                                                self._resonances[0])
+        return ResonanceOrbitalElementSetFacade(planet_elems, self._resonances[0])
 
 
 class _FacadeDirector:
-    def __init__(self, second_bigbody_elems, first_bigbody_elems):
-        self._first_bigbody_elems = first_bigbody_elems
-        self._second_bigbody_elems = second_bigbody_elems
+    def __init__(self, planets_elems:  List[OrbitalElementSetCollection]):
+        self._planets_elems = planets_elems
 
     def build(self, builder: _IFacadeBuilder) -> IOrbitalElementSetFacade:
-        return builder.build(self._first_bigbody_elems, self._second_bigbody_elems)
+        return builder.build(self._planets_elems)
 
 
 @pytest.fixture()
@@ -75,8 +72,8 @@ def _build_resonance(phase: float = None):
      _ResonanceFacadeBuilder(resonances=[_build_resonance()])),
 ])
 def test_init(mock_side_effect, exception_cls, builder):
-    first_bigbody_elems, second_bigbody_elems = build_orbital_collection(mock_side_effect)
-    director = _FacadeDirector(second_bigbody_elems, first_bigbody_elems)
+    planets_elems = build_orbital_collection(mock_side_effect)
+    director = _FacadeDirector(planets_elems)
     with pytest.raises(exception_cls):
         director.build(builder)
 
@@ -95,11 +92,11 @@ def test_init(mock_side_effect, exception_cls, builder):
 )
 def test_get_elements(aei_data, first_serialized_planet, second_serialized_planet,
                       builder: _IFacadeBuilder):
-    first_elems, second_elems = build_orbital_collection([
+    planet_elems = build_orbital_collection([
         [build_elem_set(first_serialized_planet)],
         [build_elem_set(second_serialized_planet)]
     ])
-    director = _FacadeDirector(second_elems, first_elems)
+    director = _FacadeDirector(planet_elems)
     facade = director.build(builder)
     i = 0
     data = TEST_HEADER + [aei_data]
@@ -129,11 +126,11 @@ def test_get_elements(aei_data, first_serialized_planet, second_serialized_plane
 def test_get_resonant_phases(aei_data, first_serialized_planet, second_serialized_planet,
                              phase_value: float):
     builder = _ResonanceFacadeBuilder(resonances=[_build_resonance(phase_value)])
-    first_elems, second_elems = build_orbital_collection([
+    planet_elems = build_orbital_collection([
         [build_elem_set(x) for x in first_serialized_planet],
         [build_elem_set(x) for x in second_serialized_planet]
     ])
-    director = _FacadeDirector(second_elems, first_elems)
+    director = _FacadeDirector(planet_elems)
     facade = director.build(builder)    # type: ResonanceOrbitalElementSetFacade
 
     i = 0

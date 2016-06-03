@@ -5,8 +5,6 @@ from typing import List, Tuple
 from settings import Config
 
 SMALL_BODY = 'small_body'
-FIRST_BODY = 'first_body'
-SECOND_BODY = 'second_body'
 CONFIG = Config.get_params()
 OUTPUT_ANGLE = CONFIG['output']['angle']
 BODIES_COUNTER = CONFIG['integrator']['number_of_bodies']
@@ -100,9 +98,15 @@ class OrbitalElementSetCollection:
         """
         return self._set
 
+    def __getitem__(self, item: int) -> OrbitalElementSet:
+        return self.orbital_elements[item]
 
-def build_bigbody_elements(firstbody_filepath: str, secondbody_filepath: str) \
-        -> Tuple[OrbitalElementSetCollection, OrbitalElementSetCollection]:
-    firstbody_elements = OrbitalElementSetCollection(firstbody_filepath)
-    secondbody_elements = OrbitalElementSetCollection(secondbody_filepath)
-    return firstbody_elements, secondbody_elements
+    def __len__(self) -> int:
+        return len(self.orbital_elements)
+
+
+def build_bigbody_elements(planet_filepaths: List[str]) -> List[OrbitalElementSetCollection]:
+    res = []
+    for filepath in planet_filepaths:
+        res.append(OrbitalElementSetCollection(filepath))
+    return res

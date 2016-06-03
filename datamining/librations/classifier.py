@@ -1,12 +1,12 @@
 from typing import List, Dict
 import logging
 
+from entities import ResonanceMixin, BodyNumberEnum, LibrationMixin
 from .librationbuilder import ApocentricBuilder
 from .librationbuilder import TransientBuilder
 from .librationbuilder import LibrationDirector
 from datamining import ResonanceOrbitalElementSetFacade
 from entities import Libration
-from entities import ThreeBodyResonance
 from entities.dbutills import session
 from settings import Config
 
@@ -19,15 +19,15 @@ class LibrationClassifier:
     Class is need for determining type of libration. If it needs, class will build libration by
     resonances and orbital elements of related sky bodies.
     """
-    def __init__(self, get_from_db):
+    def __init__(self, get_from_db, body_count: BodyNumberEnum):
         self._get_from_db = get_from_db
-        self._libration_director = LibrationDirector()
-        self._resonance = None  # type: ThreeBodyResonance
+        self._libration_director = LibrationDirector(body_count)
+        self._resonance = None  # type: ResonanceMixin
         self._resonance_str = None  # type: str
         self._asteroid_num = None  # type: int
         self._libration = None  # type: Libration
 
-    def set_resonance(self, resonance: ThreeBodyResonance):
+    def set_resonance(self, resonance: ResonanceMixin):
         """
         Wroks as hook before classifying libration. It is need for saving useful data before any
         actions on resonance's libration by SQLalchemy, because we can try get something from
@@ -77,7 +77,7 @@ class LibrationClassifier:
         return False
 
 
-def _save_as_transient(libration: Libration, resonance: ThreeBodyResonance, asteroid_num: int,
+def _save_as_transient(libration: LibrationMixin, resonance: ResonanceMixin, asteroid_num: int,
                        resonance_str: str):
     if not libration.is_pure:
         if libration.is_transient:
@@ -98,4 +98,3 @@ def _save_as_transient(libration: Libration, resonance: ThreeBodyResonance, aste
 
 class _NoTransientException(Exception):
     pass
-

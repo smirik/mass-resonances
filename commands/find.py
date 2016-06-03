@@ -1,11 +1,12 @@
 import json
 import logging
-from typing import List, Dict
+from typing import List, Dict, overload, Tuple
 
 from datamining import get_aggregated_resonances, PhaseBuilder
 from datamining import LibrationClassifier
 from datamining.orbitalelements.collection import AEIValueError
 from datamining import PhaseStorage, PhaseCleaner
+from entities import BodyNumberEnum
 from entities.body import BrokenAsteroid
 from entities.dbutills import REDIS, get_or_create
 from datamining import ResonanceOrbitalElementSetFacade
@@ -18,40 +19,37 @@ from sqlalchemy import exists
 PROJECT_DIR = Config.get_project_dir()
 CONFIG = Config.get_params()
 BODIES_COUNTER = CONFIG['integrator']['number_of_bodies']
-BODY1 = CONFIG['resonance']['bodies'][0]
-BODY2 = CONFIG['resonance']['bodies'][1]
 MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 OUTPUT_ANGLE = CONFIG['output']['angle']
 
 
-def find(start: int, stop: int, is_current: bool = False,
+def find(start: int, stop: int, planets: Tuple[str], is_current: bool = False,
          phase_storage: PhaseStorage = PhaseStorage.redis):
     """Analyze resonances for pointed half-interval of numbers of asteroids. It gets resonances
     aggregated to asteroids. Computes resonant phase by orbital elements from prepared aei files of
     three bodies (asteroid and two planets). After this it finds circulations in vector of resonant
     phases and solves, based in circulations, libration does exists or no.
 
+    :param planets:
     :param phase_storage: needs for auto migration from redis to postgres
     :param start: start point of half-interval.
     :param stop: stop point of half-interval. It will be excluded.
     :param is_current:
     :return:
     """
-    firstbody_elements, secondbody_elements = None, None
-    firstbody_aei = opjoin(MERCURY_DIR, '%s.aei' % BODY1)
-    secondbody_aei = opjoin(MERCURY_DIR, '%s.aei' % BODY2)
+    orbital_element_sets = None
+    filepaths = [opjoin(MERCURY_DIR, '%s.aei' % x) for x in planets]
     try:
-        firstbody_elements, secondbody_elements = build_bigbody_elements(
-            firstbody_aei, secondbody_aei)
+        orbital_element_sets = build_bigbody_elements(filepaths)
     except AEIValueError:
-        logging.error('Incorrect data in %s or in %s' % (firstbody_aei, secondbody_aei))
+        logging.error('Incorrect data in %s' % ' or in '.join(filepaths))
         exit(-1)
 
-    classifier = LibrationClassifier(is_current)
+    classifier = LibrationClassifier(is_current, BodyNumberEnum(len(planets) + 1))
     phase_builder = PhaseBuilder(phase_storage)
     phase_cleaner = PhaseCleaner(phase_storage)
 
-    for resonance, aei_data in get_aggregated_resonances(start, stop, False):
+    for resonance, aei_data in get_aggregated_resonances(start, stop, False, planets):
         broken_asteroid_mediator = _BrokenAsteroidMediator(resonance.small_body.name)
         if broken_asteroid_mediator.check():
             continue
@@ -60,16 +58,14 @@ def find(start: int, stop: int, is_current: bool = False,
         resonance_id = resonance.id
         classifier.set_resonance(resonance)
 
-        orbital_elem_set = ResonanceOrbitalElementSetFacade(
-            firstbody_elements, secondbody_elements, resonance)
-
+        orbital_elem_set_facade = ResonanceOrbitalElementSetFacade(orbital_element_sets, resonance)
         try:
-            serialized_phases = phase_builder.build(aei_data, resonance_id, orbital_elem_set)
+            serialized_phases = phase_builder.build(aei_data, resonance_id, orbital_elem_set_facade)
         except AEIValueError:
             broken_asteroid_mediator.save()
             phase_cleaner.delete(resonance_id)
             continue
-        classifier.classify(orbital_elem_set, serialized_phases)
+        classifier.classify(orbital_elem_set_facade, serialized_phases)
 
     session.commit()
 

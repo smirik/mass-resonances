@@ -52,7 +52,7 @@ def _load_aei(to_project_path: str, start: int, stop: int):
 
 def _edit_config(in_project_path: str, url: str):
     orig = opjoin(in_project_path, 'alembic.ini')
-    os.rename('%s.dist' % orig, orig)
+    shutil.copy('%s.dist' % orig, orig)
     copy = opjoin(in_project_path, 'alembic.ini.bck')
     shutil.move(orig, copy)
     with open(copy, 'r') as copy_f:
@@ -100,11 +100,6 @@ def _add_redis_sings(to_config_path):
         resonance_section = {}
         if 'AXIS_SWING' in os.environ:
             resonance_section.update({'axis_error': float(os.environ['AXIS_SWING'])})
-        if 'PLANETS' in os.environ:
-            first_planet, second_planet = os.environ['PLANETS'].split(',')
-            resonance_section.update({'bodies': [
-                first_planet.strip().upper(), second_planet.strip().upper()
-            ]})
         if resonance_section:
             local_settings.update({'resonance': resonance_section})
 
@@ -383,7 +378,7 @@ def main():
     parser = _ArgParser(sys.argv)
     start = None
     stop = None
-    except_commands = ['migrate', '--help', 'get_file_list', 'librations']
+    except_commands = ['migrate', '--help', 'get_file_list', 'librations', 'resonances']
     if not any([x in sys.argv for x in except_commands]):
         start = int(parser.parse('--start='))
         stop = int(parser.parse('--stop='))

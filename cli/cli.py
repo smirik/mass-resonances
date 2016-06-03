@@ -8,7 +8,7 @@ from logging.handlers import RotatingFileHandler
 from commands import load_resonances as _load_resonances, AsteroidCondition
 from commands import calc as _calc
 from commands import find as _find
-from commands import PhaseStorage
+from commands import show_resonance_table as _show_resonance_table
 from commands import plot as _plot
 from commands import package as _package
 from commands import remove_export_directory
@@ -17,11 +17,14 @@ from commands import clear_phases as _clear_phases
 from commands import show_librations as _show_librations
 from commands import extract as _extract
 from commands import PlanetCondition, AxisInterval, ResonanceIntegers
+from datamining import PhaseStorage
 from settings import Config
 from os.path import join as opjoin
 
 LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 PHASE_STORAGE = ['REDIS', 'DB', 'FILE']
+PLANETS = ['EARTHMOO', 'JUPITER', 'MARS', 'MERCURY', 'NEPTUNE', 'PLUTO', 'SATURN', 'URANUS',
+           'VENUS']
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -37,6 +40,12 @@ def _unite_decorators(*decorators):
         return decorated_function
 
     return deco
+
+
+def _report_interval_options():
+    return _unite_decorators(
+        click.option('--limit', default=100, type=int, help='Example: 100'),
+        click.option('--offset', default=0, type=int, help='Example: 100'))
 
 
 def _asteroid_interval_options(default_start=1, default_stop=101):
@@ -109,19 +118,21 @@ FIND_HELP_PREFIX = 'If true, the application will'
               help='Name of file in axis directory with resonances default: %s' %
                    RESONANCE_FILEPATH,
               type=str)
-def load_resonances(start: int, stop: int, file: str):
+@click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
+def load_resonances(start: int, stop: int, file: str, planets: Tuple[str]):
     if not os.path.isabs(file):
         file = os.path.normpath(opjoin(os.getcwd(), file))
     if file == RESONANCE_FILEPATH:
         logging.info('%s will be used as source of integers' % file)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
-        _load_resonances(file, i, end)
+        _load_resonances(file, i, end, planets)
 
 
 @cli.command(
     help='Computes resonant phases, find in them circulations and saves to librations.'
-         ' Parameters --from-day and --to-day are use only --recalc option is true.')
+         ' Parameters --from-day and --to-day are use only --recalc option is true.'
+         ' Example: find --start=1 --stop=101 --phase-storage=FILE JUPITER MARS')
 @_asteroid_time_intervals_options()
 @click.option('--reload-resonances', default=False, type=bool,
               help='%s load integers, satisfying D\'Alamebrt rule, from %s.' %
@@ -133,15 +144,16 @@ def load_resonances(start: int, stop: int, file: str):
                    FIND_HELP_PREFIX)
 @click.option('--phase-storage', default='REDIS', type=click.Choice(PHASE_STORAGE),
               help='will save phases to redis or postgres or file')
+@click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
-         recalc: bool, is_current: bool, phase_storage: str):
+         recalc: bool, is_current: bool, phase_storage: str, planets: Tuple[str]):
     if recalc:
         _calc(start, stop, STEP, from_day, to_day)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
         if reload_resonances:
-            _load_resonances(RESONANCE_FILEPATH, i, end)
-        _find(i, end, is_current, PhaseStorage(PHASE_STORAGE.index(phase_storage)))
+            _load_resonances(RESONANCE_FILEPATH, i, end, planets)
+        _find(i, end, planets, is_current, PhaseStorage(PHASE_STORAGE.index(phase_storage)))
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
@@ -151,15 +163,17 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
               help='will load phases for plotting from redis or postgres or file')
 @click.option('--only-librations', default=False, type=bool,
               help='flag indicates about plotting only for resonances, that librates')
-def plot(start: int, stop: int, phase_storage: str, only_librations: bool):
-    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations)
+@click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
+def plot(start: int, stop: int, phase_storage: str, only_librations: bool, planets: Tuple[str]):
+    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations, planets)
 
 
 @cli.command(name='clear-phases', help='Clears phases from database and Redis, which related to '
                                        'pointed asteroids.')
 @_asteroid_interval_options()
-def clear_phases(start: int, stop: int):
-    _clear_phases(start, stop)
+@click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
+def clear_phases(start: int, stop: int, planets: Tuple[str]):
+    _clear_phases(start, stop, planets)
 
 
 @cli.command()
@@ -200,8 +214,7 @@ def broken_bodies():
               help='Interval is pointing by two values separated by space. Example: 0.0 180.0')
 @click.option('--integers', nargs=3, default=None, type=int,
               help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
-@click.option('--limit', default=100, type=int, help='Example: 100')
-@click.option('--offset', default=0, type=int, help='Example: 100')
+@_report_interval_options()
 def librations(start: int, stop: int, first_planet: str, second_planet: str, pure: bool,
                apocentric: bool, axis_interval: Tuple[float], integers: Tuple[int], limit,
                offset):
@@ -218,3 +231,25 @@ def librations(start: int, stop: int, first_planet: str, second_planet: str, pur
     if integers:
         kwargs['integers'] = ResonanceIntegers(*integers)
     _show_librations(**kwargs)
+
+
+@cli.command(help='Shows integers from resonance table. Below options are need for filtering.')
+@_asteroid_interval_options(None, None)
+@click.option('--first-planet', default=None, type=str, help='Example: JUPITER')
+@click.option('--second-planet', default=None, type=str, help='Example: SATURN')
+@click.option('--body-count', default=None, type=click.Choice(['2', '3']), help='Example: 2')
+@_report_interval_options()
+def resonances(start: int, stop: int, first_planet: str, second_planet: str,
+               body_count: str,
+               limit, offset):
+    body_count = int(body_count)
+    assert not (body_count == 2 and second_planet is not None)
+    kwargs = {
+        'body_count': body_count,
+        'offset': offset,
+        'limit': limit,
+        'planet_condtion': PlanetCondition(first_planet, second_planet)
+    }
+    if start and stop:
+        kwargs['asteroid_condition'] = AsteroidCondition(start, stop)
+    _show_resonance_table(**kwargs)

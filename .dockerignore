@@ -33,6 +33,7 @@ dump.rdb
 .travis
 githooks
 Dockerfile
+docker-compose.yml
 
 # mercury
 mercury/*.dmp
