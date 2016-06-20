@@ -1,6 +1,6 @@
 from .librations import show_librations
-from commands.reports.shortcuts import AsteroidCondition, PlanetCondition, AxisInterval, \
-    ResonanceIntegers
+from .shortcuts import AsteroidCondition, PlanetCondition, AxisInterval, ResonanceIntegers
+from .planets import show_planets
 from .librations import PlanetCondition
 from .librations import AxisInterval
 from .librations import ResonanceIntegers

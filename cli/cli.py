@@ -16,6 +16,7 @@ from commands import show_broken_bodies
 from commands import clear_phases as _clear_phases
 from commands import show_librations as _show_librations
 from commands import extract as _extract
+from commands import show_planets as _show_planets
 from commands import PlanetCondition, AxisInterval, ResonanceIntegers
 from datamining import PhaseStorage
 from settings import Config
@@ -253,3 +254,10 @@ def resonances(start: int, stop: int, first_planet: str, second_planet: str,
     if start and stop:
         kwargs['asteroid_condition'] = AsteroidCondition(start, stop)
     _show_resonance_table(**kwargs)
+
+
+@cli.command(help='Shows planets, which exist inside resonance table.')
+@click.option('--body-count', default=None, type=click.Choice(['2', '3']), help='Example: 2')
+def planets(body_count: str):
+    body_count = int(body_count)
+    _show_planets(body_count)
