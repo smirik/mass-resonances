@@ -1,4 +1,5 @@
 import pytest
+from entities import TwoBodyResonance
 from entities import ThreeBodyResonance
 from entities.body import Planet, Asteroid
 from entities.dbutills import engine
@@ -12,6 +13,7 @@ def get_class_path(cls: type) -> str:
 def resonancesfixture(request):
     def tear_down():
         conn = engine.connect()
+        conn.execute(TwoBodyResonance.__table__.delete())
         conn.execute(ThreeBodyResonance.__table__.delete())
         conn.execute(Planet.__table__.delete())
         conn.execute(Asteroid.__table__.delete())

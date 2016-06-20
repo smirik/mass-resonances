@@ -14,6 +14,9 @@ class _Body(object):
     longitude_coeff = Column(Integer, nullable=False)
     perihelion_longitude_coeff = Column(Integer, nullable=False)
 
+    def __str__(self):
+        return '%i %i' % (self.longitude_coeff, self.perihelion_longitude_coeff)
+
 
 class Planet(_Body, Base):
     __tablename__ = 'planet'
@@ -28,6 +31,9 @@ class Asteroid(_Body, Base):
         *UNIQUE_FIELDS, 'axis', name='uc_name_long_peri_axis'
     ),)
     axis = Column(Float, nullable=False)
+
+    def __str__(self):
+        return '%s %f' % (super(Asteroid, self).__str__(), self.axis)
 
 
 class BrokenAsteroid(Base):

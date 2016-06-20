@@ -1,49 +1,35 @@
 from typing import List
 
-from entities.dbutills import Base
+from abc import abstractproperty
 from settings import Config
-from sqlalchemy import Boolean, UniqueConstraint, or_
-from sqlalchemy import Column, ForeignKey, Integer, Float
+from sqlalchemy import Boolean, or_
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from .threebodyresonance import ThreeBodyResonance
 from sqlalchemy.sql.expression import func
+from sqlalchemy import Column, Float
+from entities.resonance import ResonanceMixin
 
 CONFIG = Config.get_params()
 LIBRATION_MIN = CONFIG['resonance']['libration']['min']
 
 
-class Libration(Base):
+class LibrationMixin:
     """
-    Class represents libration.
+    Base class provides base interface.
     """
     PURE_ID = 1
     TRANSIENT_ID = 2
     APOCENTRIC_PURE_ID = 3
     MIN_BREAKS = 2
 
-    __tablename__ = 'libration'
-    _resonance_id = Column('resonance_id', Integer, ForeignKey('resonance.id'), nullable=False,
-                           unique=True)
-    _resonance = relationship(ThreeBodyResonance, backref=backref('libration', uselist=False))
     _average_delta = Column('average_delta', Float)
     _percentage = Column('percentage', Float)
     _circulation_breaks = Column('circulation_breaks', ARRAY(Float), nullable=False)
     _is_apocentric = Column('is_apocentric', Boolean, nullable=False)
 
-    def __init__(self, resonance: ThreeBodyResonance, circulation_breaks: List[float],
-                 body_count: int, is_apocentric: bool):
-        """
-        :param resonance: related resonance.
-        :param circulation_breaks: Years of breaks in resonant phases of pointed resonance.
-        :param body_count:
-        :param is_apocentric: flag indicates about swift by Pi (3.14)
-        :return:
-        """
+    def __init__(self, circulation_breaks: List[float], body_count: int, is_apocentric: bool):
         self._is_apocentric = is_apocentric
-        self._resonance = resonance
         self._circulation_breaks = circulation_breaks
 
         self._average_delta = None
@@ -108,21 +94,6 @@ class Libration(Base):
         return u'% = {0:f}%, medium period = {1:f}, max = {2:f}' \
             .format(self._percentage, self._average_delta, self.max_diff)
 
-    @property
-    def asteroid_number(self) -> int:
-        name = self._resonance.small_body.name
-        return int(name[1:])
-
-    @hybrid_property
-    def resonance(self) -> ThreeBodyResonance:
-        return self._resonance
-
-    def as_transient(self) -> str:
-        return '%i;%s;%i;%f;%f' % (
-            self.asteroid_number, str(self._resonance), self.TRANSIENT_ID,
-            self._average_delta, self.max_diff
-        )
-
     @hybrid_property
     def is_pure(self):
         if type(self._circulation_breaks) == InstrumentedAttribute:
@@ -132,10 +103,27 @@ class Libration(Base):
             res = len(self._circulation_breaks) < self.MIN_BREAKS
         return res
 
+    @property
+    def asteroid_number(self) -> int:
+        name = self.resonance.small_body.name
+        return int(name[1:])
+
+    @abstractproperty
+    def resonance(self) -> ResonanceMixin:
+        pass
+
+    def as_transient(self) -> str:
+        return '%i;%s;%i;%f;%f' % (
+            self.asteroid_number, str(self.resonance), self.TRANSIENT_ID,
+            self._average_delta, self.max_diff
+        )
+
     def as_pure(self) -> str:
-        return '%s;%s;%i' % (self.asteroid_number, str(self._resonance),
+        return '%s;%s;%i' % (self.asteroid_number, str(self.resonance),
                              self.PURE_ID)
 
     def as_pure_apocentric(self) -> str:
-        return '%s;%s;%i' % (self.asteroid_number, str(self._resonance),
+        return '%s;%s;%i' % (self.asteroid_number, str(self.resonance),
                              self.APOCENTRIC_PURE_ID)
+
+

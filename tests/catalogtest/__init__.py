@@ -1,13 +1,11 @@
-from typing import List
+from typing import List, Tuple
 from unittest import mock
 
 import pytest
 from catalog import find_by_number
-from commands.load_resonances import load_resonances
-import os
 from entities.dbutills import session
 from settings import Config
-from entities import ThreeBodyResonance
+from entities import ThreeBodyResonance, BodyNumberEnum
 from datamining import get_aggregated_resonances
 from tests.shortcuts import get_class_path
 from tests.shortcuts import resonancesfixture
@@ -35,11 +33,14 @@ def _resonance_mock(resonance_str, asteroid_number):
         return resonance
 
 
-@pytest.mark.parametrize('start, stop, resonances_str', [
-    (1, 3, ['[4 -2 -1 0 0 2.1468]', '[1 -1 -7 0 0 1.1641]']), (3, 4, [])
+@pytest.mark.parametrize('start, stop, resonances_str, planets', [
+    (1, 3, ['[4 -2 -1 0 0 2.1468]', '[1 -1 -7 0 0 1.1641]'], ('JUPITER', 'SATURN')),
+    (3, 4, [], ('MARS', 'JUPITER')),
+    (1, 3, ['[4 -1 0 2.1468]', '[1 -7 0 1.1641]'], ('MARS',)),
+    (3, 4, [], ('JUPITER',))
 ])
 def test_find_resonances(resonancesfixture, start, stop, resonances_str,
-                         monkeypatch):
+                         planets: Tuple[str], monkeypatch):
     class QueryMock:
         def filter(self, *args, **kwargs):
             return self
@@ -61,7 +62,8 @@ def test_find_resonances(resonancesfixture, start, stop, resonances_str,
 
     monkeypatch.setattr(session, 'query', query)
     if not resonances_str:
-        assert [x for x in get_aggregated_resonances(start, stop, False)] == []
+        assert [x for x in get_aggregated_resonances(start, stop, False, planets)] == []
     else:
-        for i, (resonance, aei_data) in enumerate(get_aggregated_resonances(start, stop, False)):
+        for i, (resonance, aei_data) in enumerate(get_aggregated_resonances(
+                start, stop, False, planets)):
             assert str(resonance) == resonances_str[i]

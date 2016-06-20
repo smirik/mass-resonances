@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import os
 
 from datamining import get_resonances
@@ -8,10 +10,10 @@ from entities.dbutills import engine, REDIS
 TABLENAME = Phase.__tablename__
 
 
-def clear_phases(start: int, stop: int):
+def clear_phases(start: int, stop: int, planets: Tuple[str]):
     conn = engine.connect()
     resonance_ids = []
-    for resonance in get_resonances(start, stop, False):
+    for resonance in get_resonances(start, stop, False, planets):
         REDIS.delete('%s:%i' % (TABLENAME, resonance.id))
         resonance_ids.append(str(resonance.id))
 

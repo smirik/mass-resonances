@@ -8,6 +8,7 @@ input
 .coverage
 htmlcov
 alembic.ini
+alembic.test.ini
 .cache
 .pylintrc
 .ropeproject

@@ -10,7 +10,9 @@ git diff --cached --name-only | \
 RETVAL=$?
 
 echo "PyLint checks..."
-pylint -E `git ls | grep py$ | grep -v --regexp="\(alembic\|fabfile\.py\)"` --disable=E1136 --disable=E1126 --ignored-classes=Planet,Asteroid,ThreeBodyResonance,Libration,PlanetName
+pylint -E `git ls | grep py$ | grep -v --regexp="\(alembic\|fabfile\.py\)"` --disable=E1136 --disable=E1126 --disable=no-self-argument\
+    --ignored-classes=Planet,Asteroid,ThreeBodyResonance,Libration,PlanetName,TwoBodyResonance,TwoBodyLibration\
+    --ignored-modules=entities.resonance.twobodyresonance,entities.resonance.threebodyresonance,entities.resonance.resonancemixin
 PYLINTVAL=$?
 
 if [ $RETVAL -eq 0 -o $PYLINTVAL -ne 0 ]
