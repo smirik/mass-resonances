@@ -378,7 +378,7 @@ def main():
     parser = _ArgParser(sys.argv)
     start = None
     stop = None
-    except_commands = ['migrate', '--help', 'get_file_list', 'librations', 'resonances']
+    except_commands = ['migrate', '--help', 'get_file_list', 'librations', 'resonances', 'planets']
     if not any([x in sys.argv for x in except_commands]):
         start = int(parser.parse('--start='))
         stop = int(parser.parse('--stop='))

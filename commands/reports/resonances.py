@@ -1,8 +1,7 @@
-from datamining.resonances import get_resonance_query, PLANET_TABLES
+from datamining.resonances import PLANET_TABLES, GetQueryBuilder
 from entities import ResonanceMixin
 from entities import BodyNumberEnum
 from entities.body import Asteroid
-from entities.resonance.twobodyresonance import ResonanceTableOptions
 from texttable import Texttable
 from .shortcuts import AsteroidCondition, PlanetCondition
 
@@ -11,7 +10,7 @@ def show_resonance_table(asteroid_condition: AsteroidCondition = None,
                          planet_condtion: PlanetCondition = None, limit=100, offset=0,
                          body_count: int=3):
     body_count = BodyNumberEnum(body_count)
-    query = get_resonance_query(body_count)
+    query = GetQueryBuilder(body_count).get_resonances()
 
     if asteroid_condition:
         names = ['A%i' % x for x in range(asteroid_condition.start, asteroid_condition.stop)]

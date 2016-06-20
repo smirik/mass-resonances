@@ -2,6 +2,7 @@ from .reports import AsteroidCondition
 from .reports import PlanetCondition, AxisInterval, ResonanceIntegers
 from .reports import show_librations
 from .reports import show_resonance_table
+from .reports import show_planets
 from .broken_bodies import show_broken_bodies
 from .calc import calc
 from .cleaning import clear_phases

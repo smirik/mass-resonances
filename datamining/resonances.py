@@ -1,7 +1,7 @@
 import logging
-from typing import Dict, Generic
-from typing import Iterable, Tuple, List, TypeVar
-from entities import ThreeBodyResonance, Libration, BodyNumberEnum, TwoBodyResonance
+from typing import Dict
+from typing import Iterable, Tuple, List
+from entities import ThreeBodyResonance, BodyNumberEnum, TwoBodyResonance
 from entities.body import Asteroid
 from entities.body import Planet
 from entities.dbutills import session
@@ -17,6 +17,37 @@ MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 
 FOREIGNS = ['first_body', 'second_body']
 PLANET_TABLES = {x: aliased(Planet) for x in FOREIGNS}  # type: Dict[str, Planet]
+
+
+class GetQueryBuilder:
+    def __init__(self, for_bodies: BodyNumberEnum):
+        if for_bodies == BodyNumberEnum.three:
+            self.resonance_cls = ThreeBodyResonance
+        else:
+            self.resonance_cls = TwoBodyResonance
+        self.query = session.query(self.resonance_cls)
+        self.for_bodies = for_bodies
+        self._foreings = FOREIGNS[:self.for_bodies.value - 1]
+
+    def get_resonances(self) -> Query:
+        query = self.query.options(joinedload('small_body')).join(self.resonance_cls.small_body)
+        query = self._add_join(query)
+        for key in self._foreings:
+            query = query.options(joinedload(key))
+        return query
+
+    def get_planets(self) -> Query:
+        cols = [PLANET_TABLES[x].name.label('%s_name1' % x) for x in self._foreings]
+        query = session.query(*cols).select_from(self.resonance_cls)
+        query = self._add_join(query).group_by(*cols)
+        return query
+
+    def _add_join(self, query: Query) -> Query:
+        for key in self._foreings:
+            planet_table = PLANET_TABLES[key]
+            resonance_attr = getattr(self.resonance_cls, '%s_id' % key)
+            query = query.join(planet_table, resonance_attr == planet_table.id)
+        return query
 
 
 def get_resonance_query(for_bodies: BodyNumberEnum) -> Query:
@@ -56,7 +87,7 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
     :return:
     """
     body_count = BodyNumberEnum(len(planets) + 1)
-    resonances = get_resonance_query(body_count)
+    resonances = GetQueryBuilder(body_count).get_resonances()
     for i, key in enumerate(FOREIGNS):
         if i >= (body_count.value - 1):
             break
@@ -77,8 +108,8 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
 
 
 def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librations: bool,
-                              planets: Tuple[str])\
-        -> Iterable[Tuple[ResonanceMixin, List[str]]]:
+                              planets: Tuple[str]) \
+    -> Iterable[Tuple[ResonanceMixin, List[str]]]:
     """Find resonances from /axis/resonances by asteroid axis. Currently
     described by 7 items list of floats. 6 is integers satisfying
     D'Alembert rule. First 3 for longitutes, and second 3 for longitutes
