@@ -1,5 +1,11 @@
 #!/usr/bin/env python
-from typing import List
+"""
+This module aims work as entrypoint in docker container. It prepares
+environment for execute complex actions. For example. We need to integrate
+with mercury6, after this we need to compute resonance phases and find
+librations, build plots and upload them to AWS S3.
+"""
+from typing import List, Tuple, Iterable
 import traceback
 import os
 import subprocess
@@ -84,7 +90,7 @@ def _get_signs():
     return username, password, host, dbname
 
 
-def _add_redis_sings(to_config_path):
+def _edit_localsettings(to_config_path):
     with open(to_config_path, 'w') as f:
         local_settings = {
             'redis': {
@@ -120,25 +126,45 @@ def _archive_plots(archive_path: str, source: str, spec: str):
             tarf.add(item, arcname=os.path.basename(item))
 
 
-def _get_interval(start: int, stop: int):
+def _make_cmd_interal_options(start: int, stop: int):
     return ['--start=%i' % start, '--stop=%i' % stop]
 
 
+def _get_interval(from_line: str):
+    starts_from = from_line.index('aei-') + 4
+    ends_by = from_line.index('-', starts_from)
+    start_asteroid_number = int(from_line[starts_from: ends_by])
+
+    starts_from = ends_by + 1
+    ends_by = from_line.index('.tar', starts_from)
+    stop_asteroid_number = int(from_line[starts_from:ends_by])
+    return start_asteroid_number, stop_asteroid_number
+
+
 class ProgramRunner:
+    """
+    Execute complex programs. It can:
+
+    1. Run full cycle of computions (integrate
+    with mercury6, after this we need to compute resonance phases and find
+    librations, build plots and upload them to AWS S3).
+
+    2. Run computing resonance phases by downloaded aei files from AWS S3 and find
+    librations, build plots and upload them to AWS S3.
+
+    3. Run computing resonance phases by downloaded aei files from AWS S3 and find
+    librations.
+    """
     STEP = 100
-    CMD = 's3cmd'
+    CMD = 'aws'
     CMD_GET_ARGS = [
-        '--access_key=%s' % os.environ.get('S3_ACCESS_KEY', ''),
-        '--secret_key=%s' % os.environ.get('S3_SECRET_KEY', ''),
-        'get'
+        's3', 'cp'
     ]
     CMD_SYNC_ARGS = [
         '--acl-private',
         '--bucket-location=EU',
         '--guess-mime-type',
         '--storage-class=STANDARD',
-        '--access_key=%s' % os.environ.get('S3_ACCESS_KEY', ''),
-        '--secret_key=%s' % os.environ.get('S3_SECRET_KEY', ''),
         'sync',
     ]
     LOGFILE = 'entrypoint-errors.log'
@@ -158,19 +184,17 @@ class ProgramRunner:
         self._project_path = project_path
         self.S3_ROOT_DIR = os.environ.get('S3_ROOT_DIR')
 
-    def run_find_plot(self, phase_storage: str = 'REDIS', only_librations: bool = False):
-        if not self.S3_PLOTS_DIR:
-            print('You must to point directory name for plots on AWS S3 (env var S3_PLOTS_DIR)')
-            exit(-1)
-        assert self.S3_ROOT_DIR
+    def _prepare_environment(self) -> str:
         _copy_aws_file_list(self._project_path)
-        _add_redis_sings(opjoin(self._project_path, 'config', 'local_config.yml'))
+        _edit_localsettings(opjoin(self._project_path, 'config', 'local_config.yml'))
         file_list_path = opjoin(self._project_path, 'catalog', AWS_S3_AEI_FILE_LIST)
         if not os.path.exists(file_list_path):
             self._raw_log('%s doesn\'t exists. Get list of aei files, that you need.' %
                           file_list_path + ' Try command get_file_list', False)
-            return
+            return None
+        return file_list_path
 
+    def _iterate_aws_aei_files(self, file_list_path) -> Iterable[Tuple[int, int]]:
         with open(file_list_path) as file_list_file:
             for i in range(self._start):
                 next(file_list_file)
@@ -179,43 +203,56 @@ class ProgramRunner:
                 if i >= (self._stop - self._start):
                     break
                 s3_path = line.split()[3]
+                start_asteroid_number, stop_asteroid_number = _get_interval(line)
+                result = subprocess.run([self.CMD] + self.CMD_GET_ARGS + [s3_path, '.'])
 
-                starts_from = line.index('aei-') + 4
-                ends_by = line.index('-', starts_from)
-                start_asteroid_number = int(line[starts_from: ends_by])
-
-                starts_from = ends_by + 1
-                ends_by = line.index('.tar', starts_from)
-                stop_asteroid_number = int(line[starts_from:ends_by])
-
-                result = subprocess.run([self.CMD] + self.CMD_GET_ARGS + [s3_path])
                 if not result.returncode:
                     tarfile_name = os.path.basename(s3_path)
                     extract_path = opjoin(self._project_path, self.EXTRACT_ARCHIVE_PATH)
                     symlink_paths = self._make_symlinks_to_files(tarfile_name, extract_path)
+                    yield start_asteroid_number, stop_asteroid_number
 
-                    if not self._find(start_asteroid_number, stop_asteroid_number, phase_storage):
-                        continue
-
-                    if not self._plot(start_asteroid_number, stop_asteroid_number, phase_storage,
-                                      only_librations):
-                        continue
-
-                    self._move_files_to_s3(
-                        opjoin(self._project_path, 'output', 'images', '*.png'),
-                        opjoin(self._project_path, 'png-%i-%i.tar' %
-                               (start_asteroid_number, stop_asteroid_number)),
-                        'w', self.S3_PLOTS_DIR)
-
-                    self._clear_phases(start_asteroid_number, stop_asteroid_number)
                     shutil.rmtree(extract_path, True)
                     os.remove(tarfile_name)
                     for item in symlink_paths:
-                        os.remove(item)
+                        try:
+                            os.remove(item)
+                        except FileNotFoundError:
+                            pass
                     symlink_paths.clear()
                 else:
                     self._raw_log('Something wrong during loading %s' % s3_path, False)
                     continue
+
+    def run_find(self, phase_storage: str = 'REDIS'):
+        file_list_path = self._prepare_environment()
+        if not file_list_path:
+            return
+
+        for start_asteroid, stop_asteroid in self._iterate_aws_aei_files(file_list_path):
+            if not self._find(start_asteroid, stop_asteroid, phase_storage):
+                continue
+
+    def run_find_plot(self, phase_storage: str = 'REDIS', only_librations: bool = False):
+        if not self.S3_PLOTS_DIR:
+            print('You must to point directory name for plots on AWS S3 (env var S3_PLOTS_DIR)')
+            exit(-1)
+        assert self.S3_ROOT_DIR
+        file_list_path = self._prepare_environment()
+        if not file_list_path:
+            return
+
+        for start_asteroid, stop_asteroid in self._iterate_aws_aei_files(file_list_path):
+            if not self._find(start_asteroid, stop_asteroid, phase_storage):
+                continue
+
+            if not self._plot(start_asteroid, stop_asteroid, phase_storage, only_librations):
+                continue
+
+            self._move_files_to_s3(
+                opjoin(self._project_path, 'output', 'images', '*.png'),
+                opjoin(self._project_path, 'png-%i-%i.tar' % (start_asteroid, stop_asteroid)),
+                'w', self.S3_PLOTS_DIR)
 
     def run_full_stack(self, from_day: float, phase_storage: str = 'REDIS',
                        only_librations: bool = False):
@@ -224,10 +261,10 @@ class ProgramRunner:
             exit(-1)
         assert self.S3_ROOT_DIR
         _copy_catalog(self._project_path)
-        _add_redis_sings(opjoin(self._project_path, 'config', 'local_config.yml'))
+        _edit_localsettings(opjoin(self._project_path, 'config', 'local_config.yml'))
         for i in range(self._start, self._stop, self.STEP):
             end = i + self.STEP if i + self.STEP < self._stop else self._stop
-            interval = _get_interval(i, end)
+            interval = _make_cmd_interal_options(i, end)
 
             res = subprocess.run([
                 opjoin(self._project_path, 'main.py'), '--logfile=%s' % self.CALC_LOGFILE,
@@ -257,13 +294,13 @@ class ProgramRunner:
         _copy_catalog(self._project_path)
         if self._start is not None and self._stop is not None and need_aei:
             _load_aei(self._project_path, self._start, self._stop)
-        _add_redis_sings(opjoin(self._project_path, 'config', 'local_config.yml'))
+        _edit_localsettings(opjoin(self._project_path, 'config', 'local_config.yml'))
         subprocess.call([opjoin(self._project_path, 'main.py')] + program_args,
                         cwd=self._project_path)
         if need_aei:
             _copy_aei(self._project_path)
 
-    def _make_symlinks_to_files(self, from_archive, extract_path):
+    def _make_symlinks_to_files(self, from_archive, extract_path) -> List[str]:
         symlink_paths = []
         with tarfile.open(from_archive) as tarf:
             for archive_item in tarf:
@@ -279,23 +316,24 @@ class ProgramRunner:
         return symlink_paths
 
     def _plot(self, start: int, stop: int, phase_storage: str, only_librations: bool):
-        interval = _get_interval(start, stop)
-        res = subprocess.run([
-            opjoin(self._project_path, 'main.py'), '--logfile=%s' % self.PLOT_LOGFILE,
-            'plot', '--phase-storage=%s' % phase_storage,
-            '--only-librations=%i' % only_librations
-        ] + interval, cwd=self._project_path, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        interval = _make_cmd_interal_options(start, stop)
+        args = [opjoin(self._project_path, 'main.py'), '--logfile=%s' % self.PLOT_LOGFILE, 'plot',
+                '--phase-storage=%s' % phase_storage, '--only-librations=%i' % only_librations]
+        args += interval + ['%s' % os.environ['PLANETS'].split(',')]
+        res = subprocess.run(args, cwd=self._project_path, stderr=subprocess.PIPE,
+                             stdout=subprocess.PIPE)
         if res.returncode:
             self._handle_process_error(start, stop, self.PLOT_LOGFILE, res.stderr)
             return False
         return True
 
     def _find(self, start: int, stop: int, phase_storage):
-        interval = _get_interval(start, stop)
-        res = subprocess.run([
-            opjoin(self._project_path, 'main.py'), '--logfile=%s' % self.FIND_LOGFILE,
-            'find', '--reload-resonances=0', '--phase-storage=%s' % phase_storage
-        ] + interval, cwd=self._project_path, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        interval = _make_cmd_interal_options(start, stop)
+        args = [opjoin(self._project_path, 'main.py'), '--logfile=%s' % self.FIND_LOGFILE,
+                'find', '--reload-resonances=0', '--phase-storage=%s' % phase_storage]
+        args += interval + ['%s' % os.environ['PLANETS'].split(',')]
+        res = subprocess.run(args, cwd=self._project_path, stderr=subprocess.PIPE,
+                             stdout=subprocess.PIPE)
         if res.returncode:
             self._handle_process_error(start, stop, self.FIND_LOGFILE, res.stderr)
             return False
@@ -422,6 +460,14 @@ def main():
         if exception_message:
             raise Exception(exception_message)
         runner.run_find_plot(phase_storage, only_librations)
+    elif 'complex_find' in sys.argv:
+        phase_storage = parser.parse('--phase-storage=')
+        exception_message = ''
+        if phase_storage is None:
+            exception_message = '--phase-storage %s' % TAIL_MESSAGE
+        if exception_message:
+            raise Exception(exception_message)
+        runner.run_find(phase_storage)
     else:
         del sys.argv[0]
         runner.run_simple(sys.argv, bool(int(os.environ.get('NEED_AEI', True))))
