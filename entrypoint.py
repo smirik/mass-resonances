@@ -319,7 +319,7 @@ class ProgramRunner:
         interval = _make_cmd_interal_options(start, stop)
         args = [opjoin(self._project_path, 'main.py'), '--logfile=%s' % self.PLOT_LOGFILE, 'plot',
                 '--phase-storage=%s' % phase_storage, '--only-librations=%i' % only_librations]
-        args += interval + ['%s' % os.environ['PLANETS'].split(',')]
+        args += interval + ['%s' % os.environ['PLANETS'].replace(',', ' ')]
         res = subprocess.run(args, cwd=self._project_path, stderr=subprocess.PIPE,
                              stdout=subprocess.PIPE)
         if res.returncode:
@@ -331,7 +331,7 @@ class ProgramRunner:
         interval = _make_cmd_interal_options(start, stop)
         args = [opjoin(self._project_path, 'main.py'), '--logfile=%s' % self.FIND_LOGFILE,
                 'find', '--reload-resonances=0', '--phase-storage=%s' % phase_storage]
-        args += interval + ['%s' % os.environ['PLANETS'].split(',')]
+        args += interval + ['%s' % os.environ['PLANETS'].replace(',', ' ')]
         res = subprocess.run(args, cwd=self._project_path, stderr=subprocess.PIPE,
                              stdout=subprocess.PIPE)
         if res.returncode:
