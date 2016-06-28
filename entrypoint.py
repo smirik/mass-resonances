@@ -233,6 +233,8 @@ class ProgramRunner:
             if not self._find(start_asteroid, stop_asteroid, phase_storage):
                 continue
 
+            self._clear_phases(start_asteroid, stop_asteroid)
+
     def run_find_plot(self, phase_storage: str = 'REDIS', only_librations: bool = False):
         if not self.S3_PLOTS_DIR:
             print('You must to point directory name for plots on AWS S3 (env var S3_PLOTS_DIR)')
@@ -253,6 +255,8 @@ class ProgramRunner:
                 opjoin(self._project_path, 'output', 'images', '*.png'),
                 opjoin(self._project_path, 'png-%i-%i.tar' % (start_asteroid, stop_asteroid)),
                 'w', self.S3_PLOTS_DIR)
+
+            self._clear_phases(start_asteroid, stop_asteroid)
 
     def run_full_stack(self, from_day: float, phase_storage: str = 'REDIS',
                        only_librations: bool = False):
@@ -340,11 +344,13 @@ class ProgramRunner:
         return True
 
     def _clear_phases(self, start: int, stop: int):
-        res = subprocess.run([
+        args = [
             opjoin(self._project_path, 'main.py'), '--logfile=resonances-clear-phases.log',
             'clear-phases', '--start=%s' % start, '--stop=%s' % stop,
-            os.environ['PLANETS'].split(',')
-        ], cwd=self._project_path, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        ]
+        args += os.environ['PLANETS'].split(',')
+        res = subprocess.run(args, cwd=self._project_path, stderr=subprocess.PIPE,
+                             stdout=subprocess.PIPE)
         if res.returncode:
             self._log(start, stop, res.stderr)
 
