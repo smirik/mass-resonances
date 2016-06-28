@@ -177,7 +177,8 @@ def clear_phases(start: int, stop: int, planets: Tuple[str]):
     _clear_phases(start, stop, planets)
 
 
-@cli.command()
+@cli.command(help='Removes data from export directory (%s).' %
+                  opjoin(PROJECT_DIR, CONFIG['export']['base_dir']))
 @_asteroid_interval_options()
 def clean(start: int, stop: int):
     remove_export_directory(start, stop)
@@ -238,7 +239,8 @@ def librations(start: int, stop: int, first_planet: str, second_planet: str, pur
 @_asteroid_interval_options(None, None)
 @click.option('--first-planet', default=None, type=str, help='Example: JUPITER')
 @click.option('--second-planet', default=None, type=str, help='Example: SATURN')
-@click.option('--body-count', default=None, type=click.Choice(['2', '3']), help='Example: 2')
+@click.option('--body-count', default=None, type=click.Choice(['2', '3']),
+              help='Example: 2. 2 means two body resonance, 3 means three body resonance,')
 @_report_interval_options()
 def resonances(start: int, stop: int, first_planet: str, second_planet: str,
                body_count: str,
@@ -257,7 +259,8 @@ def resonances(start: int, stop: int, first_planet: str, second_planet: str,
 
 
 @cli.command(help='Shows planets, which exist inside resonance table.')
-@click.option('--body-count', default=None, type=click.Choice(['2', '3']), help='Example: 2')
+@click.option('--body-count', default=None, type=click.Choice(['2', '3']),
+              help='Example: 2. 2 means two body resonance, 3 means three body resonance,')
 def planets(body_count: str):
     body_count = int(body_count)
     _show_planets(body_count)

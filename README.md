@@ -196,3 +196,53 @@ Options:
                    integrated.
   --help           Show this message and exit.
 ```
+
+**Usage: main.py librations [OPTIONS]**
+```
+  Shows librations. Below options are need for filtering.
+
+Options:
+  --start INTEGER           Start asteroid number. Counting from 1.
+  --stop INTEGER            Stop asteroid number. Excepts last. Means, that
+                            asteroid with number, that equals this parameter,
+                            will not be integrated.
+  --first-planet TEXT       Example: JUPITER
+  --second-planet TEXT      Example: SATURN
+  --pure BOOLEAN            Example: 0
+  --apocentric BOOLEAN      Example: 0
+  --axis-interval FLOAT...  Interval is pointing by two values separated by
+                            space. Example: 0.0 180.0
+  --integers INTEGER...     Integers are pointing by three values separated by
+                            space. Example: 5 -1 -1
+  --limit INTEGER           Example: 100
+  --offset INTEGER          Example: 100
+  --help                    Show this message and exit.
+```
+
+**Usage: main.py resonances [OPTIONS]**
+```
+  Shows integers from resonance table. Below options are need for filtering.
+
+Options:
+  --start INTEGER       Start asteroid number. Counting from 1.
+  --stop INTEGER        Stop asteroid number. Excepts last. Means, that
+                        asteroid with number, that equals this parameter, will
+                        not be integrated.
+  --first-planet TEXT   Example: JUPITER
+  --second-planet TEXT  Example: SATURN
+  --body-count [2|3]    Example: 2. 2 means two body resonance, 3 means three
+                        body resonance,
+  --limit INTEGER       Example: 100
+  --offset INTEGER      Example: 100
+  --help                Show this message and exit.
+```
+
+**Usage: main.py planets [OPTIONS]**
+```
+  Shows planets, which exist inside resonance table.
+
+Options:
+  --body-count [2|3]  Example: 2. 2 means two body resonance, 3 means three
+                      body resonance,
+  --help              Show this message and exit.
+```
