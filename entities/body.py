@@ -1,5 +1,6 @@
 from entities.dbutills import Base
-from sqlalchemy import Column, Integer, String, UniqueConstraint, Float
+from sqlalchemy import Column, Integer, String, UniqueConstraint, Float, func, cast
+from sqlalchemy.ext.hybrid import hybrid_property
 
 LONG = 'longitude'
 PERI = 'perihelion_%s' % LONG
@@ -31,6 +32,14 @@ class Asteroid(_Body, Base):
         *UNIQUE_FIELDS, 'axis', name='uc_name_long_peri_axis'
     ),)
     axis = Column(Float, nullable=False)
+
+    @hybrid_property
+    def number(self) -> int:
+        return int(self.name[1:])
+
+    @number.expression
+    def number(cls):
+        return cast(func.substr(cls.name, 2, func.length(cls.name) - 1), Integer)
 
     def __str__(self):
         return '%s %f' % (super(Asteroid, self).__str__(), self.axis)

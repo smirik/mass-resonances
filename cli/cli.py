@@ -32,6 +32,7 @@ PROJECT_DIR = Config.get_project_dir()
 RESONANCE_TABLE_FILE = CONFIG['resonance_table']['file']
 RESONANCE_FILEPATH = opjoin(PROJECT_DIR, 'axis', RESONANCE_TABLE_FILE)
 STEP = CONFIG['integrator']['number_of_bodies']
+INTEGRATOR_DIR = CONFIG['integrator']['dir']
 
 
 def _unite_decorators(*decorators):
@@ -57,6 +58,18 @@ def _asteroid_interval_options(default_start=1, default_stop=101):
                      help='Stop asteroid number. Excepts last. Means, that '
                           'asteroid with number, that equals this parameter,'
                           ' will not be integrated.'))
+
+
+def aei_path_options():
+    return _unite_decorators(
+        click.option('--aei-path', '-p', multiple=True,
+                     default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
+                     type=click.Path(exists=True, resolve_path=True),
+                     help='Path to aei files. It can be folder or tar.gz archive.'
+                          ' You can point several paths. Example: -p /mnt/aei/ -p /tmp/aei'),
+        click.option('--recursive', '-r', type=bool, is_flag=True,
+                     help='Indicates about recursive search aei file in pointed paths.'),
+    )
 
 
 def _asteroid_time_intervals_options():
@@ -143,18 +156,25 @@ def load_resonances(start: int, stop: int, file: str, planets: Tuple[str]):
 @click.option('--is-current', default=False, type=bool,
               help='%s librations only from database, it won\'t compute them from phases' %
                    FIND_HELP_PREFIX)
-@click.option('--phase-storage', default='REDIS', type=click.Choice(PHASE_STORAGE),
+@click.option('--phase-storage', '-s', default='REDIS', type=click.Choice(PHASE_STORAGE),
               help='will save phases to redis or postgres or file')
+@aei_path_options()
+@click.option('--clear', '-c', type=bool, is_flag=True,
+              help='Will clear resonance phases aftersearch librations.')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
-         recalc: bool, is_current: bool, phase_storage: str, planets: Tuple[str]):
+         recalc: bool, is_current: bool, phase_storage: str, aei_path: Tuple[str, ...],
+         recursive: bool, clear: bool, planets: Tuple[str]):
     if recalc:
         _calc(start, stop, STEP, from_day, to_day)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
         if reload_resonances:
             _load_resonances(RESONANCE_FILEPATH, i, end, planets)
-        _find(i, end, planets, is_current, PhaseStorage(PHASE_STORAGE.index(phase_storage)))
+        _find(i, end, planets, aei_path, recursive, is_current,
+              PhaseStorage(PHASE_STORAGE.index(phase_storage)))
+        if clear:
+            _clear_phases(i, end, planets)
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
@@ -164,9 +184,12 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
               help='will load phases for plotting from redis or postgres or file')
 @click.option('--only-librations', default=False, type=bool,
               help='flag indicates about plotting only for resonances, that librates')
+@aei_path_options()
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
-def plot(start: int, stop: int, phase_storage: str, only_librations: bool, planets: Tuple[str]):
-    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations, planets)
+def plot(start: int, stop: int, phase_storage: str, only_librations: bool,
+         aei_path: Tuple[str, ...], recursive: bool, planets: Tuple[str]):
+    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations, aei_path,
+          recursive, planets)
 
 
 @cli.command(name='clear-phases', help='Clears phases from database and Redis, which related to '
@@ -258,9 +281,9 @@ def resonances(start: int, stop: int, first_planet: str, second_planet: str,
     _show_resonance_table(**kwargs)
 
 
-@cli.command(help='Shows planets, which exist inside resonance table.')
+@cli.command(name='planets', help='Shows planets, which exist inside resonance table.')
 @click.option('--body-count', default=None, type=click.Choice(['2', '3']),
               help='Example: 2. 2 means two body resonance, 3 means three body resonance,')
-def planets(body_count: str):
+def show_planets(body_count: str):
     body_count = int(body_count)
     _show_planets(body_count)

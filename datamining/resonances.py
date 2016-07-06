@@ -1,6 +1,11 @@
+"""
+Module contains kit for getting resonances from databases.
+"""
 import logging
 from typing import Dict
 from typing import Iterable, Tuple, List
+
+from datamining.orbitalelements import FilepathBuilder
 from entities import ThreeBodyResonance, BodyNumberEnum, TwoBodyResonance
 from entities.body import Asteroid
 from entities.body import Planet
@@ -20,6 +25,9 @@ PLANET_TABLES = {x: aliased(Planet) for x in FOREIGNS}  # type: Dict[str, Planet
 
 
 class GetQueryBuilder:
+    """
+    Class build base query for getting two or three body resonances or related planets.
+    """
     def __init__(self, for_bodies: BodyNumberEnum):
         if for_bodies == BodyNumberEnum.three:
             self.resonance_cls = ThreeBodyResonance
@@ -27,13 +35,11 @@ class GetQueryBuilder:
             self.resonance_cls = TwoBodyResonance
         self.query = session.query(self.resonance_cls)
         self.for_bodies = for_bodies
-        self._foreings = FOREIGNS[:self.for_bodies.value - 1]
+        self._foreings = FOREIGNS[:for_bodies.value - 1]
 
     def get_resonances(self) -> Query:
-        query = self.query.options(joinedload('small_body')).join(self.resonance_cls.small_body)
+        query = self.query.join(Asteroid, isouter=True)
         query = self._add_join(query)
-        for key in self._foreings:
-            query = query.options(joinedload(key))
         return query
 
     def get_planets(self) -> Query:
@@ -46,7 +52,7 @@ class GetQueryBuilder:
         for key in self._foreings:
             planet_table = PLANET_TABLES[key]
             resonance_attr = getattr(self.resonance_cls, '%s_id' % key)
-            query = query.join(planet_table, resonance_attr == planet_table.id)
+            query = query.join(planet_table, resonance_attr == planet_table.id, isouter=True)
         return query
 
 
@@ -75,7 +81,7 @@ def get_resonance_query(for_bodies: BodyNumberEnum) -> Query:
     return query
 
 
-def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[str]) \
+def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[str, ...]) \
         -> Iterable[ResonanceMixin]:
     """
     Returns resonances related to asteroid in pointer interval from start to stop.
@@ -91,13 +97,12 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
     for i, key in enumerate(FOREIGNS):
         if i >= (body_count.value - 1):
             break
-        resonances.filter(PLANET_TABLES[key].name == planets[i])
-    names = ['A%i' % x for x in range(start, stop)]
-    resonances = resonances.filter(Asteroid.name.in_(names)).options(joinedload('libration'))
+        resonances = resonances.filter(PLANET_TABLES[key].name == planets[i])
+    resonances = resonances.filter(Asteroid.number >= start, Asteroid.number < stop)\
+        .options(joinedload('libration')).order_by(Asteroid.number)
 
     if only_librations:
         resonances = resonances.join('libration')
-    resonances = sorted(resonances.all(), key=lambda x: x.asteroid_number)
 
     if not resonances:
         logging.info('We have no resonances, try command load-resonances --start=%i --stop=%i'
@@ -108,13 +113,14 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
 
 
 def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librations: bool,
-                              planets: Tuple[str]) \
-    -> Iterable[Tuple[ResonanceMixin, List[str]]]:
+                              planets: Tuple[str, ...], filepath_builder: FilepathBuilder) \
+        -> Iterable[Tuple[ResonanceMixin, List[str]]]:
     """Find resonances from /axis/resonances by asteroid axis. Currently
     described by 7 items list of floats. 6 is integers satisfying
     D'Alembert rule. First 3 for longitutes, and second 3 for longitutes
     perihilion. Seventh value is asteroid axis.
 
+    :param filepath_builder:
     :param planets:
     :param only_librations: flag indicates about getting resonances, that has related librations.
     :param to_asteroid:
@@ -132,7 +138,7 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librati
                 self._asteroid_number = for_asteroid_number
                 self._aei_data.clear()
 
-                smallbody_filepath = opjoin(MERCURY_DIR, 'A%i.aei' % self._asteroid_number)
+                smallbody_filepath = filepath_builder.build('A%i.aei' % self._asteroid_number)
                 with open(smallbody_filepath) as aei_file:
                     for line in aei_file:
                         self._aei_data.append(line)
