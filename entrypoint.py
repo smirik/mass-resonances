@@ -184,10 +184,15 @@ class ProgramRunner:
         self._project_path = project_path
         self.S3_ROOT_DIR = os.environ.get('S3_ROOT_DIR')
 
-    def _prepare_environment(self) -> str:
+    def _get_file_list_path(self):
+        if os.environ['FILE_LIST']:
+            return os.environ['FILE_LIST']
         _copy_aws_file_list(self._project_path)
+        return opjoin(self._project_path, 'catalog', AWS_S3_AEI_FILE_LIST)
+
+    def _prepare_environment(self) -> str:
         _edit_localsettings(opjoin(self._project_path, 'config', 'local_config.yml'))
-        file_list_path = opjoin(self._project_path, 'catalog', AWS_S3_AEI_FILE_LIST)
+        file_list_path = self._get_file_list_path()
         if not os.path.exists(file_list_path):
             self._raw_log('%s doesn\'t exists. Get list of aei files, that you need.' %
                           file_list_path + ' Try command get_file_list', False)
@@ -202,12 +207,19 @@ class ProgramRunner:
             for i, line in enumerate(file_list_file):
                 if i >= (self._stop - self._start):
                     break
-                s3_path = line.split()[3]
-                start_asteroid_number, stop_asteroid_number = _get_interval(line)
-                result = subprocess.run([self.CMD] + self.CMD_GET_ARGS + [s3_path, '.'])
 
-                if not result.returncode:
-                    tarfile_name = os.path.basename(s3_path)
+                res = 0
+                start_asteroid_number, stop_asteroid_number = _get_interval(line)
+                if 's3://' in line:
+                    tar_source_path = line.split()[3]
+                    res = subprocess.run([self.CMD] + self.CMD_GET_ARGS + [tar_source_path, '.'])\
+                        .returncode
+                else:
+                    tar_source_path = line[:-1]
+                    shutil.copy(tar_source_path, '.')
+
+                if not res:
+                    tarfile_name = os.path.basename(tar_source_path)
                     extract_path = opjoin(self._project_path, self.EXTRACT_ARCHIVE_PATH)
                     symlink_paths = self._make_symlinks_to_files(tarfile_name, extract_path)
                     yield start_asteroid_number, stop_asteroid_number
@@ -221,7 +233,7 @@ class ProgramRunner:
                             pass
                     symlink_paths.clear()
                 else:
-                    self._raw_log('Something wrong during loading %s' % s3_path, False)
+                    self._raw_log('Something wrong during loading %s' % tar_source_path, False)
                     continue
 
     def run_find(self, phase_storage: str = 'REDIS'):
