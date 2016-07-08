@@ -2,7 +2,7 @@ import os
 from math import pi
 
 from datamining import PhaseLoader, PhaseStorage
-from entities import BodyNumberEnum
+from datamining.orbitalelements import FilepathBuilder
 from os.path import join as opjoin
 from typing import List, Tuple
 
@@ -22,7 +22,8 @@ OUTPUT_GNU_PATH = opjoin(PROJECT_DIR, CONFIG['output']['gnuplot'])
 
 
 def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: bool,
-         planets: Tuple[str]):
+         aei_path: Tuple[str, ...], is_recursive: bool, planets: Tuple[str]):
+    pathbuilder = FilepathBuilder(aei_path, is_recursive)
     resmaker = _ResfileMaker(planets)
 
     if not os.path.exists(OUTPUT_IMAGES):
@@ -33,7 +34,7 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
 
     phase_loader = PhaseLoader(phase_storage)
     for resonance, aei_data in get_aggregated_resonances(start, stop, for_librations,
-                                                         planets):
+                                                         planets, pathbuilder):
         phases = phase_loader.load(resonance.id)
         apocentric_phases = [cutoff_angle(x + pi) for x in phases]
         res_filepath = opjoin(OUTPUT_RES_PATH, 'A%i_%i.res' %

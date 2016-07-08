@@ -5,7 +5,6 @@ from settings import Config
 from sqlalchemy import Boolean, or_
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.expression import func
 from sqlalchemy import Column, Float
 from entities.resonance import ResonanceMixin
@@ -96,11 +95,12 @@ class LibrationMixin:
 
     @hybrid_property
     def is_pure(self):
-        if type(self._circulation_breaks) == InstrumentedAttribute:
-            res = or_(func.array_length(self._circulation_breaks, 1) < self.MIN_BREAKS,
-                      func.array_length(self._circulation_breaks, 1).is_(None))
-        else:
-            res = len(self._circulation_breaks) < self.MIN_BREAKS
+        return len(self._circulation_breaks) < self.MIN_BREAKS
+
+    @is_pure.expression
+    def is_pure(cls):
+        res = or_(func.array_length(cls._circulation_breaks, 1) < cls.MIN_BREAKS,
+                  func.array_length(cls._circulation_breaks, 1).is_(None))
         return res
 
     @property

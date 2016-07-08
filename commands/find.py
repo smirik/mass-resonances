@@ -1,9 +1,11 @@
 import json
 import logging
-from typing import List, Dict, overload, Tuple
+
+from typing import List, Dict, Tuple
 
 from datamining import get_aggregated_resonances, PhaseBuilder
 from datamining import LibrationClassifier
+from datamining.orbitalelements import FilepathBuilder
 from datamining.orbitalelements.collection import AEIValueError
 from datamining import PhaseStorage, PhaseCleaner
 from entities import BodyNumberEnum
@@ -23,13 +25,14 @@ MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 OUTPUT_ANGLE = CONFIG['output']['angle']
 
 
-def find(start: int, stop: int, planets: Tuple[str], is_current: bool = False,
-         phase_storage: PhaseStorage = PhaseStorage.redis):
+def find(start: int, stop: int, planets: Tuple[str], aei_path: Tuple[str, ...], is_recursive: bool,
+         is_current: bool = False, phase_storage: PhaseStorage = PhaseStorage.redis):
     """Analyze resonances for pointed half-interval of numbers of asteroids. It gets resonances
     aggregated to asteroids. Computes resonant phase by orbital elements from prepared aei files of
     three bodies (asteroid and two planets). After this it finds circulations in vector of resonant
     phases and solves, based in circulations, libration does exists or no.
 
+    :param aei_path:
     :param planets:
     :param phase_storage: needs for auto migration from redis to postgres
     :param start: start point of half-interval.
@@ -38,7 +41,8 @@ def find(start: int, stop: int, planets: Tuple[str], is_current: bool = False,
     :return:
     """
     orbital_element_sets = None
-    filepaths = [opjoin(MERCURY_DIR, '%s.aei' % x) for x in planets]
+    pathbuilder = FilepathBuilder(aei_path, is_recursive)
+    filepaths = [pathbuilder.build('%s.aei' % x) for x in planets]
     try:
         orbital_element_sets = build_bigbody_elements(filepaths)
     except AEIValueError:
@@ -49,7 +53,7 @@ def find(start: int, stop: int, planets: Tuple[str], is_current: bool = False,
     phase_builder = PhaseBuilder(phase_storage)
     phase_cleaner = PhaseCleaner(phase_storage)
 
-    for resonance, aei_data in get_aggregated_resonances(start, stop, False, planets):
+    for resonance, aei_data in get_aggregated_resonances(start, stop, False, planets, pathbuilder):
         broken_asteroid_mediator = _BrokenAsteroidMediator(resonance.small_body.name)
         if broken_asteroid_mediator.check():
             continue

@@ -1,4 +1,4 @@
-from typing import List, Generic, TypeVar
+from typing import List
 from abc import abstractmethod
 from entities.body import Planet
 from sqlalchemy import Integer
@@ -53,15 +53,14 @@ class ResonanceMixin:
 
     @hybrid_property
     def asteroid_number(self) -> int:
-        name = self.small_body.name
-        return int(name[1:])
+        return int(self.small_body.name[1:])
 
     @abstractmethod
     def compute_resonant_phase(self, *args) -> float:
         pass
 
     @abstractmethod
-    def get_big_bodies(self):
+    def get_big_bodies(self) -> List[Planet]:
         pass
 
     @classmethod
