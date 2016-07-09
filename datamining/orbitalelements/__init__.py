@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Iterable
 
 from tarfile import TarFile
 from tarfile import TarInfo
@@ -38,7 +38,7 @@ class FilepathBuilder:
 
     EXTRACT_PATH = opjoin(PROJECT_DIR, '.from_archives')
 
-    def __init__(self, paths: Tuple, is_recursive=False):
+    def __init__(self, paths: Iterable, is_recursive=False):
         self._last_tar = None
         self._is_recursive = is_recursive
         self._archives = []

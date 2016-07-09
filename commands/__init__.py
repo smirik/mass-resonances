@@ -12,4 +12,4 @@ from .fileoperations import remove_export_directory
 from .find import find
 from .load_resonances import load_resonances
 from .plot import plot
-
+from .genres import genres

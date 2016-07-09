@@ -18,6 +18,7 @@ from commands import show_librations as _show_librations
 from commands import extract as _extract
 from commands import show_planets as _show_planets
 from commands import PlanetCondition, AxisInterval, ResonanceIntegers
+from commands import genres as _genres
 from datamining import PhaseStorage
 from settings import Config
 from os.path import join as opjoin
@@ -266,8 +267,7 @@ def librations(start: int, stop: int, first_planet: str, second_planet: str, pur
               help='Example: 2. 2 means two body resonance, 3 means three body resonance,')
 @_report_interval_options()
 def resonances(start: int, stop: int, first_planet: str, second_planet: str,
-               body_count: str,
-               limit, offset):
+               body_count: str, limit, offset):
     body_count = int(body_count)
     assert not (body_count == 2 and second_planet is not None)
     kwargs = {
@@ -287,3 +287,19 @@ def resonances(start: int, stop: int, first_planet: str, second_planet: str,
 def show_planets(body_count: str):
     body_count = int(body_count)
     _show_planets(body_count)
+
+
+@cli.command()
+@click.option('--asteroid', '-a', type=int)
+@click.option('--aei-paths', '-p', multiple=True, default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
+              type=str, help='path to tar archive contains aei files.')
+@click.option('--integers', '-i', nargs=3, default=None, type=int,
+              help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
+@click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
+def genres(asteroid: int, integers: Tuple, aei_paths: Tuple, planets: Tuple):
+    assert integers
+    aei_paths = [x for x in aei_paths]
+    for i, aei_path in enumerate(aei_paths):
+        if not os.path.isabs(aei_path) and 's3://' != aei_path[:5]:
+            aei_paths[i] = os.path.normpath(opjoin(os.getcwd(), aei_path))
+    _genres(asteroid, integers, aei_paths, planets)
