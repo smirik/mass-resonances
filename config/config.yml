@@ -118,3 +118,8 @@ redis:
   host: localhost
   port: 6379
   db: 0
+
+s3:
+  access_key: null
+  secret_key: null
+  bucket: null

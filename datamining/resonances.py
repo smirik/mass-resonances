@@ -112,6 +112,25 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
         yield resonance
 
 
+class AEIDataGetter:
+    def __init__(self, filepath_builder: FilepathBuilder):
+        self._filepath_builder = filepath_builder
+        self._asteroid_number = None
+        self._aei_data = []
+
+    def get_aei_data(self, for_asteroid_number: int) -> List[str]:
+        if for_asteroid_number != self._asteroid_number:
+            self._asteroid_number = for_asteroid_number
+            self._aei_data.clear()
+
+            aei_path = self._filepath_builder.build('A%i.aei' % self._asteroid_number)
+            with open(aei_path) as aei_file:
+                for line in aei_file:
+                    self._aei_data.append(line)
+
+        return self._aei_data
+
+
 def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librations: bool,
                               planets: Tuple[str, ...], filepath_builder: FilepathBuilder) \
         -> Iterable[Tuple[ResonanceMixin, List[str]]]:
@@ -128,24 +147,7 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librati
     :return:
     """
 
-    class _DataGetter:
-        def __init__(self):
-            self._asteroid_number = None
-            self._aei_data = []
-
-        def get_aei_data(self, for_asteroid_number: int) -> List[str]:
-            if for_asteroid_number != self._asteroid_number:
-                self._asteroid_number = for_asteroid_number
-                self._aei_data.clear()
-
-                smallbody_filepath = filepath_builder.build('A%i.aei' % self._asteroid_number)
-                with open(smallbody_filepath) as aei_file:
-                    for line in aei_file:
-                        self._aei_data.append(line)
-
-            return self._aei_data
-
-    aei_getter = _DataGetter()
+    aei_getter = AEIDataGetter(filepath_builder)
     for resonance in get_resonances(from_asteroid, to_asteroid, only_librations, planets):
         aei_data = aei_getter.get_aei_data(resonance.asteroid_number)
         assert len(aei_data) > 0

@@ -24,7 +24,7 @@ OUTPUT_GNU_PATH = opjoin(PROJECT_DIR, CONFIG['output']['gnuplot'])
 def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: bool,
          aei_path: Tuple[str, ...], is_recursive: bool, planets: Tuple[str]):
     pathbuilder = FilepathBuilder(aei_path, is_recursive)
-    resmaker = _ResfileMaker(planets)
+    resmaker = ResfileMaker(planets)
 
     if not os.path.exists(OUTPUT_IMAGES):
         os.makedirs(OUTPUT_IMAGES)
@@ -53,11 +53,11 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
         make_plot(res_filepath, gnu_filepath, png_path)
 
 
-class _ResfileMaker:
-    def __init__(self, planets: Tuple[str]):
-        self.orbital_element_sets = build_bigbody_elements([
-            opjoin(MERCURY_DIR, '%s.aei' % x) for x in planets
-        ])
+class ResfileMaker:
+    def __init__(self, planets: Tuple[str], planet_paths: List = None):
+        if not planet_paths:
+            planet_paths = [opjoin(MERCURY_DIR, '%s.aei' % x) for x in planets]
+        self.orbital_element_sets = build_bigbody_elements(planet_paths)
 
     def make(self, with_phases: List[float], by_aei_data: List[str], filepath: str):
         orbital_elem_set = ComputedOrbitalElementSetFacade(self.orbital_element_sets, with_phases)
