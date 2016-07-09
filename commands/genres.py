@@ -36,10 +36,14 @@ def get_from_s3(filepaths: List[str]) -> List[str]:
                 continue
             start = path.index(BUCKET)
             filename = path[start + len(BUCKET) + 1:]
-            local_path = opjoin(PROJECT_DIR, '.s3files', basename(filename))
+            folder = opjoin(PROJECT_DIR, '.s3files')
+            if not exists(folder):
+                mkdir(folder)
+            local_path = opjoin(folder, basename(filename))
             if not exists(local_path):
                 s3key = bucket.get_key(filename, validate=False)
-                s3key.get_contents_to_file(local_path)
+                with open(local_path, 'wb') as f:
+                    s3key.get_contents_to_file(f)
             new_paths.append(local_path)
     return new_paths
 
@@ -81,5 +85,5 @@ def genres(asteroid_number: int, integers: Tuple, filepaths: List[str], planets:
     if not exists(folder):
         mkdir(folder)
     resmaker.make(phases, aei_data, opjoin(
-        folder, 'A%i_%s_%s.res' % (asteroid_number, planets, '_'.join([x for x in integers]))
+        folder, 'A%i_%s_%s.res' % (asteroid_number, planets, '_'.join([str(x) for x in integers]))
     ))
