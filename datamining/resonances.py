@@ -104,12 +104,14 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
     if only_librations:
         resonances = resonances.join('libration')
 
-    if not resonances:
+    is_empty = True
+    for resonance in resonances:
+        is_empty = False
+        yield resonance
+
+    if is_empty:
         logging.info('We have no resonances, try command load-resonances --start=%i --stop=%i'
                      % (start, stop))
-
-    for resonance in resonances:
-        yield resonance
 
 
 class AEIDataGetter:

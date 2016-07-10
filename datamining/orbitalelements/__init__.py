@@ -102,4 +102,5 @@ class FilepathBuilder:
         return None
 
     def __del__(self):
-        shutil.rmtree(self.EXTRACT_PATH)
+        if opexists(self.EXTRACT_PATH):
+            shutil.rmtree(self.EXTRACT_PATH)

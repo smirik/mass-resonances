@@ -21,3 +21,15 @@ def cutoff_angle(value: float) -> float:
         while value < -math.pi:
             value += 2*math.pi
     return value
+
+
+def get_asteroid_interval(from_line: str):
+    starts_from = from_line.index('aei-') + 4
+    ends_by = from_line.index('-', starts_from)
+    start_asteroid_number = int(from_line[starts_from: ends_by])
+
+    starts_from = ends_by + 1
+    ends_by = from_line.index('.tar', starts_from)
+    stop_asteroid_number = int(from_line[starts_from:ends_by])
+    return start_asteroid_number, stop_asteroid_number
+
