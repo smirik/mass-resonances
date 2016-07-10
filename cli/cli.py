@@ -191,7 +191,7 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
                   ' Libration can be created by command \'find\'.')
 @_asteroid_interval_options()
-@click.option('--phase-storage', default='REDIS', type=click.Choice(PHASE_STORAGE),
+@click.option('--phase-storage', default='FILE', type=click.Choice(PHASE_STORAGE),
               help='will load phases for plotting from redis or postgres or file')
 @click.option('--only-librations', default=False, type=bool,
               help='flag indicates about plotting only for resonances, that librates')

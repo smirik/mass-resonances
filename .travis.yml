@@ -44,9 +44,7 @@ script:
   - python ./main.py calc
   - python ./main.py load-resonances --start=1 --stop=101 --file=axis/res_J JUPITER
   - python ./main.py load-resonances --start=1 --stop=101 --file=axis/resonances JUPITER SATURN
-  - python ./main.py find --phase-storage=FILE JUPITER
   - python ./main.py find JUPITER SATURN
-  - python ./main.py plot --phase-storage=FILE JUPITER
   - python ./main.py plot JUPITER SATURN
   - python ./main.py package --res=1 --compress=1 --aei=1
   - python ./main.py clear-phases --start=1 --stop=101 JUPITER
