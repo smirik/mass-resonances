@@ -139,16 +139,23 @@ Options:
                                   file for integrator Mercury6 as stop time
                                   pointed in days.
   --reload-resonances BOOLEAN     If true, the application will load integers,
-                                  satisfying D'Alamebrt rule, from /media/stor
-                                  age/develop/resonances/axis/resonances.
+                                  satisfying D'Alamebrt rule, from /home/uantl
+                                  ord/Develop/resonances/axis/resonances.
   --recalc BOOLEAN                If true, the application will invoke calc
                                   method before
   --is-current BOOLEAN            If true, the application will librations
                                   only from database, it won't compute them
                                   from phases
-  --phase-storage [REDIS|DB|FILE]
+  -s, --phase-storage [REDIS|DB|FILE]
                                   will save phases to redis or postgres or
                                   file
+  -p, --aei-path PATH             Path to aei files. It can be folder or
+                                  tar.gz archive. You can point several paths.
+                                  Example: -p /mnt/aei/ -p /tmp/aei
+  -r, --recursive                 Indicates about recursive search aei file in
+                                  pointed paths.
+  -c, --clear                     Will clear resonance phases aftersearch
+                                  librations.
   --help                          Show this message and exit.
 ```
   
@@ -166,6 +173,13 @@ Options:
   --phase-storage [REDIS|DB|FILE]
                                   will load phases for plotting from redis or
                                   postgres or file
+  --only-librations BOOLEAN       flag indicates about plotting only for
+                                  resonances, that librates
+  -p, --aei-path PATH             Path to aei files. It can be folder or
+                                  tar.gz archive. You can point several paths.
+                                  Example: -p /mnt/aei/ -p /tmp/aei
+  -r, --recursive                 Indicates about recursive search aei file in
+                                  pointed paths.
   --help                          Show this message and exit.
 ```
 
@@ -245,4 +259,20 @@ Options:
   --body-count [2|3]  Example: 2. 2 means two body resonance, 3 means three
                       body resonance,
   --help              Show this message and exit.
+```
+  
+**Usage: main.py planets [OPTIONS]**
+```
+  Generate res files for pointed planets.
+
+Options:
+  -a, --asteroid INTEGER     Number of asteroid
+  -p, --aei-paths TEXT       path to tar archive contains aei files. Provides
+                             downloading from AWS S3 if pointed options
+                             access_key, secret_key, bucket in section s3
+                             inside settings file. Example:
+                             /etc/aei-1-101.tar.gz
+  -i, --integers INTEGER...  Integers are pointing by three values separated
+                             by space. Example: 5 -1 -1
+  --help                     Show this message and exit.
 ```

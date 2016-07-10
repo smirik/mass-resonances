@@ -289,10 +289,13 @@ def show_planets(body_count: str):
     _show_planets(body_count)
 
 
-@cli.command()
-@click.option('--asteroid', '-a', type=int)
+@cli.command(help='Generate res files for pointed planets.')
+@click.option('--asteroid', '-a', type=int, help='Number of asteroid')
 @click.option('--aei-paths', '-p', multiple=True, default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
-              type=str, help='path to tar archive contains aei files.')
+              type=str, help='path to tar archive contains aei files.'
+                             ' Provides downloading from AWS S3 if pointed options access_key,'
+                             ' secret_key, bucket in section s3 inside settings file.'
+                             ' Example: /etc/aei-1-101.tar.gz')
 @click.option('--integers', '-i', nargs=3, default=None, type=int,
               help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
