@@ -198,8 +198,8 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
 @aei_path_options()
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def plot(start: int, stop: int, phase_storage: str, only_librations: bool,
-         aei_path: Tuple[str, ...], recursive: bool, planets: Tuple[str]):
-    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations, aei_path,
+         aei_paths: Tuple[str, ...], recursive: bool, planets: Tuple[str]):
+    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations, aei_paths,
           recursive, planets)
 
 
