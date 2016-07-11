@@ -37,6 +37,7 @@ resonance:
 
 phases_dir: '.phases_dir'
 extract_dir: '.from_archives'
+s3files_dir: '.s3files_dir'
 
 output:
   angle:   output/res

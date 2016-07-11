@@ -117,3 +117,9 @@ redis:
 
 phases_dir: '.phases_dir'
 extract_dir: '.from_archives'
+s3files_dir: '.s3files_dir'
+
+s3:
+  access_key: null
+  secret_key: null
+  bucket: null

@@ -3,7 +3,13 @@ from typing import Tuple
 
 import os
 import click
-from logging.handlers import RotatingFileHandler
+
+from .internal import build_logging
+from .internal import aei_path_options
+from .internal import asteroid_interval_options
+from .internal import asteroid_time_intervals_options
+from .internal import Path
+from .internal import report_interval_options
 
 from commands import load_resonances as _load_resonances, AsteroidCondition
 from commands import calc as _calc
@@ -36,88 +42,19 @@ STEP = CONFIG['integrator']['number_of_bodies']
 INTEGRATOR_DIR = CONFIG['integrator']['dir']
 
 
-def _unite_decorators(*decorators):
-    def deco(decorated_function):
-        for dec in reversed(decorators):
-            decorated_function = dec(decorated_function)
-        return decorated_function
-
-    return deco
-
-
-def _report_interval_options():
-    return _unite_decorators(
-        click.option('--limit', default=100, type=int, help='Example: 100'),
-        click.option('--offset', default=0, type=int, help='Example: 100'))
-
-
-def _asteroid_interval_options(default_start=1, default_stop=101):
-    return _unite_decorators(
-        click.option('--start', default=default_start, type=int,
-                     help='Start asteroid number. Counting from 1.'),
-        click.option('--stop', default=default_stop, type=int,
-                     help='Stop asteroid number. Excepts last. Means, that '
-                          'asteroid with number, that equals this parameter,'
-                          ' will not be integrated.'))
-
-
-def aei_path_options():
-    return _unite_decorators(
-        click.option('--aei-paths', '-p', multiple=True,
-                     default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
-                     type=click.Path(exists=True, resolve_path=True),
-                     help='Path to aei files. It can be folder or tar.gz archive.'
-                          ' You can point several paths. Example: -p /mnt/aei/ -p /tmp/aei'),
-        click.option('--recursive', '-r', type=bool, is_flag=True,
-                     help='Indicates about recursive search aei file in pointed paths.'),
-    )
-
-
-def _asteroid_time_intervals_options():
-    prefix = 'This parameter will be passed to param.in file for integrator Mercury6 as'
-    return _unite_decorators(
-        _asteroid_interval_options(),
-        click.option('--from-day', default=2451000.5, help='%s start time pointed in days.' %
-                                                           prefix),
-        click.option('--to-day', default=2501000.5,
-                     help='%s stop time pointed in days.' % prefix))
-
-
-def _build_logging(loglevel: str, logfile: str, message_format: str, time_format: str):
-    if logfile:
-        logpath = opjoin(PROJECT_DIR, 'logs')
-        if not os.path.exists(logpath):
-            os.mkdir(logpath)
-        path = opjoin(logpath, logfile)
-        loghandler = RotatingFileHandler(path, mode='a', maxBytes=10 * 1024 * 1024,
-                                         backupCount=10, encoding=None, delay=0)
-        loghandler.setFormatter(logging.Formatter(message_format, time_format))
-        loghandler.setLevel(loglevel)
-
-        logger = logging.getLogger()
-        logger.setLevel(loglevel)
-        logger.addHandler(loghandler)
-    else:
-        logging.basicConfig(
-            format=message_format,
-            datefmt=time_format,
-            level=loglevel,
-        )
-
-
 @click.group()
 @click.option('--loglevel', default='DEBUG', help='default: DEBUG',
               type=click.Choice(LEVELS))
 @click.option('--logfile', default=None, help='default: None',
               type=str)
 def cli(loglevel: str = 'DEBUG', logfile: str = None):
-    _build_logging(getattr(logging, loglevel), logfile, '%(asctime)s %(levelname)s %(message)s',
-                   '%Y-%m-%d %H:%M:%S')
+    build_logging(getattr(logging, loglevel), logfile, '%(asctime)s %(levelname)s %(message)s',
+                  '%Y-%m-%d %H:%M:%S')
 
 
 @cli.command(help='Launch integrator Mercury6 for computing orbital elements of asteroids and'
                   ' planets, that will be stored in aei files.')
-@_asteroid_time_intervals_options()
+@asteroid_time_intervals_options()
 def calc(start: int, stop: int, from_day: float, to_day: float):
     _calc(start, stop, STEP, from_day, to_day)
 
@@ -128,7 +65,7 @@ FIND_HELP_PREFIX = 'If true, the application will'
 @cli.command(help='Loads integers, satisfying D\'Alambert rule, from %s and build potentially' %
                   RESONANCE_FILEPATH + 'resonances, that related to asteroid from catalog by' +
                   ' comparing axis from this file and catalog', name='load-resonances')
-@_asteroid_interval_options()
+@asteroid_interval_options()
 @click.option('--file', default=RESONANCE_FILEPATH,
               help='Name of file in axis directory with resonances default: %s' %
                    RESONANCE_FILEPATH,
@@ -150,7 +87,7 @@ def load_resonances(start: int, stop: int, file: str, planets: Tuple[str]):
          ' Example: find --start=1 --stop=101 --phase-storage=FILE JUPITER MARS.'
          ' If you point --start=-1 --stop=-1 -p path/to/tar, application will load'
          ' data every asteroid from archive and work with it.')
-@_asteroid_time_intervals_options()
+@asteroid_time_intervals_options()
 @click.option('--reload-resonances', default=False, type=bool,
               help='%s load integers, satisfying D\'Alamebrt rule, from %s.' %
                    (FIND_HELP_PREFIX, RESONANCE_FILEPATH))
@@ -163,12 +100,14 @@ def load_resonances(start: int, stop: int, file: str, planets: Tuple[str]):
               help='will save phases to redis or postgres or file')
 @aei_path_options()
 @click.option('--clear', '-c', type=bool, is_flag=True,
-              help='Will clear resonance phases aftersearch librations.')
+              help='Will clear resonance phases after search librations.')
+@click.option('--clear-s3', type=bool, is_flag=True,
+              help='Will clear downloaded s3 files after search librations.')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
          recalc: bool, is_current: bool, phase_storage: str, aei_paths: Tuple[str, ...],
-         recursive: bool, clear: bool, planets: Tuple[str]):
-    finder = LibrationFilder(planets, aei_paths, recursive, clear, is_current,
+         recursive: bool, clear: bool, clear_s3: bool, planets: Tuple[str]):
+    finder = LibrationFilder(planets, aei_paths, recursive, clear, clear_s3, is_current,
                              PhaseStorage(PHASE_STORAGE.index(phase_storage)))
     if start == stop == -1 and aei_paths:
         finder.find_by_file()
@@ -184,7 +123,7 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
                   ' Libration can be created by command \'find\'.')
-@_asteroid_interval_options()
+@asteroid_interval_options()
 @click.option('--phase-storage', default='FILE', type=click.Choice(PHASE_STORAGE),
               help='will load phases for plotting from redis or postgres or file')
 @click.option('--only-librations', default=False, type=bool,
@@ -199,7 +138,7 @@ def plot(start: int, stop: int, phase_storage: str, only_librations: bool,
 
 @cli.command(name='clear-phases', help='Clears phases from database and Redis, which related to '
                                        'pointed asteroids.')
-@_asteroid_interval_options()
+@asteroid_interval_options()
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def clear_phases(start: int, stop: int, planets: Tuple[str]):
     _clear_phases(start, stop, planets)
@@ -207,7 +146,7 @@ def clear_phases(start: int, stop: int, planets: Tuple[str]):
 
 @cli.command(help='Removes data from export directory (%s).' %
                   opjoin(PROJECT_DIR, CONFIG['export']['base_dir']))
-@_asteroid_interval_options()
+@asteroid_interval_options()
 def clean(start: int, stop: int):
     remove_export_directory(start, stop)
 
@@ -220,7 +159,7 @@ def extract(start: int, copy_aei: bool):
 
 
 @cli.command()
-@_asteroid_interval_options()
+@asteroid_interval_options()
 @click.option('--res', default=False, type=bool)
 @click.option('--aei', default=False, type=bool)
 @click.option('--compress', default=False, type=bool)
@@ -235,7 +174,7 @@ def broken_bodies():
 
 
 @cli.command(help='Shows librations. Below options are need for filtering.')
-@_asteroid_interval_options(None, None)
+@asteroid_interval_options(None, None)
 @click.option('--first-planet', default=None, type=str, help='Example: JUPITER')
 @click.option('--second-planet', default=None, type=str, help='Example: SATURN')
 @click.option('--pure', default=None, type=bool, help='Example: 0')
@@ -244,7 +183,7 @@ def broken_bodies():
               help='Interval is pointing by two values separated by space. Example: 0.0 180.0')
 @click.option('--integers', nargs=3, default=None, type=int,
               help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
-@_report_interval_options()
+@report_interval_options()
 def librations(start: int, stop: int, first_planet: str, second_planet: str, pure: bool,
                apocentric: bool, axis_interval: Tuple[float], integers: Tuple[int], limit,
                offset):
@@ -264,12 +203,12 @@ def librations(start: int, stop: int, first_planet: str, second_planet: str, pur
 
 
 @cli.command(help='Shows integers from resonance table. Below options are need for filtering.')
-@_asteroid_interval_options(None, None)
+@asteroid_interval_options(None, None)
 @click.option('--first-planet', default=None, type=str, help='Example: JUPITER')
 @click.option('--second-planet', default=None, type=str, help='Example: SATURN')
 @click.option('--body-count', default=None, type=click.Choice(['2', '3']),
               help='Example: 2. 2 means two body resonance, 3 means three body resonance,')
-@_report_interval_options()
+@report_interval_options()
 def resonances(start: int, stop: int, first_planet: str, second_planet: str,
                body_count: str, limit, offset):
     body_count = int(body_count)
@@ -296,17 +235,14 @@ def show_planets(body_count: str):
 @cli.command(help='Generate res files for pointed planets.')
 @click.option('--asteroid', '-a', type=int, help='Number of asteroid')
 @click.option('--aei-paths', '-p', multiple=True, default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
-              type=str, help='path to tar archive contains aei files.'
-                             ' Provides downloading from AWS S3 if pointed options access_key,'
-                             ' secret_key, bucket in section s3 inside settings file.'
-                             ' Example: /etc/aei-1-101.tar.gz')
+              type=Path(exists=True, resolve_path=True),
+              help='path to tar archive contains aei files.'
+                   ' Provides downloading from AWS S3 if pointed options access_key,'
+                   ' secret_key, bucket in section s3 inside settings file.'
+                   ' Example: /etc/aei-1-101.tar.gz')
 @click.option('--integers', '-i', nargs=3, default=None, type=int,
               help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def genres(asteroid: int, integers: Tuple, aei_paths: Tuple, planets: Tuple):
     assert integers
-    aei_paths = [x for x in aei_paths]
-    for i, aei_path in enumerate(aei_paths):
-        if not os.path.isabs(aei_path) and 's3://' != aei_path[:5]:
-            aei_paths[i] = os.path.normpath(opjoin(os.getcwd(), aei_path))
-    _genres(asteroid, integers, aei_paths, planets)
+    _genres(asteroid, integers, [x for x in aei_paths], planets)

@@ -15,7 +15,7 @@ from os.path import join as opjoin
 PROJECT_DIR = Config.get_project_dir()
 CONFIG = Config.get_params()
 _folder = CONFIG['phases_dir']
-PHASE_DIR = _folder  if isabs(_folder) else opjoin(PROJECT_DIR, _folder)
+PHASE_DIR = _folder if isabs(_folder) else opjoin(PROJECT_DIR, _folder)
 
 TABLENAME = Phase.__tablename__
 
@@ -111,7 +111,7 @@ def _save_db(serialized_phases: List[Dict[str, float]], for_resonance_id: int):
 
 def _save_file(serialized_phases: List[Dict[str, float]], filename: str):
     if not os.path.exists(os.path.dirname(filename)):
-        os.mkdir(os.path.dirname(filename))
+        os.makedirs(os.path.dirname(filename))
     with open(filename, 'w') as f:
         for i, phase in enumerate(serialized_phases):
             if i > 0:
