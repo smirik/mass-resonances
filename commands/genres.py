@@ -2,7 +2,7 @@ from os import mkdir, getcwd
 from typing import Tuple, List
 
 from datamining import PhaseBuilder, PhaseStorage, build_bigbody_elements, \
-    ResonanceOrbitalElementSetFacade, PhaseLoader
+    ResonanceOrbitalElementSetFacade, PhaseLoader, PhaseCleaner
 from datamining.orbitalelements import FilepathBuilder
 from datamining.resonances import AEIDataGetter
 from os.path import join as opjoin
@@ -67,6 +67,7 @@ def genres(asteroid_number: int, integers: Tuple, filepaths: List[str], planets:
     phase_storage = PhaseStorage.file
     phase_builder = PhaseBuilder(phase_storage)
     phase_loader = PhaseLoader(phase_storage)
+    phase_cleaner = PhaseCleaner(phase_storage)
 
     print('Loading aei files.')
     filepaths = get_from_s3(filepaths) + [x for x in filepaths if not is_s3(x)]
@@ -87,3 +88,4 @@ def genres(asteroid_number: int, integers: Tuple, filepaths: List[str], planets:
     resmaker.make(phases, aei_data, opjoin(
         folder, 'A%i_%s_%s.res' % (asteroid_number, planets, '_'.join([str(x) for x in integers]))
     ))
+    phase_cleaner.delete(resonance_id)

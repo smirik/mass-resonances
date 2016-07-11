@@ -16,6 +16,7 @@ import yaml
 import re
 from os.path import join as opjoin
 import tarfile
+from shortcuts import get_asteroid_interval
 
 TAIL_MESSAGE = 'option not pointed.'
 AWS_S3_AEI_FILE_LIST = 'aws_s3_aei_files.txt'
@@ -135,17 +136,6 @@ def _make_cmd_interal_options(start: int, stop: int):
     return ['--start=%i' % start, '--stop=%i' % stop]
 
 
-def _get_interval(from_line: str):
-    starts_from = from_line.index('aei-') + 4
-    ends_by = from_line.index('-', starts_from)
-    start_asteroid_number = int(from_line[starts_from: ends_by])
-
-    starts_from = ends_by + 1
-    ends_by = from_line.index('.tar', starts_from)
-    stop_asteroid_number = int(from_line[starts_from:ends_by])
-    return start_asteroid_number, stop_asteroid_number
-
-
 class ProgramRunner:
     """
     Execute complex programs. It can:
@@ -214,7 +204,7 @@ class ProgramRunner:
                     break
 
                 res = 0
-                start_asteroid_number, stop_asteroid_number = _get_interval(line)
+                start_asteroid_number, stop_asteroid_number = get_asteroid_interval(line)
                 if 's3://' in line:
                     tar_source_path = line.split()[3]
                     res = subprocess.run([self.CMD] + self.CMD_GET_ARGS + [tar_source_path, '.'])\

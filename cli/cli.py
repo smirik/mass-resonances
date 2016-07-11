@@ -19,6 +19,7 @@ from commands import extract as _extract
 from commands import show_planets as _show_planets
 from commands import PlanetCondition, AxisInterval, ResonanceIntegers
 from commands import genres as _genres
+from commands.find import find_by_file
 from datamining import PhaseStorage
 from settings import Config
 from os.path import join as opjoin
@@ -63,7 +64,7 @@ def _asteroid_interval_options(default_start=1, default_stop=101):
 
 def aei_path_options():
     return _unite_decorators(
-        click.option('--aei-path', '-p', multiple=True,
+        click.option('--aei-paths', '-p', multiple=True,
                      default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
                      type=click.Path(exists=True, resolve_path=True),
                      help='Path to aei files. It can be folder or tar.gz archive.'
@@ -147,7 +148,9 @@ def load_resonances(start: int, stop: int, file: str, planets: Tuple[str]):
 @cli.command(
     help='Computes resonant phases, find in them circulations and saves to librations.'
          ' Parameters --from-day and --to-day are use only --recalc option is true.'
-         ' Example: find --start=1 --stop=101 --phase-storage=FILE JUPITER MARS')
+         ' Example: find --start=1 --stop=101 --phase-storage=FILE JUPITER MARS.'
+         ' If you point --start=-1 --stop=-1 -p path/to/tar, application will load'
+         ' data every asteroid from archive and work with it.')
 @_asteroid_time_intervals_options()
 @click.option('--reload-resonances', default=False, type=bool,
               help='%s load integers, satisfying D\'Alamebrt rule, from %s.' %
@@ -157,22 +160,29 @@ def load_resonances(start: int, stop: int, file: str, planets: Tuple[str]):
 @click.option('--is-current', default=False, type=bool,
               help='%s librations only from database, it won\'t compute them from phases' %
                    FIND_HELP_PREFIX)
-@click.option('--phase-storage', '-s', default='REDIS', type=click.Choice(PHASE_STORAGE),
+@click.option('--phase-storage', '-s', default='FILE', type=click.Choice(PHASE_STORAGE),
               help='will save phases to redis or postgres or file')
 @aei_path_options()
 @click.option('--clear', '-c', type=bool, is_flag=True,
               help='Will clear resonance phases aftersearch librations.')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
-         recalc: bool, is_current: bool, phase_storage: str, aei_path: Tuple[str, ...],
+         recalc: bool, is_current: bool, phase_storage: str, aei_paths: Tuple[str, ...],
          recursive: bool, clear: bool, planets: Tuple[str]):
+    if start == stop == -1 and aei_paths:
+        for i, end in find_by_file(planets, aei_paths, recursive, is_current,
+                                   PhaseStorage(PHASE_STORAGE.index(phase_storage))):
+            if clear:
+                _clear_phases(i, end, planets)
+        return
+
     if recalc:
         _calc(start, stop, STEP, from_day, to_day)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
         if reload_resonances:
             _load_resonances(RESONANCE_FILEPATH, i, end, planets)
-        _find(i, end, planets, aei_path, recursive, is_current,
+        _find(i, end, planets, aei_paths, recursive, is_current,
               PhaseStorage(PHASE_STORAGE.index(phase_storage)))
         if clear:
             _clear_phases(i, end, planets)
@@ -181,15 +191,15 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
                   ' Libration can be created by command \'find\'.')
 @_asteroid_interval_options()
-@click.option('--phase-storage', default='REDIS', type=click.Choice(PHASE_STORAGE),
+@click.option('--phase-storage', default='FILE', type=click.Choice(PHASE_STORAGE),
               help='will load phases for plotting from redis or postgres or file')
 @click.option('--only-librations', default=False, type=bool,
               help='flag indicates about plotting only for resonances, that librates')
 @aei_path_options()
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def plot(start: int, stop: int, phase_storage: str, only_librations: bool,
-         aei_path: Tuple[str, ...], recursive: bool, planets: Tuple[str]):
-    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations, aei_path,
+         aei_paths: Tuple[str, ...], recursive: bool, planets: Tuple[str]):
+    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations, aei_paths,
           recursive, planets)
 
 
@@ -289,10 +299,13 @@ def show_planets(body_count: str):
     _show_planets(body_count)
 
 
-@cli.command()
-@click.option('--asteroid', '-a', type=int)
+@cli.command(help='Generate res files for pointed planets.')
+@click.option('--asteroid', '-a', type=int, help='Number of asteroid')
 @click.option('--aei-paths', '-p', multiple=True, default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
-              type=str, help='path to tar archive contains aei files.')
+              type=str, help='path to tar archive contains aei files.'
+                             ' Provides downloading from AWS S3 if pointed options access_key,'
+                             ' secret_key, bucket in section s3 inside settings file.'
+                             ' Example: /etc/aei-1-101.tar.gz')
 @click.option('--integers', '-i', nargs=3, default=None, type=int,
               help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)

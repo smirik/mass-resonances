@@ -16,7 +16,9 @@ from datamining import build_bigbody_elements
 from entities.dbutills import session
 from os.path import join as opjoin
 from settings import Config
+from shortcuts import get_asteroid_interval
 from sqlalchemy import exists
+from tarfile import is_tarfile
 
 PROJECT_DIR = Config.get_project_dir()
 CONFIG = Config.get_params()
@@ -25,14 +27,41 @@ MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 OUTPUT_ANGLE = CONFIG['output']['angle']
 
 
-def find(start: int, stop: int, planets: Tuple[str], aei_path: Tuple[str, ...], is_recursive: bool,
+def find_by_file(planets: Tuple[str], aei_paths: tuple, is_recursive: bool,
+                 is_current: bool = False, phase_storage: PhaseStorage = PhaseStorage.redis):
+    """Do same that find but asteroid interval will be determined by filenames.
+
+    :param is_recursive:
+    :param aei_paths:
+    :param planets:
+    :param phase_storage: needs for auto migration from redis to postgres
+    :param is_current:
+    :return:
+    """
+    for path in aei_paths:
+        is_tar = False
+        try:
+            is_tar = is_tarfile(path)
+        except IsADirectoryError:
+            pass
+        if not is_tar:
+            logging.info('%s is not tar file. Skipping...' % path)
+            continue
+        start, stop = get_asteroid_interval(path)
+        logging.info('find librations for asteroids [%i %i], from %s' % (start, stop, path))
+        find(start, stop, planets, (path,), is_recursive, is_current, phase_storage)
+        yield start, stop
+
+
+def find(start: int, stop: int, planets: Tuple[str], aei_paths: tuple, is_recursive: bool,
          is_current: bool = False, phase_storage: PhaseStorage = PhaseStorage.redis):
     """Analyze resonances for pointed half-interval of numbers of asteroids. It gets resonances
     aggregated to asteroids. Computes resonant phase by orbital elements from prepared aei files of
     three bodies (asteroid and two planets). After this it finds circulations in vector of resonant
     phases and solves, based in circulations, libration does exists or no.
 
-    :param aei_path:
+    :param is_recursive:
+    :param aei_paths:
     :param planets:
     :param phase_storage: needs for auto migration from redis to postgres
     :param start: start point of half-interval.
@@ -41,7 +70,7 @@ def find(start: int, stop: int, planets: Tuple[str], aei_path: Tuple[str, ...], 
     :return:
     """
     orbital_element_sets = None
-    pathbuilder = FilepathBuilder(aei_path, is_recursive)
+    pathbuilder = FilepathBuilder(aei_paths, is_recursive)
     filepaths = [pathbuilder.build('%s.aei' % x) for x in planets]
     try:
         orbital_element_sets = build_bigbody_elements(filepaths)
