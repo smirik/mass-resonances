@@ -14,6 +14,7 @@ from .librations import LibrationClassifier
 
 from .resonances import get_aggregated_resonances
 from .resonances import get_resonances
+from .resonances import AEIDataGetter
 
 from .phases import PhaseBuilder
 from .phases import PhaseLoader

@@ -13,6 +13,7 @@ from .collection import OrbitalElementSet
 
 from os.path import exists as opexists
 from os.path import join as opjoin
+from os.path import isabs
 import glob
 from tarfile import is_tarfile
 from tarfile import open as taropen
@@ -20,6 +21,9 @@ import os
 from settings import Config
 import shutil
 PROJECT_DIR = Config.get_project_dir()
+CONFIG = Config.get_params()
+_folder = CONFIG['extract_dir']
+EXTRACT_PATH = _folder if isabs(_folder) else opjoin(PROJECT_DIR, _folder)
 
 
 class FilepathException(Exception):
@@ -36,8 +40,6 @@ class FilepathBuilder:
     needed.
     """
 
-    EXTRACT_PATH = opjoin(PROJECT_DIR, '.from_archives')
-
     def __init__(self, paths: Iterable, is_recursive=False):
         self._last_tar = None
         self._is_recursive = is_recursive
@@ -49,7 +51,7 @@ class FilepathBuilder:
             elif is_tarfile(path):
                 self._archives.append(path)
         self._check_paths(paths)
-        self._dirs.append(self.EXTRACT_PATH)
+        self._dirs.append(EXTRACT_PATH)
 
     def build(self, for_name: str) -> str:
         """ Builds full path by pointed filename.
@@ -96,11 +98,11 @@ class FilepathBuilder:
                     filepath = taritem.name
                     if for_name not in filepath:
                         continue
-                    tarfile.extract(taritem, self.EXTRACT_PATH)
+                    tarfile.extract(taritem, EXTRACT_PATH)
                     self._last_tar = tarname
-                    return opjoin(self.EXTRACT_PATH, filepath)
+                    return opjoin(EXTRACT_PATH, filepath)
         return None
 
     def __del__(self):
-        if opexists(self.EXTRACT_PATH):
-            shutil.rmtree(self.EXTRACT_PATH)
+        if opexists(EXTRACT_PATH):
+            shutil.rmtree(EXTRACT_PATH)

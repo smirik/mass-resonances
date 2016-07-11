@@ -9,10 +9,13 @@ from entities import Phase
 from enum import Enum
 from enum import unique
 from settings import Config
+from os.path import isabs
+from os.path import join as opjoin
 
 PROJECT_DIR = Config.get_project_dir()
 CONFIG = Config.get_params()
-PHASE_DIR = CONFIG['phases_dir']
+_folder = CONFIG['phases_dir']
+PHASE_DIR = _folder  if isabs(_folder) else opjoin(PROJECT_DIR, _folder)
 
 TABLENAME = Phase.__tablename__
 
