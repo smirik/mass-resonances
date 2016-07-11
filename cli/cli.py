@@ -11,21 +11,6 @@ from .internal import asteroid_time_intervals_options
 from .internal import Path
 from .internal import report_interval_options
 
-from commands import load_resonances as _load_resonances, AsteroidCondition
-from commands import calc as _calc
-from commands import LibrationFilder
-from commands import show_resonance_table as _show_resonance_table
-from commands import plot as _plot
-from commands import package as _package
-from commands import remove_export_directory
-from commands import show_broken_bodies
-from commands import clear_phases as _clear_phases
-from commands import show_librations as _show_librations
-from commands import extract as _extract
-from commands import show_planets as _show_planets
-from commands import PlanetCondition, AxisInterval, ResonanceIntegers
-from commands import genres as _genres
-from datamining import PhaseStorage
 from settings import Config
 from os.path import join as opjoin
 
@@ -55,8 +40,12 @@ def cli(loglevel: str = 'DEBUG', logfile: str = None):
 @cli.command(help='Launch integrator Mercury6 for computing orbital elements of asteroids and'
                   ' planets, that will be stored in aei files.')
 @asteroid_time_intervals_options()
-def calc(start: int, stop: int, from_day: float, to_day: float):
-    _calc(start, stop, STEP, from_day, to_day)
+@click.option('--aei-path', '-p', multiple=False, default=opjoin(PROJECT_DIR, INTEGRATOR_DIR),
+              type=click.Path(exists=True, resolve_path=True),
+              help='Path where will be stored aei files.')
+def calc(start: int, stop: int, from_day: float, to_day: float, aei_path: str):
+    from commands import calc as _calc
+    _calc(start, stop, STEP, from_day, to_day, aei_path)
 
 
 FIND_HELP_PREFIX = 'If true, the application will'
@@ -66,19 +55,23 @@ FIND_HELP_PREFIX = 'If true, the application will'
                   RESONANCE_FILEPATH + 'resonances, that related to asteroid from catalog by' +
                   ' comparing axis from this file and catalog', name='load-resonances')
 @asteroid_interval_options()
-@click.option('--file', default=RESONANCE_FILEPATH,
+@click.option('--file', default=RESONANCE_FILEPATH, type=str,
               help='Name of file in axis directory with resonances default: %s' %
-                   RESONANCE_FILEPATH,
-              type=str)
+                   RESONANCE_FILEPATH)
+@click.option('--axis-swing', type=float,
+              help='Axis swing determines swing between semi major axis of asteroid from astdys '
+                   'catalog and resonance table.')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
-def load_resonances(start: int, stop: int, file: str, planets: Tuple[str]):
+def load_resonances(start: int, stop: int, file: str, axis_swing: float, planets: Tuple[str]):
+    assert axis_swing > 0.
+    from commands import load_resonances as _load_resonances
     if not os.path.isabs(file):
         file = os.path.normpath(opjoin(os.getcwd(), file))
     if file == RESONANCE_FILEPATH:
         logging.info('%s will be used as source of integers' % file)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
-        _load_resonances(file, i, end, planets)
+        _load_resonances(file, i, end, planets, axis_swing)
 
 
 @cli.command(
@@ -107,6 +100,11 @@ def load_resonances(start: int, stop: int, file: str, planets: Tuple[str]):
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
          recalc: bool, is_current: bool, phase_storage: str, aei_paths: Tuple[str, ...],
          recursive: bool, clear: bool, clear_s3: bool, planets: Tuple[str]):
+    from commands import load_resonances as _load_resonances
+    from datamining import PhaseStorage
+    from commands import calc as _calc
+    from commands import LibrationFilder
+
     finder = LibrationFilder(planets, aei_paths, recursive, clear, clear_s3, is_current,
                              PhaseStorage(PHASE_STORAGE.index(phase_storage)))
     if start == stop == -1 and aei_paths:
@@ -132,6 +130,8 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def plot(start: int, stop: int, phase_storage: str, only_librations: bool,
          aei_paths: Tuple[str, ...], recursive: bool, planets: Tuple[str]):
+    from datamining import PhaseStorage
+    from commands import plot as _plot
     _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations, aei_paths,
           recursive, planets)
 
@@ -141,6 +141,7 @@ def plot(start: int, stop: int, phase_storage: str, only_librations: bool,
 @asteroid_interval_options()
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def clear_phases(start: int, stop: int, planets: Tuple[str]):
+    from commands import clear_phases as _clear_phases
     _clear_phases(start, stop, planets)
 
 
@@ -148,6 +149,7 @@ def clear_phases(start: int, stop: int, planets: Tuple[str]):
                   opjoin(PROJECT_DIR, CONFIG['export']['base_dir']))
 @asteroid_interval_options()
 def clean(start: int, stop: int):
+    from commands import remove_export_directory
     remove_export_directory(start, stop)
 
 
@@ -155,6 +157,7 @@ def clean(start: int, stop: int):
 @click.option('--start', default=1)
 @click.option('--copy-aei', default=False, type=bool)
 def extract(start: int, copy_aei: bool):
+    from commands import extract as _extract
     _extract(start, do_copy_aei=copy_aei)
 
 
@@ -164,12 +167,14 @@ def extract(start: int, copy_aei: bool):
 @click.option('--aei', default=False, type=bool)
 @click.option('--compress', default=False, type=bool)
 def package(start: int, stop: int, res: bool, aei: bool, compress: bool):
+    from commands import package as _package
     _package(start, stop, res, aei, compress)
 
 
 @cli.command(help='Shows names of asteroid, that has got incorrect data in aei files.',
              name='broken-bodies')
 def broken_bodies():
+    from commands import show_broken_bodies
     show_broken_bodies()
 
 
@@ -187,6 +192,9 @@ def broken_bodies():
 def librations(start: int, stop: int, first_planet: str, second_planet: str, pure: bool,
                apocentric: bool, axis_interval: Tuple[float], integers: Tuple[int], limit,
                offset):
+    from commands import AsteroidCondition
+    from commands import show_librations as _show_librations
+    from commands import PlanetCondition, AxisInterval, ResonanceIntegers
     kwargs = {}
     if start and stop:
         kwargs['asteroid_condition'] = AsteroidCondition(start, stop)
@@ -211,6 +219,10 @@ def librations(start: int, stop: int, first_planet: str, second_planet: str, pur
 @report_interval_options()
 def resonances(start: int, stop: int, first_planet: str, second_planet: str,
                body_count: str, limit, offset):
+    from commands import AsteroidCondition
+    from commands import show_resonance_table as _show_resonance_table
+    from commands import PlanetCondition
+
     body_count = int(body_count)
     assert not (body_count == 2 and second_planet is not None)
     kwargs = {
@@ -228,6 +240,7 @@ def resonances(start: int, stop: int, first_planet: str, second_planet: str,
 @click.option('--body-count', default=None, type=click.Choice(['2', '3']),
               help='Example: 2. 2 means two body resonance, 3 means three body resonance,')
 def show_planets(body_count: str):
+    from commands import show_planets as _show_planets
     body_count = int(body_count)
     _show_planets(body_count)
 
@@ -244,5 +257,6 @@ def show_planets(body_count: str):
               help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def genres(asteroid: int, integers: Tuple, aei_paths: Tuple, planets: Tuple):
+    from commands import genres as _genres
     assert integers
     _genres(asteroid, integers, [x for x in aei_paths], planets)

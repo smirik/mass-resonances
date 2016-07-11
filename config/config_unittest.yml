@@ -119,6 +119,12 @@ phases_dir: '.phases_dir'
 extract_dir: '.from_archives'
 s3files_dir: '.s3files_dir'
 
+postgres:
+  host: localhost
+  user: postgres
+  password:
+  db: resonances_unittest
+
 s3:
   access_key: null
   secret_key: null

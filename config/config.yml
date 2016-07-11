@@ -27,7 +27,6 @@ integrator:
   number_of_bodies: 100
 
 resonance:
-  axis_error: 0.01
   libration:
     min: 20000
   db_file: export/full.db
@@ -121,7 +120,13 @@ redis:
   port: 6379
   db: 0
 
+postgres:
+  host: $POSTGRES_PORT_5432_TCP_ADDR
+  user: $RESONANCES_DB_USER
+  password:
+  db: $RESONANCES_DB_NAME
+
 s3:
-  access_key: null
-  secret_key: null
-  bucket: null
+  access_key: $S3_ACCESS_KEY
+  secret_key: $S3_SECRET_KEY
+  bucket: $S3_BUCKET

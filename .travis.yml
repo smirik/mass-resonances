@@ -21,6 +21,9 @@ install:
   - pip install -r reqs.pip
   - pip install coverage pytest==2.8.3
 
+env:
+  - POSTGRES_PORT_5432_TCP_ADDR=localhost RESONANCES_DB_USER=postgres RESONANCES_DB_NAME=resonances
+
 before_script:
   - cd ./catalog
   - wget http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat
@@ -42,8 +45,8 @@ before_script:
 script:
   - python ./main.py --help
   - python ./main.py calc
-  - python ./main.py load-resonances --start=1 --stop=101 --file=axis/res_J JUPITER
-  - python ./main.py load-resonances --start=1 --stop=101 --file=axis/resonances JUPITER SATURN
+  - python ./main.py load-resonances --start=1 --stop=101 --file=axis/res_J --axis-swing=0.01 JUPITER
+  - python ./main.py load-resonances --start=1 --stop=101 --file=axis/resonances --axis-swing=0.01 JUPITER SATURN
   - python ./main.py find JUPITER SATURN
   - python ./main.py plot JUPITER SATURN
   - python ./main.py package --res=1 --compress=1 --aei=1

@@ -14,7 +14,13 @@ from sqlalchemy.engine import Engine
 import time
 import logging
 
-if Config.get_params()['debug']:
+CONFIG = Config.get_params()
+_HOST = CONFIG['postgres']['host']
+_USER = CONFIG['postgres']['user']
+_PASSWORD = CONFIG['postgres']['password']
+_DB = CONFIG['postgres']['db']
+
+if CONFIG['debug']:
     logging.basicConfig()
     logger = logging.getLogger("myapp.sqltime")
     logger.setLevel(logging.DEBUG)
@@ -41,7 +47,7 @@ class Base(object):
         super(Base, self).__init__(**kwargs)
     id = Column(Integer, primary_key=True)
 
-engine = create_engine(_config.get_main_option('sqlalchemy.url'))
+engine = create_engine('postgres://%s:%s@%s/%s' % (_USER, _PASSWORD, _HOST, _DB))
 _Session = sessionmaker()
 _Session.configure(bind=engine)
 session = _Session()    # type: Session

@@ -1,4 +1,6 @@
 import logging
+from glob import iglob
+
 import os
 
 from settings import Config
@@ -12,6 +14,7 @@ from integrator import element6
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 SMALL_BODIES_FILENAME = CONFIG['integrator']['files']['small_bodies']
+INTEGRATOR_PATH = os.path.join(PROJECT_DIR, CONFIG['integrator']['dir'])
 
 
 class MercuryException(Exception):
@@ -34,32 +37,29 @@ def _execute_mercury():
         raise e
 
 
-def calc(start: int, stop: int, step: int, from_day: float, to_day: float):
+def calc(start: int, stop: int, step: int, from_day: float, to_day: float,
+         aei_path: str = INTEGRATOR_PATH):
     set_time_interval(from_day, to_day)
     aei_clean()
     for i in range(start, stop, step):
         end = i + step if i + step < stop else stop
-        _calc(i, end)
+        _calc(i, end, aei_path)
 
 
-def _calc(start: int, stop: int):
+def _calc(start: int, stop: int, target_path):
     """Gets from astdys catalog parameters of orbital elements. Represents them
     to small.in file and makes symlink of this file in directory of application
     mercury6.
 
     :param int start: start is position of start element for computing.
     :param int stop:
+    :param str target_path: path where will be saved aei files.
     """
-    filepath = os.path.join(PROJECT_DIR, CONFIG['integrator']['input'],
-                            SMALL_BODIES_FILENAME)
-    symlink = os.path.join(PROJECT_DIR, CONFIG['integrator']['dir'],
-                           SMALL_BODIES_FILENAME)
+    filepath = os.path.join(PROJECT_DIR, CONFIG['integrator']['input'], SMALL_BODIES_FILENAME)
+    symlink = os.path.join(INTEGRATOR_PATH, SMALL_BODIES_FILENAME)
     small_bodies_storage = SmallBodiesFileBuilder(filepath, symlink)
     small_bodies_storage.create_small_body_file()
-    logging.info(
-        'Create initial conditions for asteroids from %i to %i',
-        start, stop
-    )
+    logging.info('Create initial conditions for asteroids from %i to %i', start, stop)
 
     for i in range(start, stop):
         arr = find_by_number(i)
@@ -69,3 +69,6 @@ def _calc(start: int, stop: int):
     logging.info('Integrating orbits...')
     _execute_mercury()
     logging.info('[done]')
+    if INTEGRATOR_PATH != target_path:
+        for path in iglob(os.path.join(INTEGRATOR_PATH, '*.aei')):
+            os.rename(path, os.path.join(target_path, os.path.basename(path)))
