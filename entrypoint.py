@@ -97,6 +97,11 @@ def _edit_localsettings(to_config_path):
                 'host': os.environ.get('REDIS_PORT_6379_TCP_ADDR', 'localhost'),
                 'port': os.environ.get('REDIS_PORT_6379_TCP_PORT', 6379),
                 'db': 0
+            },
+            's3': {
+                'access_key': os.environ.get('S3_ACCESS_KEY', None),
+                'secret_key': os.environ.get('S3_SECRET_KEY', None),
+                'bucket': S3_BUCKET_NAME,
             }
         }
         if 'ASTEROID_EPOCH_START' in os.environ:
@@ -435,7 +440,8 @@ def main():
     parser = _ArgParser(sys.argv)
     start = None
     stop = None
-    except_commands = ['migrate', '--help', 'get_file_list', 'librations', 'resonances', 'planets']
+    except_commands = ['migrate', '--help', 'get_file_list', 'librations', 'resonances', 'planets',
+                       'genres']
     if not any([x in sys.argv for x in except_commands]):
         start = int(parser.parse('--start='))
         stop = int(parser.parse('--stop='))
