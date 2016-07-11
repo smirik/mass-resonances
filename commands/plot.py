@@ -1,4 +1,5 @@
 import os
+from datamining import AEIDataGetter
 from math import pi
 
 from datamining import PhaseLoader, PhaseStorage
@@ -33,8 +34,9 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
         os.makedirs(OUTPUT_GNU_PATH)
 
     phase_loader = PhaseLoader(phase_storage)
-    for resonance, aei_data in get_aggregated_resonances(start, stop, for_librations,
-                                                         planets, pathbuilder):
+    aei_getter = AEIDataGetter(pathbuilder)
+    for resonance, aei_data in get_aggregated_resonances(start, stop, for_librations, planets,
+                                                         aei_getter):
         phases = phase_loader.load(resonance.id)
         apocentric_phases = [cutoff_angle(x + pi) for x in phases]
         res_filepath = opjoin(OUTPUT_RES_PATH, 'A%i_%i.res' %

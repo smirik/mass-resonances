@@ -12,6 +12,7 @@ from entities.body import Planet
 from entities.dbutills import session
 from entities.resonance.twobodyresonance import ResonanceMixin
 from os.path import join as opjoin
+from os import remove
 from settings import Config
 from sqlalchemy.orm import Query
 from sqlalchemy.orm import joinedload, aliased
@@ -115,10 +116,11 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
 
 
 class AEIDataGetter:
-    def __init__(self, filepath_builder: FilepathBuilder):
+    def __init__(self, filepath_builder: FilepathBuilder, clear: bool = False):
         self._filepath_builder = filepath_builder
         self._asteroid_number = None
         self._aei_data = []
+        self._clear = clear
 
     def get_aei_data(self, for_asteroid_number: int) -> List[str]:
         if for_asteroid_number != self._asteroid_number:
@@ -129,19 +131,21 @@ class AEIDataGetter:
             with open(aei_path) as aei_file:
                 for line in aei_file:
                     self._aei_data.append(line)
+            if self._clear:
+                remove(aei_path)
 
         return self._aei_data
 
 
 def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librations: bool,
-                              planets: Tuple[str, ...], filepath_builder: FilepathBuilder) \
+                              planets: Tuple[str, ...], aei_getter: AEIDataGetter) \
         -> Iterable[Tuple[ResonanceMixin, List[str]]]:
     """Find resonances from /axis/resonances by asteroid axis. Currently
     described by 7 items list of floats. 6 is integers satisfying
     D'Alembert rule. First 3 for longitutes, and second 3 for longitutes
     perihilion. Seventh value is asteroid axis.
 
-    :param filepath_builder:
+    :param aei_getter:
     :param planets:
     :param only_librations: flag indicates about getting resonances, that has related librations.
     :param to_asteroid:
@@ -149,7 +153,6 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librati
     :return:
     """
 
-    aei_getter = AEIDataGetter(filepath_builder)
     for resonance in get_resonances(from_asteroid, to_asteroid, only_librations, planets):
         aei_data = aei_getter.get_aei_data(resonance.asteroid_number)
         assert len(aei_data) > 0

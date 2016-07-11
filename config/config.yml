@@ -35,7 +35,8 @@ resonance:
     - 5
     - 6
 
-phases_dir: 'phases_dir'
+phases_dir: '.phases_dir'
+extract_dir: '.from_archives'
 
 output:
   angle:   output/res
@@ -81,7 +82,7 @@ constants:
     - 0.000285787542104469  # saturn
     - 4.36378261525313e-05  # uranus
     - 5.14956512995827e-05  # neptune
-    - 6.56075612085868e-09  # ploton ?
+    - 6.56075612085868e-09  # pluto ?
 
   axis:
     - 0.0           # sun

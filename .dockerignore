@@ -19,7 +19,8 @@ local_config.yml
 logs
 catalog/*.cat
 .s3cfg
-phases_dir
+.phases_dir
+.from_archives
 alembic.test.ini
 deploy_programs
 catalog/aws_s3_aei_files.txt

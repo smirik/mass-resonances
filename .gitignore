@@ -19,7 +19,8 @@ local_config.yml
 *.lprof
 logs
 catalog/*.cat
-phases_dir
+.phases_dir
+.from_archives
 .s3cfg
 alembic.test.ini
 deploy_programs

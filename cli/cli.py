@@ -7,7 +7,7 @@ from logging.handlers import RotatingFileHandler
 
 from commands import load_resonances as _load_resonances, AsteroidCondition
 from commands import calc as _calc
-from commands import find as _find
+from commands import LibrationFilder
 from commands import show_resonance_table as _show_resonance_table
 from commands import plot as _plot
 from commands import package as _package
@@ -19,7 +19,6 @@ from commands import extract as _extract
 from commands import show_planets as _show_planets
 from commands import PlanetCondition, AxisInterval, ResonanceIntegers
 from commands import genres as _genres
-from commands.find import find_by_file
 from datamining import PhaseStorage
 from settings import Config
 from os.path import join as opjoin
@@ -169,12 +168,10 @@ def load_resonances(start: int, stop: int, file: str, planets: Tuple[str]):
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
          recalc: bool, is_current: bool, phase_storage: str, aei_paths: Tuple[str, ...],
          recursive: bool, clear: bool, planets: Tuple[str]):
+    finder = LibrationFilder(planets, aei_paths, recursive, clear, is_current,
+                             PhaseStorage(PHASE_STORAGE.index(phase_storage)))
     if start == stop == -1 and aei_paths:
-        for i, end in find_by_file(planets, aei_paths, recursive, is_current,
-                                   PhaseStorage(PHASE_STORAGE.index(phase_storage))):
-            if clear:
-                _clear_phases(i, end, planets)
-        return
+        finder.find_by_file()
 
     if recalc:
         _calc(start, stop, STEP, from_day, to_day)
@@ -182,10 +179,7 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
         end = i + STEP if i + STEP < stop else stop
         if reload_resonances:
             _load_resonances(RESONANCE_FILEPATH, i, end, planets)
-        _find(i, end, planets, aei_paths, recursive, is_current,
-              PhaseStorage(PHASE_STORAGE.index(phase_storage)))
-        if clear:
-            _clear_phases(i, end, planets)
+        finder.find(i, end)
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
