@@ -1,7 +1,7 @@
 import json
 import logging
 
-from typing import List, Dict, Tuple, Generator
+from typing import List, Dict, Tuple
 
 from datamining import get_aggregated_resonances, PhaseBuilder
 from datamining import AEIDataGetter
@@ -19,7 +19,6 @@ from os.path import join as opjoin
 from settings import Config
 from shortcuts import get_asteroid_interval
 from sqlalchemy import exists
-from tarfile import is_tarfile
 
 PROJECT_DIR = Config.get_project_dir()
 CONFIG = Config.get_params()
@@ -30,7 +29,9 @@ OUTPUT_ANGLE = CONFIG['output']['angle']
 
 class LibrationFilder:
     def __init__(self, planets: Tuple[str], aei_paths: tuple, is_recursive: bool, clear: bool,
-                 is_current: bool = False, phase_storage: PhaseStorage = PhaseStorage.redis):
+                 clear_s3: bool, is_current: bool = False,
+                 phase_storage: PhaseStorage = PhaseStorage.redis):
+        self._clear_s3 = clear_s3
         self._planets = planets
         self._aei_paths = aei_paths
         self._is_recursive = is_recursive
@@ -40,16 +41,16 @@ class LibrationFilder:
 
     def find(self, start: int, stop: int):
         """Analyze resonances for pointed half-interval of numbers of asteroids. It gets resonances
-        aggregated to asteroids. Computes resonant phase by orbital elements from prepared aei files of
-        three bodies (asteroid and two planets). After this it finds circulations in vector of resonant
-        phases and solves, based in circulations, libration does exists or no.
+        aggregated to asteroids. Computes resonant phase by orbital elements from prepared aei files
+        of three bodies (asteroid and two planets). After this it finds circulations in vector of
+        resonant phases and solves, based in circulations, libration does exists or no.
 
         :param start: start point of half-interval.
         :param stop: stop point of half-interval. It will be excluded.
         :return:
         """
         orbital_element_sets = None
-        pathbuilder = FilepathBuilder(self._aei_paths, self._is_recursive)
+        pathbuilder = FilepathBuilder(self._aei_paths, self._is_recursive, self._clear_s3)
         filepaths = [pathbuilder.build('%s.aei' % x) for x in self._planets]
         try:
             orbital_element_sets = build_bigbody_elements(filepaths)
@@ -68,13 +69,16 @@ class LibrationFilder:
             if broken_asteroid_mediator.check():
                 continue
 
-            logging.debug('Analyze asteroid %s, resonance %s' % (resonance.small_body.name, resonance))
+            logging.debug('Analyze asteroid %s, resonance %s' % (resonance.small_body.name,
+                                                                 resonance))
             resonance_id = resonance.id
             classifier.set_resonance(resonance)
 
-            orbital_elem_set_facade = ResonanceOrbitalElementSetFacade(orbital_element_sets, resonance)
+            orbital_elem_set_facade = ResonanceOrbitalElementSetFacade(orbital_element_sets,
+                                                                       resonance)
             try:
-                serialized_phases = phase_builder.build(aei_data, resonance_id, orbital_elem_set_facade)
+                serialized_phases = phase_builder.build(aei_data, resonance_id,
+                                                        orbital_elem_set_facade)
             except AEIValueError:
                 broken_asteroid_mediator.save()
                 phase_cleaner.delete(resonance_id)
@@ -91,14 +95,6 @@ class LibrationFilder:
         :return:
         """
         for path in self._aei_paths:
-            is_tar = False
-            try:
-                is_tar = is_tarfile(path)
-            except IsADirectoryError:
-                pass
-            if not is_tar:
-                logging.info('%s is not tar file. Skipping...' % path)
-                continue
             start, stop = get_asteroid_interval(path)
             logging.info('find librations for asteroids [%i %i], from %s' % (start, stop, path))
             self.find(start, stop)

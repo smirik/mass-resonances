@@ -1,5 +1,8 @@
-from typing import Tuple, List, Iterable
+from typing import List
+from typing import Iterable
 
+from boto.s3.connection import S3Connection
+from shortcuts import is_s3
 from tarfile import TarFile
 from tarfile import TarInfo
 from .collection import OrbitalElementSetCollection
@@ -14,16 +17,23 @@ from .collection import OrbitalElementSet
 from os.path import exists as opexists
 from os.path import join as opjoin
 from os.path import isabs
+from os import makedirs
 import glob
 from tarfile import is_tarfile
 from tarfile import open as taropen
 import os
 from settings import Config
 import shutil
+from os.path import basename
+
 PROJECT_DIR = Config.get_project_dir()
 CONFIG = Config.get_params()
-_folder = CONFIG['extract_dir']
-EXTRACT_PATH = _folder if isabs(_folder) else opjoin(PROJECT_DIR, _folder)
+_ex_folder = CONFIG['extract_dir']
+EXTRACT_PATH = _ex_folder if isabs(_ex_folder) else opjoin(PROJECT_DIR, _ex_folder)
+
+BUCKET = CONFIG['s3']['bucket']
+_s3_folder = CONFIG['s3files_dir']
+S3_FILES_DIR = _s3_folder if isabs(_s3_folder) else opjoin(PROJECT_DIR, _s3_folder)
 
 
 class FilepathException(Exception):
@@ -34,23 +44,61 @@ class FilepathInvalidException(Exception):
     pass
 
 
+def _get_from_s3(filepaths: List[str]) -> List[str]:
+    new_paths = []
+    if any([is_s3(x) for x in filepaths]):
+        conn = S3Connection(CONFIG['s3']['access_key'], CONFIG['s3']['secret_key'])
+        bucket = conn.get_bucket(BUCKET)
+        for path in filepaths:
+            if not is_s3(path):
+                continue
+            start = path.index(BUCKET)
+            filename = path[start + len(BUCKET) + 1:]
+            if not opexists(S3_FILES_DIR):
+                makedirs(S3_FILES_DIR)
+            local_path = opjoin(S3_FILES_DIR, basename(filename))
+            if not opexists(local_path):
+                s3key = bucket.get_key(filename, validate=False)
+                with open(local_path, 'wb') as f:
+                    s3key.get_contents_to_file(f)
+                if not is_tarfile(local_path):
+                    raise FilepathInvalidException('%s is not tar. Local copy %s' %
+                                                   (path, local_path))
+            new_paths.append(local_path)
+    return new_paths
+
+
+def _check(paths, by_controlling: List[str]) -> List[str]:
+    invalid_paths = [x for x in paths if x not in by_controlling]
+    if invalid_paths:
+        raise FilepathInvalidException('Pointed invalid paths %s. Only tar and folder are '
+                                       'supported' % ' '.join(invalid_paths))
+
+
 class FilepathBuilder:
     """
     Class builds paths of pointed file names from base paths. It will search name recursive if it is
     needed.
     """
 
-    def __init__(self, paths: Iterable, is_recursive=False):
+    def __init__(self, paths: Iterable, is_recursive=False, is_clear_downloaded: bool = False):
+        self._is_clear_downloaded = is_clear_downloaded
         self._last_tar = None
         self._is_recursive = is_recursive
         self._archives = []
         self._dirs = []
+        s3paths = []
+
         for path in paths:
-            if os.path.isdir(path):
+            if is_s3(path):
+                s3paths.append(path)
+            elif os.path.isdir(path):
                 self._dirs.append(path)
             elif is_tarfile(path):
                 self._archives.append(path)
-        self._check_paths(paths)
+
+        _check(paths, self._dirs + self._archives + s3paths)
+        self._archives += _get_from_s3(s3paths)
         self._dirs.append(EXTRACT_PATH)
 
     def build(self, for_name: str) -> str:
@@ -68,12 +116,6 @@ class FilepathBuilder:
 
         raise FilepathException('File %s doesn\'t exist in folders %s' %
                                 (for_name, ', '.join(self._dirs + self._archives)))
-
-    def _check_paths(self, paths) -> List[str]:
-        invalid_paths = [x for x in paths if x not in (self._archives + self._dirs)]
-        if invalid_paths:
-            raise FilepathInvalidException('Pointed invalid paths %s. Only tar and folder are '
-                                           'supported' % ' '.join(invalid_paths))
 
     def _build_from_dirs(self, for_name: str) -> str:
         res = None
@@ -106,3 +148,7 @@ class FilepathBuilder:
     def __del__(self):
         if opexists(EXTRACT_PATH):
             shutil.rmtree(EXTRACT_PATH)
+
+        if self._is_clear_downloaded and opexists(S3_FILES_DIR):
+            shutil.rmtree(S3_FILES_DIR)
+

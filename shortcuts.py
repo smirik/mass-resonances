@@ -6,6 +6,10 @@ def logging_done():
     logging.info('[done]')
 
 
+def is_s3(path) -> bool:
+    return 's3://' == path[:5]
+
+
 def cutoff_angle(value: float) -> float:
     """Cutoff input angle to interval from 0 to Pi or from 0 to -Pi
     if input angle is negative.

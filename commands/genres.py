@@ -6,46 +6,13 @@ from datamining import PhaseBuilder, PhaseStorage, build_bigbody_elements, \
 from datamining.orbitalelements import FilepathBuilder
 from datamining.resonances import AEIDataGetter
 from os.path import join as opjoin
-from os.path import basename
 from os.path import exists
 from entities.body import Asteroid, Planet
 from entities.dbutills import session
 from entities import ThreeBodyResonance
 from entities import TwoBodyResonance
-from settings import Config
-from boto.s3.connection import S3Connection
 from sqlalchemy.orm import aliased
 from .plot import ResfileMaker
-
-CONFIG = Config.get_params()
-BUCKET = CONFIG['s3']['bucket']
-PROJECT_DIR = Config.get_project_dir()
-
-
-def is_s3(path) -> bool:
-    return 's3://' == path[:5]
-
-
-def get_from_s3(filepaths: List[str]) -> List[str]:
-    new_paths = []
-    if any([is_s3(x) for x in filepaths]):
-        conn = S3Connection(CONFIG['s3']['access_key'], CONFIG['s3']['secret_key'])
-        bucket = conn.get_bucket(BUCKET)
-        for path in filepaths:
-            if not is_s3(path):
-                continue
-            start = path.index(BUCKET)
-            filename = path[start + len(BUCKET) + 1:]
-            folder = opjoin(PROJECT_DIR, '.s3files')
-            if not exists(folder):
-                mkdir(folder)
-            local_path = opjoin(folder, basename(filename))
-            if not exists(local_path):
-                s3key = bucket.get_key(filename, validate=False)
-                with open(local_path, 'wb') as f:
-                    s3key.get_contents_to_file(f)
-            new_paths.append(local_path)
-    return new_paths
 
 
 def genres(asteroid_number: int, integers: Tuple, filepaths: List[str], planets: Tuple):
@@ -70,7 +37,6 @@ def genres(asteroid_number: int, integers: Tuple, filepaths: List[str], planets:
     phase_cleaner = PhaseCleaner(phase_storage)
 
     print('Loading aei files.')
-    filepaths = get_from_s3(filepaths) + [x for x in filepaths if not is_s3(x)]
     builder = FilepathBuilder(filepaths, True)
     planet_aei_paths = [builder.build('%s.aei' % x) for x in planets]
     resmaker = ResfileMaker(planets, planet_aei_paths)
