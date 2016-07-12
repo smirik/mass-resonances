@@ -22,7 +22,7 @@ install:
   - pip install coverage pytest==2.8.3
 
 env:
-  - POSTGRES_PORT_5432_TCP_ADDR=localhost RESONANCES_DB_USER=postgres RESONANCES_DB_NAME=resonances
+  - POSTGRES_PORT_5432_TCP_ADDR=localhost RESONANCES_DB_USER=postgres RESONANCES_DB_NAME=resonances $POSTGRES_ENV_POSTGRES_PASSWORD=
 
 before_script:
   - cd ./catalog
