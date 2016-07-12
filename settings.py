@@ -1,3 +1,4 @@
+import logging
 from typing import Dict
 
 import yaml
@@ -5,6 +6,27 @@ import os
 import sys
 
 _PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _merge(source: Dict, destination: Dict) -> Dict:
+    for key, value in source.items():
+        if isinstance(value, dict):
+            node = destination.setdefault(key, {})
+            _merge(value, node)
+        else:
+            destination[key] = value
+    return destination
+
+
+def _env_var_eval(val: Dict):
+    for key, value in val.items():
+        if isinstance(value, dict):
+            _env_var_eval(value)
+        elif isinstance(value, str) and value[:1] == '$':
+            val[key] = os.environ.get(value[1:], None)
+            if not val[key]:
+                logging.warning('Environment variable %s is not defined' % value[1:])
+    return val
 
 
 class _ParamBridge:
@@ -27,16 +49,8 @@ class _ParamBridge:
                     raise e
 
             if local_params:
-                self._params = self._merge(local_params, self._params)
-
-    def _merge(self, source: Dict, destination: Dict) -> Dict:
-        for key, value in source.items():
-            if isinstance(value, dict):
-                node = destination.setdefault(key, {})
-                self._merge(value, node)
-            else:
-                destination[key] = value
-        return destination
+                self._params = _merge(local_params, self._params)
+        self._params = _env_var_eval(self._params)
 
     def __getitem__(self, key: str):
         return getattr(self, key, self._params[key])
