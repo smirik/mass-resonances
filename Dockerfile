@@ -18,4 +18,4 @@ WORKDIR /opt/resonances/
 
 ADD . /opt/resonances/
 
-ENTRYPOINT ["/opt/resonances/entrypoint.py"]
+ENTRYPOINT ["/opt/resonances/main.py"]

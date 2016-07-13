@@ -189,9 +189,14 @@ def broken_bodies():
 @click.option('--integers', nargs=3, default=None, type=int,
               help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
 @report_interval_options()
+@click.option('--body-count', default=3, type=click.Choice(['2', '3']),
+              help='Example: 2. 2 means two body resonance, 3 means three body resonance,')
 def librations(start: int, stop: int, first_planet: str, second_planet: str, pure: bool,
-               apocentric: bool, axis_interval: Tuple[float], integers: Tuple[int], limit,
-               offset):
+               apocentric: bool, axis_interval: Tuple[float], integers: Tuple[int], limit: int,
+               offset: int, body_count: str):
+    body_count = int(body_count)
+    if body_count == 2:
+        assert not second_planet
     from commands import AsteroidCondition
     from commands import show_librations as _show_librations
     from commands import PlanetCondition, AxisInterval, ResonanceIntegers
@@ -207,7 +212,7 @@ def librations(start: int, stop: int, first_planet: str, second_planet: str, pur
         kwargs['axis_interval'] = AxisInterval(*axis_interval)
     if integers:
         kwargs['integers'] = ResonanceIntegers(*integers)
-    _show_librations(**kwargs)
+    _show_librations(**kwargs, body_count=body_count)
 
 
 @cli.command(help='Shows integers from resonance table. Below options are need for filtering.')
