@@ -103,10 +103,10 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
     from commands import calc as _calc
     from commands import LibrationFilder
 
-    finder = LibrationFilder(planets, aei_paths, recursive, clear, clear_s3, is_current,
+    finder = LibrationFilder(planets, recursive, clear, clear_s3, is_current,
                              PhaseStorage(PHASE_STORAGE.index(phase_storage)))
     if start == stop == -1 and aei_paths:
-        finder.find_by_file()
+        finder.find_by_file(aei_paths)
 
     if recalc:
         _calc(start, stop, STEP, from_day, to_day)
@@ -114,7 +114,7 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
         end = i + STEP if i + STEP < stop else stop
         if reload_resonances:
             _load_resonances(RESONANCE_FILEPATH, i, end, planets)
-        finder.find(i, end)
+        finder.find(i, end, aei_paths)
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
