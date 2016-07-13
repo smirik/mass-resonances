@@ -15,7 +15,7 @@ from sqlalchemy.orm import aliased
 from .plot import ResfileMaker
 
 
-def genres(asteroid_number: int, integers: Tuple, filepaths: List[str], planets: Tuple):
+def genres(asteroid_number: int, integers: List[int], filepaths: List[str], planets: Tuple):
     t1 = aliased(Planet)
     t2 = aliased(Planet)
     cond = len(integers) == 3
@@ -52,6 +52,7 @@ def genres(asteroid_number: int, integers: Tuple, filepaths: List[str], planets:
     if not exists(folder):
         mkdir(folder)
     resmaker.make(phases, aei_data, opjoin(
-        folder, 'A%i_%s_%s.res' % (asteroid_number, planets, '_'.join([str(x) for x in integers]))
+        folder, 'A%i_%s_%s.res' % (asteroid_number, '_'.join(planets),
+                                   '_'.join([str(x) for x in integers]))
     ))
     phase_cleaner.delete(resonance_id)
