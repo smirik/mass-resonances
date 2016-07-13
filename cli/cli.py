@@ -1,16 +1,13 @@
 import logging
-from typing import Tuple
-
+from typing import Tuple, List
 import os
 import click
-
-from .internal import build_logging
+from .internal import build_logging, validate_ints, validate_planets
 from .internal import aei_path_options
 from .internal import asteroid_interval_options
 from .internal import asteroid_time_intervals_options
 from .internal import Path
 from .internal import report_interval_options
-
 from settings import Config
 from os.path import join as opjoin
 
@@ -51,9 +48,10 @@ def calc(start: int, stop: int, from_day: float, to_day: float, aei_path: str):
 FIND_HELP_PREFIX = 'If true, the application will'
 
 
-@cli.command(help='Loads integers, satisfying D\'Alambert rule, from %s and build potentially' %
-                  RESONANCE_FILEPATH + 'resonances, that related to asteroid from catalog by' +
-                  ' comparing axis from this file and catalog', name='load-resonances')
+@cli.command(
+    help='Loads integers, satisfying D\'Alambert rule, from %s and build potentially' %
+         RESONANCE_FILEPATH + 'resonances, that related to asteroid from catalog by' +
+         ' comparing axis from this file and catalog', name='load-resonances')
 @asteroid_interval_options()
 @click.option('--file', default=RESONANCE_FILEPATH, type=str,
               help='Name of file in axis directory with resonances default: %s' %
@@ -132,12 +130,14 @@ def plot(start: int, stop: int, phase_storage: str, only_librations: bool,
          aei_paths: Tuple[str, ...], recursive: bool, planets: Tuple[str]):
     from datamining import PhaseStorage
     from commands import plot as _plot
-    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations, aei_paths,
+    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)), only_librations,
+          aei_paths,
           recursive, planets)
 
 
-@cli.command(name='clear-phases', help='Clears phases from database and Redis, which related to '
-                                       'pointed asteroids.')
+@cli.command(name='clear-phases',
+             help='Clears phases from database and Redis, which related to '
+                  'pointed asteroids.')
 @asteroid_interval_options()
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def clear_phases(start: int, stop: int, planets: Tuple[str]):
@@ -252,16 +252,18 @@ def show_planets(body_count: str):
 
 @cli.command(help='Generate res files for pointed planets.')
 @click.option('--asteroid', '-a', type=int, help='Number of asteroid')
-@click.option('--aei-paths', '-p', multiple=True, default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
+@click.option('--aei-paths', '-p', multiple=True,
+              default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
               type=Path(exists=True, resolve_path=True),
               help='path to tar archive contains aei files.'
                    ' Provides downloading from AWS S3 if pointed options access_key,'
                    ' secret_key, bucket in section s3 inside settings file.'
                    ' Example: /etc/aei-1-101.tar.gz')
-@click.option('--integers', '-i', nargs=3, default=None, type=int,
-              help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
-@click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
-def genres(asteroid: int, integers: Tuple, aei_paths: Tuple, planets: Tuple):
+@click.option('--integers', '-i', default=None, type=str,
+              help='Integers are pointing by three values separated by space.'
+                   ' Example: \'5 -1 -1\', Example \'1 -1\'', callback=validate_ints)
+@click.argument('planets', type=click.Choice(PLANETS), nargs=-1, callback=validate_planets)
+def genres(asteroid: int, integers: List[int], aei_paths: Tuple, planets: Tuple):
     from commands import genres as _genres
     assert integers
     _genres(asteroid, integers, [x for x in aei_paths], planets)

@@ -87,3 +87,17 @@ def build_logging(loglevel: str, logfile: str, message_format: str, time_format:
             level=loglevel,
         )
 
+
+def validate_ints(ctx: click.Context, option: click.Option, value: str):
+    res = [int(x) for x in value.split()]
+    if not (2 <= len(res) <= 3):
+        error_message = 'Incorrect integers. Correct examples \'5 -1 -1\' or \'1 -1\''
+        raise click.BadOptionUsage(option.name ,error_message)
+    return res
+
+
+def validate_planets(ctx: click.Context, option: click.Option, value: str):
+    if len(value) == len(ctx.params['integers']) - 1:
+        return value
+    raise click.BadParameter('Incorrect number of planets for pointed integers.')
+
