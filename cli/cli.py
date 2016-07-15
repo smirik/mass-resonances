@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple, List
+from typing import Tuple, List, TypeVar
 import os
 import click
 from .internal import build_logging, validate_ints, validate_planets, validate_integer_expression, \
@@ -23,6 +23,8 @@ RESONANCE_TABLE_FILE = CONFIG['resonance_table']['file']
 RESONANCE_FILEPATH = opjoin(PROJECT_DIR, 'axis', RESONANCE_TABLE_FILE)
 STEP = CONFIG['integrator']['number_of_bodies']
 INTEGRATOR_DIR = CONFIG['integrator']['dir']
+
+BodyCountType = TypeVar('T', str, int)
 
 
 @click.group()
@@ -188,20 +190,22 @@ def broken_bodies():
 @click.option('--apocentric', default=None, type=bool, help='Example: 0')
 @click.option('--axis-interval', nargs=2, default=None, type=float,
               help='Interval is pointing by two values separated by space. Example: 0.0 180.0')
-@click.option('--integers', nargs=3, default=None, type=int,
-              help='Integers are pointing by three values separated by space. Example: 5 -1 -1')
+@click.option('--integers', '-i', default=None, type=str, callback=validate_integer_expression,
+              help='Integers are pointing by three values separated by space. Example: \'5 -1 -1\'')
 @report_interval_options()
-@click.option('--body-count', default='3', type=click.Choice(['2', '3']),
+@click.option('--body-count', default=None, callback=validate_or_set_body_count,
+              type=click.Choice(['2', '3']),
               help='Example: 2. 2 means two body resonance, 3 means three body resonance,')
 def librations(start: int, stop: int, first_planet: str, second_planet: str, pure: bool,
-               apocentric: bool, axis_interval: Tuple[float], integers: Tuple[int], limit: int,
+               apocentric: bool, axis_interval: Tuple[float], integers: List[str], limit: int,
                offset: int, body_count: str):
     body_count = int(body_count)
-    if body_count == 2:
-        assert not second_planet
+    if integers and body_count != len(integers):
+        raise click.BadParameter('--body-count must be equal number of --integers')
+    assert not (body_count == 2 and second_planet is not None)
     from commands import AsteroidCondition
     from commands import show_librations as _show_librations
-    from commands import PlanetCondition, AxisInterval, ResonanceIntegers
+    from commands import PlanetCondition, AxisInterval
     kwargs = {}
     if start and stop:
         kwargs['asteroid_condition'] = AsteroidCondition(start, stop)
@@ -212,9 +216,7 @@ def librations(start: int, stop: int, first_planet: str, second_planet: str, pur
     kwargs['limit'] = limit
     if axis_interval:
         kwargs['axis_interval'] = AxisInterval(*axis_interval)
-    if integers:
-        kwargs['integers'] = ResonanceIntegers(*integers)
-    _show_librations(**kwargs, body_count=body_count)
+    _show_librations(body_count=body_count, integers=integers, **kwargs)
 
 
 @cli.command(help='Shows integers from resonance table. Below options are need for filtering.')
@@ -228,7 +230,7 @@ def librations(start: int, stop: int, first_planet: str, second_planet: str, pur
 @click.option('--integers', '-i', type=str, callback=validate_integer_expression, default=None,
               help='Examples: \'>1 1\', \'>=3 <5\', \'1 -1 *\'')
 def resonances(start: int, stop: int, first_planet: str, second_planet: str,
-               body_count: str, limit, offset, integers: List[str]):
+               body_count: BodyCountType, limit, offset, integers: List[str]):
     from commands import AsteroidCondition
     from commands import show_resonance_table as _show_resonance_table
     from commands import PlanetCondition

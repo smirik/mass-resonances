@@ -2,7 +2,7 @@
 Module contains kit for getting resonances from databases.
 """
 import logging
-from typing import Dict
+from typing import Dict, Union
 from typing import Iterable, Tuple, List
 
 from datamining.orbitalelements import FilepathBuilder
@@ -14,8 +14,9 @@ from entities.resonance.twobodyresonance import ResonanceMixin
 from os.path import join as opjoin
 from os import remove
 from settings import Config
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, contains_eager
 from sqlalchemy.orm import joinedload, aliased
+from sqlalchemy.orm.util import AliasedClass
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -29,7 +30,8 @@ class GetQueryBuilder:
     """
     Class build base query for getting two or three body resonances or related planets.
     """
-    def __init__(self, for_bodies: BodyNumberEnum):
+    def __init__(self, for_bodies: BodyNumberEnum, load_related=False):
+        self._load_related = load_related
         if for_bodies == BodyNumberEnum.three:
             self.resonance_cls = ThreeBodyResonance
         else:
@@ -37,11 +39,19 @@ class GetQueryBuilder:
         self.query = session.query(self.resonance_cls)
         self.for_bodies = for_bodies
         self._foreings = FOREIGNS[:for_bodies.value - 1]
+        self._asteroid_alias = aliased(Asteroid)
 
     def get_resonances(self) -> Query:
-        query = self.query.join(Asteroid, isouter=True)
+        query = self.query.outerjoin(self._asteroid_alias, self.resonance_cls.small_body)
+        if self._load_related:
+            options = contains_eager(self.resonance_cls.small_body, alias=self._asteroid_alias)
+            query = query.options(options)
         query = self._add_join(query)
         return query
+
+    @property
+    def asteroid_alias(self) -> Union[AliasedClass, Asteroid]:
+        return self._asteroid_alias
 
     def get_planets(self) -> Query:
         cols = [PLANET_TABLES[x].name.label('%s_name1' % x) for x in self._foreings]
@@ -52,8 +62,13 @@ class GetQueryBuilder:
     def _add_join(self, query: Query) -> Query:
         for key in self._foreings:
             planet_table = PLANET_TABLES[key]
+
             resonance_attr = getattr(self.resonance_cls, '%s_id' % key)
-            query = query.join(planet_table, resonance_attr == planet_table.id, isouter=True)
+            query = query.outerjoin(planet_table, resonance_attr == planet_table.id)
+            if self._load_related:
+                options = contains_eager(getattr(self.resonance_cls, key), alias=planet_table)
+                query = query.options(options)
+
         return query
 
 
@@ -94,13 +109,15 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
     :return:
     """
     body_count = BodyNumberEnum(len(planets) + 1)
-    resonances = GetQueryBuilder(body_count).get_resonances()
+    builder = GetQueryBuilder(body_count)
+    resonances = builder.get_resonances()
+    t1 = builder.asteroid_alias
     for i, key in enumerate(FOREIGNS):
         if i >= (body_count.value - 1):
             break
         resonances = resonances.filter(PLANET_TABLES[key].name == planets[i])
-    resonances = resonances.filter(Asteroid.number >= start, Asteroid.number < stop)\
-        .options(joinedload('libration')).order_by(Asteroid.number)
+    resonances = resonances.filter(t1.number >= start, t1.number < stop)\
+        .options(joinedload('libration')).order_by(builder.asteroid_alias.number)
 
     if only_librations:
         resonances = resonances.join('libration')
