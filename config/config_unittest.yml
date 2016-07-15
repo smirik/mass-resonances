@@ -120,10 +120,10 @@ extract_dir: '.from_archives'
 s3files_dir: '.s3files_dir'
 
 postgres:
-  host: localhost
-  user: postgres
-  password:
-  db: resonances_unittest
+  host: $TEST_DBHOST
+  user: $TEST_DBUSER
+  password: $TEST_DBPASS
+  db: $TEST_DB
 
 s3:
   access_key: null
