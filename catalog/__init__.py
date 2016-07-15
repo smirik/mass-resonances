@@ -34,7 +34,7 @@ def find_by_number(number: int) -> List[float]:
     except FileNotFoundError as e:
         link = 'http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat'
         logging.error('File from astdys doesn\'t exist try this %s' % link)
-        raise e
+        exit(-1)
 
 
 def build_possible_resonances(from_filepath: str, for_asteroid_num: int, planets: Tuple[str],

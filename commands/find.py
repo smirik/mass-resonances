@@ -28,18 +28,17 @@ OUTPUT_ANGLE = CONFIG['output']['angle']
 
 
 class LibrationFilder:
-    def __init__(self, planets: Tuple[str], aei_paths: tuple, is_recursive: bool, clear: bool,
+    def __init__(self, planets: Tuple[str], is_recursive: bool, clear: bool,
                  clear_s3: bool, is_current: bool = False,
                  phase_storage: PhaseStorage = PhaseStorage.redis):
         self._clear_s3 = clear_s3
         self._planets = planets
-        self._aei_paths = aei_paths
         self._is_recursive = is_recursive
         self._is_current = is_current
         self._phase_storage = phase_storage
         self._clear = clear
 
-    def find(self, start: int, stop: int):
+    def find(self, start: int, stop: int, aei_paths: tuple):
         """Analyze resonances for pointed half-interval of numbers of asteroids. It gets resonances
         aggregated to asteroids. Computes resonant phase by orbital elements from prepared aei files
         of three bodies (asteroid and two planets). After this it finds circulations in vector of
@@ -50,7 +49,7 @@ class LibrationFilder:
         :return:
         """
         orbital_element_sets = None
-        pathbuilder = FilepathBuilder(self._aei_paths, self._is_recursive, self._clear_s3)
+        pathbuilder = FilepathBuilder(aei_paths, self._is_recursive, self._clear_s3)
         filepaths = [pathbuilder.build('%s.aei' % x) for x in self._planets]
         try:
             orbital_element_sets = build_bigbody_elements(filepaths)
@@ -89,15 +88,16 @@ class LibrationFilder:
 
         session.commit()
 
-    def find_by_file(self):
+    def find_by_file(self, aei_paths: tuple):
         """Do same that find but asteroid interval will be determined by filenames.
 
+        :param aei_paths:
         :return:
         """
-        for path in self._aei_paths:
+        for path in aei_paths:
             start, stop = get_asteroid_interval(path)
             logging.info('find librations for asteroids [%i %i], from %s' % (start, stop, path))
-            self.find(start, stop)
+            self.find(start, stop, (path,))
 
 
 def _build_redis_phases(by_aei_data: List[str], in_key: str,
