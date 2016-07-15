@@ -50,10 +50,10 @@ def build_possible_resonances(from_filepath: str, for_asteroid_num: int, planets
     :return: list of resonances.
     """
     res = []
+    asteroid_parameters = find_by_number(for_asteroid_num)
+    asteroid_axis = asteroid_parameters[1]
     try:
         with open(from_filepath) as resonance_file:
-            asteroid_parameters = find_by_number(for_asteroid_num)
-            asteroid_axis = asteroid_parameters[1]
             for line in resonance_file:
                 line_data = line.split()
 
