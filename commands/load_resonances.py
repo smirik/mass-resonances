@@ -6,7 +6,7 @@ from entities import ThreeBodyResonance
 
 
 def load_resonances(from_filepath: str, start_asteroid: int, stop_asteroid: int,
-                    planets: Tuple[str], axis_swing: int = 0.01)\
+                    planets: Tuple[str], axis_swing: float = 0.01)\
         -> Dict[int, List[ThreeBodyResonance]]:
     """
     Makes all possible resonances for asteroids, that pointed by half-interval.

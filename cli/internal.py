@@ -1,6 +1,10 @@
+import re
+
 import click
 import logging
 from logging.handlers import RotatingFileHandler
+
+from entities.resonance.factory import BodyNumberEnum
 from os.path import join as opjoin
 from settings import Config
 import os
@@ -18,6 +22,59 @@ def _unite_decorators(*decorators):
         return decorated_function
 
     return deco
+
+
+def _try_to_int(val: str, option: click.Option):
+    try:
+        int(val)
+    except ValueError:
+        raise click.BadOptionUsage(option, 'Invalid integers.')
+
+
+def validate_or_set_body_count(ctx: click.Context, option: click.Option, value: str):
+    ints = ctx.params.get('integers', None)
+    if type(ints) == str:
+        ints = ints.split()
+    integers_count = len(ints) if ints else None
+    if not value and integers_count:
+        return integers_count
+    if integers_count and value:
+        if int(value) != integers_count:
+            raise click.BadOptionUsage(option, '--body-count must be equal number of integers')
+        return value
+    if not value:
+        return 3
+
+
+def validate_integer_expression(ctx: click.Context, option: click.Option, value: str):
+    if not value:
+        return value
+    vals = value.split()
+
+    error_message = 'Invalid integers. Check --help'
+    try:
+        BodyNumberEnum(len(vals))
+    except ValueError:
+        raise click.BadOptionUsage(option, error_message)
+
+    bool_ops = ['<', '>', '<=', '>=']
+    for i, val in enumerate(vals):
+        if val == '*':
+            continue
+
+        res = re.search('([0-9])', val)
+        if res:
+            number_part_start = res.start()
+            symbol = val[:number_part_start]
+            _try_to_int(val[number_part_start:], option)
+            if not symbol or symbol == '-':
+                vals[i] = '==%s' % val
+            elif symbol not in bool_ops:
+                raise click.BadOptionUsage(option, 'Invalid operators before integers.')
+        else:
+            raise click.BadOptionUsage(option, error_message)
+
+    return vals
 
 
 def report_interval_options():
@@ -92,7 +149,7 @@ def validate_ints(ctx: click.Context, option: click.Option, value: str):
     res = [int(x) for x in value.split()]
     if not (2 <= len(res) <= 3):
         error_message = 'Incorrect integers. Correct examples \'5 -1 -1\' or \'1 -1\''
-        raise click.BadOptionUsage(option.name ,error_message)
+        raise click.BadOptionUsage(option.name, error_message)
     return res
 
 

@@ -2,7 +2,8 @@ import logging
 from typing import Tuple, List
 import os
 import click
-from .internal import build_logging, validate_ints, validate_planets
+from .internal import build_logging, validate_ints, validate_planets, validate_integer_expression, \
+    validate_or_set_body_count
 from .internal import aei_path_options
 from .internal import asteroid_interval_options
 from .internal import asteroid_time_intervals_options
@@ -60,7 +61,8 @@ FIND_HELP_PREFIX = 'If true, the application will'
               help='Axis swing determines swing between semi major axis of asteroid from astdys '
                    'catalog and resonance table.')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
-def load_resonances(start: int, stop: int, file: str, axis_swing: float, planets: Tuple[str]):
+def load_resonances(start: int, stop: int, file: str, axis_swing: float,
+                    planets: Tuple[str]):
     assert axis_swing > 0.
     from commands import load_resonances as _load_resonances
     if not os.path.isabs(file):
@@ -220,25 +222,27 @@ def librations(start: int, stop: int, first_planet: str, second_planet: str, pur
 @click.option('--first-planet', default=None, type=str, help='Example: JUPITER')
 @click.option('--second-planet', default=None, type=str, help='Example: SATURN')
 @click.option('--body-count', default=None, type=click.Choice(['2', '3']),
+              callback=validate_or_set_body_count,
               help='Example: 2. 2 means two body resonance, 3 means three body resonance,')
 @report_interval_options()
+@click.option('--integers', '-i', type=str, callback=validate_integer_expression, default=None,
+              help='Examples: \'>1 1\', \'>=3 <5\', \'1 -1 *\'')
 def resonances(start: int, stop: int, first_planet: str, second_planet: str,
-               body_count: str, limit, offset):
+               body_count: str, limit, offset, integers: List[str]):
     from commands import AsteroidCondition
     from commands import show_resonance_table as _show_resonance_table
     from commands import PlanetCondition
 
-    body_count = int(body_count)
     assert not (body_count == 2 and second_planet is not None)
     kwargs = {
-        'body_count': body_count,
+        'body_count': int(body_count),
         'offset': offset,
         'limit': limit,
         'planet_condtion': PlanetCondition(first_planet, second_planet)
     }
     if start and stop:
         kwargs['asteroid_condition'] = AsteroidCondition(start, stop)
-    _show_resonance_table(**kwargs)
+    _show_resonance_table(integers=integers, **kwargs)
 
 
 @cli.command(name='planets', help='Shows planets, which exist inside resonance table.')
