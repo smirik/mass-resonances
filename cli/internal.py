@@ -36,14 +36,13 @@ def validate_or_set_body_count(ctx: click.Context, option: click.Option, value: 
     if type(ints) == str:
         ints = ints.split()
     integers_count = len(ints) if ints else None
-    if not value and integers_count:
-        return integers_count
-    if integers_count and value:
+    if integers_count:
+        if not value:
+            return integers_count
         if int(value) != integers_count:
             raise click.BadOptionUsage(option, '--body-count must be equal number of integers')
         return value
-    if not value:
-        return 3
+    return value or 3
 
 
 def validate_integer_expression(ctx: click.Context, option: click.Option, value: str):

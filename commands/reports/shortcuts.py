@@ -1,3 +1,8 @@
+from typing import List
+from sqlalchemy.orm import Query
+from sqlalchemy.orm.util import AliasedClass
+
+
 class AsteroidCondition:
     def __init__(self, start, stop):
         self.stop = stop
@@ -21,3 +26,12 @@ class ResonanceIntegers:
         self.third = third
         self.second = second
         self.first = first
+
+
+def add_integer_filter(query: Query, ints: List[str], body_tables: List[AliasedClass]) -> Query:
+    any_int = '*'
+
+    for integer, table in zip(ints, body_tables):
+        if integer != any_int:
+            query = query.filter(eval("table.longitude_coeff %s" % integer))
+    return query
