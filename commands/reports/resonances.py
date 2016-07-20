@@ -15,7 +15,7 @@ def show_resonance_table(asteroid_condition: AsteroidCondition = None,
     query = builder.get_resonances()
 
     if asteroid_condition:
-        query = query.filter(builder.resonance_cls.small_body.number >= asteroid_condition.start,
+        query = query.filter(builder.asteroid_alias.number >= asteroid_condition.start,
                              builder.asteroid_alias.number < asteroid_condition.stop)
 
     if planet_condtion:
