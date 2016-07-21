@@ -60,13 +60,6 @@ gnuplot:
   x_stop: 100000
   type:   points
   
-server:
-  username:   root
-  address:    uranus
-  source_dir: /root/resonances
-  dest_dir:   /Users/smirik/projects/resonances
-
-
 constants:
   u:  0.0002959122082855911025
   k:  0.017202098795

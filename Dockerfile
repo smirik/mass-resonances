@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
 ADD ./mercury /opt/resonances/mercury
 ADD ./reqs.pip /opt/resonances/reqs.pip
 
-RUN pip install -r /opt/resonances/reqs.pip && pip install awscli==1.10.23
+RUN pip install -r /opt/resonances/reqs.pip
 
 RUN cd /opt/resonances/mercury/ && ./compile.sh \
         && apt-get remove -y gfortran && apt-get autoclean -y && apt-get autoremove -y
