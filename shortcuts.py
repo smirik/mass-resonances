@@ -10,6 +10,10 @@ def is_s3(path) -> bool:
     return 's3://' == path[:5]
 
 
+def is_tar(path) -> bool:
+    return path[-4:] == '.tar' or path[-7:] == '.tar.gz'
+
+
 def cutoff_angle(value: float) -> float:
     """Cutoff input angle to interval from 0 to Pi or from 0 to -Pi
     if input angle is negative.

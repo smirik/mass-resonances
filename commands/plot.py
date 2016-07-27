@@ -19,6 +19,9 @@ from settings import Config
 from shortcuts import cutoff_angle
 from view import make_plot
 
+from shortcuts import is_s3 as _is_s3
+from shortcuts import is_tar as _is_tar
+
 import tarfile
 
 CONFIG = Config.get_params()
@@ -29,8 +32,8 @@ BUCKET = CONFIG['s3']['bucket']
 
 def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: bool,
          aei_paths: Tuple[str, ...], is_recursive: bool, planets: Tuple[str], output: str):
-    is_s3 = output[:5] == 's3://'
-    is_tar = output[-4:] == '.tar'
+    is_s3 = _is_s3(output)
+    is_tar = _is_tar(output)
     tarf = None
     s3_bucket_key = None
 

@@ -10,6 +10,10 @@ from integrator import simple_clean
 from integrator import aei_clean
 from integrator import mercury6
 from integrator import element6
+from shortcuts import is_tar as _is_tar
+
+import os
+import tarfile
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -38,22 +42,45 @@ def _execute_mercury():
 
 
 def calc(start: int, stop: int, step: int, from_day: float, to_day: float,
-         aei_path: str = INTEGRATOR_PATH):
+         output_path: str = INTEGRATOR_PATH):
+    """
+    :param from_day:
+    :param to_day:
+    :param int start: start is position of start element for computing.
+    :param int stop:
+    :param str target_path: path where will be saved aei files.
+    """
     set_time_interval(from_day, to_day)
     aei_clean()
+
     for i in range(start, stop, step):
         end = i + step if i + step < stop else stop
-        _calc(i, end, aei_path)
+        _integrate(i, end)
+
+    _save_aei_files(output_path)
 
 
-def _calc(start: int, stop: int, target_path):
+def _save_aei_files(output_path: str):
+    if INTEGRATOR_PATH != output_path:
+        if _is_tar(output_path):
+            with tarfile.open(output_path, 'w:gz') as tarf:
+                for path in iglob(os.path.join(INTEGRATOR_PATH, '*.aei')):
+                    tarf.add(path, arcname=os.path.basename(path))
+                    os.remove(path)
+        else:
+            if not os.path.exists(output_path):
+                os.makedirs(output_path)
+            for path in iglob(os.path.join(INTEGRATOR_PATH, '*.aei')):
+                os.rename(path, os.path.join(output_path, os.path.basename(path)))
+
+
+def _integrate(start: int, stop: int):
     """Gets from astdys catalog parameters of orbital elements. Represents them
     to small.in file and makes symlink of this file in directory of application
     mercury6.
 
     :param int start: start is position of start element for computing.
     :param int stop:
-    :param str target_path: path where will be saved aei files.
     """
     filepath = os.path.join(PROJECT_DIR, CONFIG['integrator']['input'], SMALL_BODIES_FILENAME)
     symlink = os.path.join(INTEGRATOR_PATH, SMALL_BODIES_FILENAME)
@@ -69,6 +96,3 @@ def _calc(start: int, stop: int, target_path):
     logging.info('Integrating orbits...')
     _execute_mercury()
     logging.info('[done]')
-    if INTEGRATOR_PATH != target_path:
-        for path in iglob(os.path.join(INTEGRATOR_PATH, '*.aei')):
-            os.rename(path, os.path.join(target_path, os.path.basename(path)))
