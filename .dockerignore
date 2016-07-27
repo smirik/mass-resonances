@@ -33,7 +33,7 @@ dump.rdb
 .git
 .gitignore
 .gitmodules
-.travis
+.travis.yml
 githooks
 Dockerfile
 docker-compose.yml
