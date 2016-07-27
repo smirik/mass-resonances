@@ -1,8 +1,5 @@
 import logging
 import os
-from boto.s3.connection import S3Connection
-from boto.s3.key import Key
-from boto.s3.bucket import Bucket
 import shutil
 from datamining import AEIDataGetter
 from math import pi
@@ -21,13 +18,13 @@ from view import make_plot
 
 from shortcuts import is_s3 as _is_s3
 from shortcuts import is_tar as _is_tar
+from shortcuts import create_aws_s3_key
 
 import tarfile
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
-BUCKET = CONFIG['s3']['bucket']
 
 
 def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: bool,
@@ -48,12 +45,9 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
             exit(-1)
         s3_path = output
         output = opjoin(PROJECT_DIR, os.path.basename(output))
-
-        conn = S3Connection(CONFIG['s3']['access_key'], CONFIG['s3']['secret_key'])
-        bucket = conn.get_bucket(BUCKET)  # type: Bucket
-        start = s3_path.index(BUCKET)
-        s3_filekey = s3_path[start + len(BUCKET) + 1:]
-        s3_bucket_key = bucket.new_key(s3_filekey)  # type: Key
+        s3_bucket_key = create_aws_s3_key(CONFIG['s3']['access_key'],
+                                          CONFIG['s3']['secret_key'],
+                                          CONFIG['s3']['bucket'], output)
 
     output_images = opjoin(output_dir, CONFIG['output']['images'])
     output_res_path = opjoin(output_dir, CONFIG['output']['angle'])

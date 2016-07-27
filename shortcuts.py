@@ -1,5 +1,8 @@
 import logging
 import math
+from boto.s3.connection import S3Connection
+from boto.s3.key import Key
+from boto.s3.bucket import Bucket
 
 
 def logging_done():
@@ -41,3 +44,11 @@ def get_asteroid_interval(from_line: str):
     stop_asteroid_number = int(from_line[starts_from:ends_by])
     return start_asteroid_number, stop_asteroid_number
 
+
+def create_aws_s3_key(access_key: str, secret_key: str, in_bucket: str, for_path: str) -> Key:
+    conn = S3Connection(access_key, secret_key)
+    bucket = conn.get_bucket(in_bucket)  # type: Bucket
+    start = for_path.index(in_bucket)
+    s3_filekey = for_path[start + len(in_bucket) + 1:]
+    s3_bucket_key = bucket.new_key(s3_filekey)  # type: Key
+    return s3_bucket_key

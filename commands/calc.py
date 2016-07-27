@@ -2,6 +2,7 @@ import logging
 from glob import iglob
 
 import os
+from os.path import join as opjoin
 
 from settings import Config
 from catalog import find_by_number
@@ -11,6 +12,9 @@ from integrator import aei_clean
 from integrator import mercury6
 from integrator import element6
 from shortcuts import is_tar as _is_tar
+from shortcuts import is_tar as _is_s3
+from shortcuts import create_aws_s3_key
+from boto.s3.key import Key
 
 import os
 import tarfile
@@ -52,26 +56,42 @@ def calc(start: int, stop: int, step: int, from_day: float, to_day: float,
     """
     set_time_interval(from_day, to_day)
     aei_clean()
+    is_s3 = _is_s3(output_path)
+    s3_bucket_key = None
+    if is_s3:
+        if not _is_tar(output_path):
+            logging.error('You must point tar.gz archive in AWS S3 bucket.')
+        s3_bucket_key = create_aws_s3_key(CONFIG['s3']['access_key'],
+                                          CONFIG['s3']['secret_key'],
+                                          CONFIG['s3']['bucket'], output_path)
 
     for i in range(start, stop, step):
         end = i + step if i + step < stop else stop
         _integrate(i, end)
 
-    _save_aei_files(output_path)
+    _save_aei_files(output_path, s3_bucket_key)
 
 
-def _save_aei_files(output_path: str):
-    if INTEGRATOR_PATH != output_path:
-        if _is_tar(output_path):
-            with tarfile.open(output_path, 'w:gz') as tarf:
-                for path in iglob(os.path.join(INTEGRATOR_PATH, '*.aei')):
-                    tarf.add(path, arcname=os.path.basename(path))
-                    os.remove(path)
-        else:
-            if not os.path.exists(output_path):
-                os.makedirs(output_path)
+def _save_aei_files(output_path: str, s3_bucket_key: Key):
+    if INTEGRATOR_PATH == output_path:
+        return
+    if _is_tar(output_path):
+        tar_path = output_path
+        if s3_bucket_key:
+            tar_path = opjoin(PROJECT_DIR, os.path.basename(output_path))
+
+        with tarfile.open(tar_path, 'w:gz') as tarf:
             for path in iglob(os.path.join(INTEGRATOR_PATH, '*.aei')):
-                os.rename(path, os.path.join(output_path, os.path.basename(path)))
+                tarf.add(path, arcname=os.path.basename(path))
+                os.remove(path)
+
+        if s3_bucket_key:
+            s3_bucket_key.set_contents_from_filename(tar_path)
+    else:
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        for path in iglob(os.path.join(INTEGRATOR_PATH, '*.aei')):
+            os.rename(path, os.path.join(output_path, os.path.basename(path)))
 
 
 def _integrate(start: int, stop: int):
