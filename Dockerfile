@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y \
         gfortran gnuplot wget git libpq-dev sed \
         && mkdir -p /opt/resonances/mercury \
         && mkdir /opt/catalog \
-        && wget 'http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat' -O /opt/catalog/allnum.cat
+        && wget 'http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat' -O /opt/resonances/catalog/allnum.cat
 
 ADD ./mercury /opt/resonances/mercury
 ADD ./reqs.pip /opt/resonances/reqs.pip
