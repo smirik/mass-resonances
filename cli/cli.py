@@ -41,7 +41,7 @@ def cli(loglevel: str = 'DEBUG', logfile: str = None):
                   ' planets, that will be stored in aei files.')
 @asteroid_time_intervals_options()
 @click.option('--aei-path', '-p', multiple=False, default=opjoin(PROJECT_DIR, INTEGRATOR_DIR),
-              type=click.Path(resolve_path=True),
+              type=Path(resolve_path=True),
               help='Path where will be stored aei files. It can be tar.gz archive.')
 def calc(start: int, stop: int, from_day: float, to_day: float, aei_path: str):
     from commands import calc as _calc
