@@ -3,7 +3,7 @@ RUN apt-get update && apt-get install -y \
         #python3 python3-pip \
         gfortran gnuplot wget git libpq-dev sed \
         && mkdir -p /opt/resonances/mercury \
-        && mkdir /opt/catalog \
+        && mkdir /opt/resonances/catalog \
         && wget 'http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat' -O /opt/resonances/catalog/allnum.cat
 
 ADD ./mercury /opt/resonances/mercury
