@@ -124,3 +124,8 @@ docker run --env-file=<path/to/.env> -v /mnt/resonances-data/aei/:/aei-files:rw 
     amarkov/resonances:v4 calc --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files
 ```
 And after this command all aei files will be in /mnt/resonances-data/aei/ and NFS will share them to server and another clients.
+Way for reading aei files for search librations is similar.
+```
+docker run --env-file=<path/to/.env> -v /mnt/resonances-data/aei/:/aei-files:ro \
+    amarkov/resonances:v4 find --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files JUPITER SATURN
+```

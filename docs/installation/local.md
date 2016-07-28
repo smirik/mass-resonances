@@ -54,10 +54,10 @@ You can point option `--limit=1000`, you will 1000 entries. For details type `do
 
 ### Search librations.
 Now, when you have aei files and resonance table, you can compute resonance phases and find libration in them.
-For this operation you need to mount folder with aei files. Look.
+Any libration, that will be found, will be saved in database.  For this operation you need to mount folder with aei files. Look.
 ```
 docker run --link=some-resonances-data:postgres --env-file=<path/to/.env> -v `pwd`/aei-files:/aei-files:ro \
-    amarkov/resonances:v4 find --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files JUPITER SATURN
+    amarkov/resonances:v4 find --start=1 --stop=101 -p /aei-files JUPITER SATURN
 ```
 Or you can find librations for all asteroid, that represented by aei files. You just need to change interval options.
 ```
