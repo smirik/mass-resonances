@@ -5,7 +5,7 @@ This section discover setup the application on cluster. Performance of the appli
 tested on Digitial Ocean, because Docker Machine has driver for setup Docker on node and it just works.
 You must have at least 3 nodes. For setup the cluster will be used Docker Swarm.
 
-* First node mach will be data server. It will contain database.
+* First node will be data server. It will contain database.
 * Second node will be manager of cluster. It will pass to nodes tasks, that we will assign to it.
 * Third node will be worker. It will take task from cluster manager and process them.
 
@@ -35,7 +35,7 @@ POSTGRES_PORT_5432_TCP_ADDR=<ip_address_of_data_node>
 ```
 
 ### Cluster manager.
-Before setup cluster you shuold choose swarm discovery. In documentation will be showed how to use swarm discovery Docker Hub.
+Before setup cluster you should choose swarm discovery. In documentation will be showed how to use swarm discovery Docker Hub.
 But Docker's authors don't recommend it for production environment.
 
 First for all we need to generate the token. You can generate on local machine. `docker run --rm swarm create` it will show you
