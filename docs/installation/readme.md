@@ -2,4 +2,4 @@
 
 ## Docker
 This section discovers installation over Docker for [local](./local.md) computer and computer
-[cluster](./cluster.md). You must know how to install Docker.
+[cluster](./remote.md). You must know how to install Docker.

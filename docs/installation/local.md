@@ -5,7 +5,7 @@
 * Run data container by command `docker run -d --name some-resonances-data amarkov/resonances-data:v3`
 * For more convinient work you can create `.env` file with next contents ```RESONANCES_DB_USER=postgres RESONANCES_DB_NAME=resonances```
 
-## Run compiting.
+## Run computing.
 
 ### Integration.
 That's all. Now you can run some computions via application.
