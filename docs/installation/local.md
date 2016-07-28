@@ -63,3 +63,7 @@ Now you can see librations by this command.
 ```
 docker run --link=some-resonances-data:postgres --env-file=<path/to/.env> amarkov/resonances:v4 librations
 ```
+For filtering by planets add options `--first-planet=JUPITER --second-planet=SATURN`. For filtering by asteroid number
+add options `--start=1 --stop=11`. This command is like a command for showing resonance table. By default it shows only
+100 entries. And as that command, it has options `--limit` and `--offset`.
+For details type `docker run --rm amarkov/resonances:v4 librations --help`
