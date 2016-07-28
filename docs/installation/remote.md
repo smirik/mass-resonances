@@ -91,3 +91,36 @@ docker run --env-file=<path/to/.env> -v `pwd`/aei-files:/aei-files:ro \
 ```
 docker run --env-file=<path/to/.env> amarkov/resonances:v4 librations
 ```
+
+## Multiple worker nodes.
+Because cluster means, that you use several machines for getting your purpose faster. But if you use several workers,
+it's very possible, that you want transver files between them. NFS was tested for solving this problem. You can install
+package `nfs-kernel-server` on your data node and package `nfs-common` for worker.
+
+### Setup NFS server.
+* Login over ssh to your data node.
+* Install `nfs-kernel-server`
+* Make file `/etc/exports` if it doesn't exist.
+* Put to file `/etc/exports` following content.
+```
+/srv/resonances-data     <node1_ip>(rw,fsid=root,no_subtree_check,no_root_squash)
+/srv/resonances-data     <node2_ip>(rw,fsid=root,no_subtree_check,no_root_squash)
+...
+/srv/resonances-data     <nodeN_ip>(rw,fsid=root,no_subtree_check,no_root_squash)
+```
+* Execute command `exportfs -rav`
+* Restart nfs-kernel-server. In Ubuntu it can be done by command `service nfs-kernel-server start`.
+
+### Setup nfs client.
+This steps must be done on every node.
+* Login over ssh to your node.
+* Install `nfs-common`
+* Mount nfs directory to `/mnt/resonances-data/`
+
+### Example with integration.
+Now, when you mounted NFS directory, you can mount this folder to container. Take a look.
+```
+docker run --env-file=<path/to/.env> -v /mnt/resonances-data/aei/:/aei-files:rw \
+    amarkov/resonances:v4 calc --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files
+```
+And after this command all aei files will be in /mnt/resonances-data/aei/ and NFS will share them to server and another clients.
