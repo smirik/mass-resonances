@@ -62,7 +62,7 @@ Now you can run computing on the cluster. You need activate cluster environment.
 Do it `eval $(docker-machine env --swarm swarm-manager)`. You are under cluster manager environment.
 Any docker command, that you will execute, it will be executed by cluster manager. Any volume, that you will mount, will be mounted
 on node, that will be assigned for resolving passed task. In this section will be showed only commands starting computing.
-Details of them was discovered in [local.md!](./local.md). But they are different from samples from [local.md!](./local.md).
+Details of them was discovered in [local.md](./local.md). But they are different from samples from [local.md](./local.md).
 
 ### Intergration
 ```
