@@ -1,5 +1,6 @@
 from typing import List, Iterable, Tuple, Dict
 
+import numpy as np
 import os
 from abc import abstractmethod
 from entities.resonance.twobodyresonance import ResonanceMixin
@@ -51,7 +52,7 @@ class IOrbitalElementSetFacade(object):
         if len(self._orbital_element_sets) == 1:
             return
         for i in range(1, len(orbital_element_sets)):
-            first_elems_len = len(orbital_element_sets[i-1])
+            first_elems_len = len(orbital_element_sets[i - 1])
             second_elems_len = len(orbital_element_sets[i])
             if not (first_elems_len == second_elems_len):
                 raise ElementCountException(
@@ -60,7 +61,7 @@ class IOrbitalElementSetFacade(object):
                 )
 
     def _get_body_orbital_elements(self, aei_data: List[str]) \
-            -> Iterable[_AggregatedElements]:
+        -> Iterable[_AggregatedElements]:
         """Build orbital elements of bodies from data of the .aei file.
         :return: generator of dictionaries, contains set of orbital elements
         for two planets and asteroid.
@@ -145,12 +146,30 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
         super(ResonanceOrbitalElementSetFacade, self).__init__(orbital_element_sets)
         self._resonance = resonance
 
+    def _compute_phases(self, elems) -> np.array:
+        phases = np.zeros(len(elems))
+        for i in range(len(elems[0].big_bodies)):
+            phases += (np.array([x.big_bodies[i].m_longitude for x in elems]) *
+                       self._resonance.get_big_bodies()[i].longitude_coeff)
+            phases += (np.array([x.big_bodies[i].p_longitude for x in elems]) *
+                       self._resonance.get_big_bodies()[i].perihelion_longitude_coeff)
+
+        small_body_m_l = np.array([x.small_body.m_longitude for x in elems])
+        small_body_p_l = np.array([x.small_body.p_longitude for x in elems])
+
+        phases += (
+            small_body_m_l * self._resonance.small_body.longitude_coeff +
+            small_body_p_l * self._resonance.small_body.perihelion_longitude_coeff
+        )
+
+        return [cutoff_angle(x) for x in phases]
+
     def get_resonant_phases(self, aei_data: List[str]) -> Iterable[Tuple[float, float]]:
-        for orbital_elements in self._get_body_orbital_elements(aei_data):
-            small_body = orbital_elements.small_body
-            resonant_phase = self._resonance.compute_resonant_phase(
-                *_get_longitudes(orbital_elements.big_bodies + [small_body]))
-            yield small_body.time, cutoff_angle(resonant_phase)
+        elems = [x for x in self._get_body_orbital_elements(aei_data)]
+        if not elems:
+            return []
+        phases = self._compute_phases(elems)
+        return [(x.small_body.time, y) for x, y in zip(elems, phases)]
 
     def get_elements(self, aei_data: List[str]) -> Iterable[str]:
         """
