@@ -1,5 +1,7 @@
 from typing import List, Dict
 
+from decimal import Decimal
+
 from settings import Config
 import os
 from datamining.resonances import PLANET_TABLES, GetQueryBuilder
@@ -12,9 +14,10 @@ CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 PATH = os.path.join(PROJECT_DIR, CONFIG['catalog']['file'])
 SKIP_LINES = CONFIG['catalog']['astdys']['skip']
+PRECISION = 4
 
 
-def get_asteroid_axises(start: int = 1, stop: int = None) -> Dict[str, str]:
+def get_asteroid_axises(start: int = 1, stop: int = None) -> Dict[str, float]:
     res = {}
 
     with open(PATH, 'r') as catalog_file:
@@ -24,7 +27,7 @@ def get_asteroid_axises(start: int = 1, stop: int = None) -> Dict[str, str]:
 
             line = line.split()
             asteroid_name = 'A%s' % line[0][1:-1]
-            res[asteroid_name] = line[2]
+            res[asteroid_name] = float(line[2])
 
             if stop and i >= stop:
                 break
@@ -68,8 +71,15 @@ def show_resonance_table(asteroid_condition: AsteroidCondition = None,
         if options is None:
             options = type(resonance).get_table_options()
             table = Texttable(max_width=120)
-            table.set_cols_width(options.column_widths + [10])
-            table.add_row(options.column_names + ['catalog axis'])
-        table.add_row(options.get_data(resonance) + [catalog_axises[resonance.small_body.name]])
+            table.set_cols_width(options.column_widths + [10, 10])
+            table.set_precision(PRECISION)
+            table.header(options.column_names + ['catalog axis', 'axis difference'])
+
+        catalog_axis = catalog_axises[resonance.small_body.name]
+        row = options.get_data(resonance) + [
+            '%.5f' % catalog_axis,
+            round(catalog_axis, PRECISION) - resonance.asteroid_axis
+        ]
+        table.add_row(row)
 
     print(table.draw() if table else 'No resonance by pointed filter.')
