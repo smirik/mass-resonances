@@ -8,8 +8,8 @@ from entities import get_resonance_factory
 from settings import Config
 
 CONFIG = Config.get_params()
-SKIP_LINES = CONFIG['catalog']['astdys']['skip']
 PROJECT_DIR = Config.get_project_dir()
+SKIP_LINES = CONFIG['catalog']['astdys']['skip']
 PATH = os.path.join(PROJECT_DIR, CONFIG['catalog']['file'])
 AXIS_COLUMNS = {BodyNumberEnum.two: 4, BodyNumberEnum.three: 6}
 

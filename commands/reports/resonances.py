@@ -1,10 +1,34 @@
-from typing import List
+from typing import List, Dict
 
+from settings import Config
+import os
 from datamining.resonances import PLANET_TABLES, GetQueryBuilder
 from entities import ResonanceMixin
 from entities import BodyNumberEnum
 from texttable import Texttable
 from .shortcuts import AsteroidCondition, PlanetCondition, add_integer_filter
+
+CONFIG = Config.get_params()
+PROJECT_DIR = Config.get_project_dir()
+PATH = os.path.join(PROJECT_DIR, CONFIG['catalog']['file'])
+SKIP_LINES = CONFIG['catalog']['astdys']['skip']
+
+
+def get_asteroid_axises(start: int = 1, stop: int = None) -> Dict[str, str]:
+    res = {}
+
+    with open(PATH, 'r') as catalog_file:
+        for i, line in enumerate(catalog_file):
+            if i < start - 1 + SKIP_LINES:
+                continue
+
+            line = line.split()
+            asteroid_name = 'A%s' % line[0][1:-1]
+            res[asteroid_name] = line[2]
+
+            if stop and i >= stop:
+                break
+    return res
 
 
 def show_resonance_table(asteroid_condition: AsteroidCondition = None,
@@ -17,6 +41,9 @@ def show_resonance_table(asteroid_condition: AsteroidCondition = None,
     if asteroid_condition:
         query = query.filter(builder.asteroid_alias.number >= asteroid_condition.start,
                              builder.asteroid_alias.number < asteroid_condition.stop)
+        catalog_axises = get_asteroid_axises(asteroid_condition.start, asteroid_condition.stop)
+    else:
+        catalog_axises = get_asteroid_axises()
 
     if planet_condtion:
         if planet_condtion.first_planet_name:
@@ -41,8 +68,8 @@ def show_resonance_table(asteroid_condition: AsteroidCondition = None,
         if options is None:
             options = type(resonance).get_table_options()
             table = Texttable(max_width=120)
-            table.set_cols_width(options.column_widths)
-            table.add_row(options.column_names)
-        table.add_row(options.get_data(resonance))
+            table.set_cols_width(options.column_widths + [10])
+            table.add_row(options.column_names + ['catalog axis'])
+        table.add_row(options.get_data(resonance) + [catalog_axises[resonance.small_body.name]])
 
     print(table.draw() if table else 'No resonance by pointed filter.')
