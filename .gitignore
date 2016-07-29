@@ -23,9 +23,11 @@ catalog/*.cat
 .from_archives
 .s3cfg
 alembic.test.ini
+alembic.test.ini
 deploy_programs
 catalog/aws_s3_aei_files.txt
 dump.rdb
 .docker_env
 .s3files
 .python-version
+alembic.remote_test.ini

@@ -28,6 +28,7 @@ dump.rdb
 .docker_env
 .s3files
 .python-version
+alembic.remote_test.ini
 
 # special
 .git
