@@ -1,3 +1,4 @@
+from math import radians
 from typing import List, Iterable, Tuple, Dict
 
 import numpy as np
@@ -60,6 +61,22 @@ class IOrbitalElementSetFacade(object):
                     (first_elems_len, second_elems_len)
                 )
 
+    def _get_body_orbital_elements2(self, aei_data: List[str]) \
+        -> Iterable[List[OrbitalElementSet]]:
+        # -> Iterable[_AggregatedElements]:
+        """Build orbital elements of bodies from data of the .aei file.
+        :return: generator of dictionaries, contains set of orbital elements
+        for two planets and asteroid.
+        """
+        for i, line in enumerate(aei_data):
+            if i < HEADER_LINE_COUNT:
+                continue
+
+            index = i - HEADER_LINE_COUNT
+            var = [x[index] for x in self._orbital_element_sets]
+            # yield _AggregatedElements(OrbitalElementSet(line), var)
+            yield var
+
     def _get_body_orbital_elements(self, aei_data: List[str]) \
         -> Iterable[_AggregatedElements]:
         """Build orbital elements of bodies from data of the .aei file.
@@ -71,9 +88,8 @@ class IOrbitalElementSetFacade(object):
                 continue
 
             index = i - HEADER_LINE_COUNT
-            yield _AggregatedElements(
-                OrbitalElementSet(line),
-                [x[index] for x in self._orbital_element_sets])
+            var = [x[index] for x in self._orbital_element_sets]
+            yield _AggregatedElements(OrbitalElementSet(line), var)
 
     def write_to_resfile(self, res_filepath: str, aei_data: List[str]):
         """Saves data, returned by method get_elements to res file.
@@ -146,16 +162,14 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
         super(ResonanceOrbitalElementSetFacade, self).__init__(orbital_element_sets)
         self._resonance = resonance
 
-    def _compute_phases(self, elems) -> np.array:
+    def _compute_phases(self, elems: List[List[OrbitalElementSet]],
+                        small_body_m_l: np.array, small_body_p_l: np.array) -> np.array:
         phases = np.zeros(len(elems))
-        for i in range(len(elems[0].big_bodies)):
-            phases += (np.array([x.big_bodies[i].m_longitude for x in elems]) *
+        for i in range(len(elems[0])):
+            phases += (np.array([x[i].m_longitude for x in elems]) *
                        self._resonance.get_big_bodies()[i].longitude_coeff)
-            phases += (np.array([x.big_bodies[i].p_longitude for x in elems]) *
+            phases += (np.array([x[i].p_longitude for x in elems]) *
                        self._resonance.get_big_bodies()[i].perihelion_longitude_coeff)
-
-        small_body_m_l = np.array([x.small_body.m_longitude for x in elems])
-        small_body_p_l = np.array([x.small_body.p_longitude for x in elems])
 
         phases += (
             small_body_m_l * self._resonance.small_body.longitude_coeff +
@@ -164,12 +178,30 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
 
         return [cutoff_angle(x) for x in phases]
 
+    def _get_asteroid_pars(self, aei_data: List[str]):
+        times = []
+        p_longs = []
+        mean_anomalies = []
+        for i, line in enumerate(aei_data):
+            if i < HEADER_LINE_COUNT:
+                continue
+
+            datas = line.split()
+            times.append(float(datas[0]))
+            p_longs.append(radians(float(datas[1])))
+            mean_anomalies.append(radians(float(datas[2])))
+        p_longs = np.array(p_longs)
+        mean_anomalies = np.array(mean_anomalies)
+        m_longs = p_longs + mean_anomalies
+        return m_longs, p_longs, times
+
     def get_resonant_phases(self, aei_data: List[str]) -> Iterable[Tuple[float, float]]:
-        elems = [x for x in self._get_body_orbital_elements(aei_data)]
+        m_longs, p_longs, times = self._get_asteroid_pars(aei_data)
+        elems = [x for x in self._get_body_orbital_elements2(aei_data)]
         if not elems:
             return []
-        phases = self._compute_phases(elems)
-        return [(x.small_body.time, y) for x, y in zip(elems, phases)]
+        phases = self._compute_phases(elems, m_longs, p_longs)
+        return [(x, y) for x, y in zip(times, phases)]
 
     def get_elements(self, aei_data: List[str]) -> Iterable[str]:
         """

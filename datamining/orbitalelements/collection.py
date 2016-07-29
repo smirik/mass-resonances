@@ -32,16 +32,40 @@ class OrbitalElementSet:
         :return:
         """
         try:
-            datas = [float(x) for x in data_string.split()]
-            self.time = datas[self._TIME]
-            self.p_longitude = radians(datas[self._PERIHELLION_LONGITUDE])
-            self.mean_anomaly = radians(datas[self._MEAN_ANOMALY])
-            self.semi_axis = datas[self._SEMIMAJOR_AXIS]
-            self.eccentricity = datas[self._ECCENTRICITY]
-            self.inclination = radians(int(datas[self._INCLINATION]))
-            self.node = radians(int(datas[self._NODE]))
+            self._datas = [x for x in data_string.split()]
+            self.time = float(self._datas[self._TIME])
+            self.p_longitude = radians(float(self._datas[self._PERIHELLION_LONGITUDE]))
+            self.mean_anomaly = radians(float(self._datas[self._MEAN_ANOMALY]))
+            self._semi_axis = None
+            self._eccentricity = None
+            self._inclination = None
+            self._node = None
         except ValueError:
             raise AEIValueError()
+
+    @property
+    def node(self) -> float:
+        if not self._node:
+            self._node = radians(int(float(self._datas[self._NODE])))
+        return self._node
+
+    @property
+    def inclination(self) -> float:
+        if not self._inclination:
+            self._inclination = radians(int(float(self._datas[self._INCLINATION])))
+        return self._inclination
+
+    @property
+    def eccentricity(self) -> float:
+        if not self._eccentricity:
+            self._eccentricity = float(self._datas[self._ECCENTRICITY])
+        return self._eccentricity
+
+    @property
+    def semi_axis(self) -> float:
+        if not self._semi_axis:
+            self._semi_axis = float(self._datas[self._SEMIMAJOR_AXIS])
+        return self._semi_axis
 
     @property
     def m_longitude(self) -> float:
