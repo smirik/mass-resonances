@@ -19,13 +19,14 @@ def _merge(source: Dict, destination: Dict) -> Dict:
 
 
 def _env_var_eval(val: Dict):
+    logger = logging.getLogger(__name__)
     for key, value in val.items():
         if isinstance(value, dict):
             _env_var_eval(value)
         elif isinstance(value, str) and value[:1] == '$':
             val[key] = os.environ.get(value[1:], None)
             if not val[key]:
-                logging.warning('Environment variable %s is not defined' % value[1:])
+                logger.warning('Environment variable %s is not defined' % value[1:])
     return val
 
 
