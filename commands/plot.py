@@ -43,7 +43,6 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
         if not is_tar:
             logging.error('You must point tar archive in AWS S3 bucket.')
             exit(-1)
-        s3_path = output
         output = opjoin(PROJECT_DIR, os.path.basename(output))
         s3_bucket_key = create_aws_s3_key(CONFIG['s3']['access_key'],
                                           CONFIG['s3']['secret_key'],
@@ -67,7 +66,7 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
     aei_getter = AEIDataGetter(pathbuilder)
 
     if is_tar:
-         tarf = tarfile.open(output, 'w')
+        tarf = tarfile.open(output, 'w')
 
     for resonance, aei_data in get_aggregated_resonances(start, stop, for_librations, planets,
                                                          aei_getter):
@@ -78,17 +77,18 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
         gnu_filepath = opjoin(output_gnu_path, 'A%i_%i.gnu' %
                               (resonance.asteroid_number, resonance.id))
 
+        title = 'Asteroid %i %s %s' % (resonance.asteroid_number, str(resonance), ' '.join(planets))
         resmaker.make(phases, aei_data, res_filepath)
         png_path = opjoin(PROJECT_DIR, output_images, 'A%i-res%i%s.png' % (
             resonance.asteroid_number, resonance.id, ''))
-        make_plot(res_filepath, gnu_filepath, png_path)
+        make_plot(res_filepath, gnu_filepath, png_path, title)
         if is_tar:
             tarf.add(png_path, arcname=os.path.basename(png_path))
 
         resmaker.make(apocentric_phases, aei_data, res_filepath)
         png_path = opjoin(PROJECT_DIR, output_images, 'A%i-res%i%s.png' % (
             resonance.asteroid_number, resonance.id, '-apocentric'))
-        make_plot(res_filepath, gnu_filepath, png_path)
+        make_plot(res_filepath, gnu_filepath, png_path, title)
         if is_tar:
             tarf.add(png_path, arcname=os.path.basename(png_path))
 
@@ -98,7 +98,6 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
 
     if is_s3:
         s3_bucket_key.set_contents_from_filename(output)
-
 
 
 class ResfileMaker:
