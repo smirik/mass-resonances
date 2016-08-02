@@ -27,7 +27,6 @@ def get_asteroid_axises(start: int = 1, stop: int = None) -> Dict[str, float]:
 
             line = line.split()
             asteroid_name = 'A%s' % line[0][1:-1]
-            print(asteroid_name)
             res[asteroid_name] = float(line[2])
 
             if stop and i >= stop + SKIP_LINES - 1:
