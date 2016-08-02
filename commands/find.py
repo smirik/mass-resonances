@@ -11,7 +11,7 @@ from datamining.orbitalelements.collection import AEIValueError
 from datamining import PhaseStorage, PhaseCleaner
 from entities import BodyNumberEnum
 from entities.body import BrokenAsteroid
-from entities.dbutills import REDIS, get_or_create
+from entities.dbutills import REDIS, get_or_create, engine
 from datamining import ResonanceOrbitalElementSetFacade
 from datamining import build_bigbody_elements
 from entities.dbutills import session
@@ -37,6 +37,9 @@ class LibrationFilder:
         self._is_current = is_current
         self._phase_storage = phase_storage
         self._clear = clear
+        conn = engine.connect()
+        conn.execute('SELECT setval(\'libration_id_seq\', '
+                     'COALESCE((SELECT MAX(id)+1 FROM libration), 1), false);')
 
     def find(self, start: int, stop: int, aei_paths: tuple):
         """Analyze resonances for pointed half-interval of numbers of asteroids. It gets resonances
