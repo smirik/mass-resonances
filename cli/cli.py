@@ -98,17 +98,18 @@ def load_resonances(start: int, stop: int, file: str, axis_swing: float,
               help='Will clear resonance phases after search librations.')
 @click.option('--clear-s3', type=bool, is_flag=True,
               help='Will clear downloaded s3 files after search librations.')
+@click.option('--verbose', '-v', type=bool, is_flag=True, help='Shows progress bar.')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def find(start: int, stop: int, from_day: float, to_day: float, reload_resonances: bool,
          recalc: bool, is_current: bool, phase_storage: str, aei_paths: Tuple[str, ...],
-         recursive: bool, clear: bool, clear_s3: bool, planets: Tuple[str]):
+         recursive: bool, clear: bool, clear_s3: bool, planets: Tuple[str], verbose: bool):
     from commands import load_resonances as _load_resonances
     from datamining import PhaseStorage
     from commands import calc as _calc
     from commands import LibrationFilder
 
     finder = LibrationFilder(planets, recursive, clear, clear_s3, is_current,
-                             PhaseStorage(PHASE_STORAGE.index(phase_storage)))
+                             PhaseStorage(PHASE_STORAGE.index(phase_storage)), verbose)
     if start == stop == -1 and aei_paths:
         finder.find_by_file(aei_paths)
 

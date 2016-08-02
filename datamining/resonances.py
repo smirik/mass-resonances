@@ -5,6 +5,7 @@ import logging
 from typing import Dict, Union
 from typing import Iterable, Tuple, List
 
+import warnings
 from datamining.orbitalelements import FilepathBuilder
 from entities import ThreeBodyResonance, BodyNumberEnum, TwoBodyResonance
 from entities.body import Asteroid
@@ -14,6 +15,7 @@ from entities.resonance.twobodyresonance import ResonanceMixin
 from os.path import join as opjoin
 from os import remove
 from settings import Config
+from sqlalchemy import exc
 from sqlalchemy.orm import Query, contains_eager
 from sqlalchemy.orm import joinedload, aliased
 from sqlalchemy.orm.util import AliasedClass
@@ -171,6 +173,8 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librati
     """
 
     for resonance in get_resonances(from_asteroid, to_asteroid, only_librations, planets):
-        aei_data = aei_getter.get_aei_data(resonance.asteroid_number)
-        assert len(aei_data) > 0
-        yield resonance, aei_data
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=exc.SAWarning)
+            aei_data = aei_getter.get_aei_data(resonance.asteroid_number)
+            assert len(aei_data) > 0
+            yield resonance, aei_data
