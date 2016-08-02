@@ -28,6 +28,15 @@ class LibrationMixin:
     _is_apocentric = Column('is_apocentric', Boolean, nullable=False)
 
     def __init__(self, circulation_breaks: List[float], body_count: int, is_apocentric: bool):
+        """
+        :param circulation_breaks: time marks, when line on plot is breaked. For example line goes
+        down and it ends on bottom border, after this it is begins from top border. Rather line goes
+        up and is breaked on top and begins from bottom of plot.
+        :param body_count: not correct name. It is end point of time interval. In the case it is
+        100000.
+        :param is_apocentric:
+        :return:
+        """
         self._is_apocentric = is_apocentric
         self._circulation_breaks = circulation_breaks
 
