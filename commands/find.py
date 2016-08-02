@@ -3,6 +3,7 @@ import logging
 
 from typing import List, Dict, Tuple
 
+import warnings
 from datamining import get_aggregated_resonances, PhaseBuilder
 from datamining import AEIDataGetter
 from datamining import LibrationClassifier
@@ -17,20 +18,23 @@ from datamining import build_bigbody_elements
 from entities.dbutills import session
 from os.path import join as opjoin
 from settings import Config
-from shortcuts import get_asteroid_interval
+from shortcuts import get_asteroid_interval, ProgressBar
 from sqlalchemy import exists
+from sqlalchemy.orm import exc
 
 PROJECT_DIR = Config.get_project_dir()
 CONFIG = Config.get_params()
 BODIES_COUNTER = CONFIG['integrator']['number_of_bodies']
 MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 OUTPUT_ANGLE = CONFIG['output']['angle']
+DEBUG = 10
 
 
 class LibrationFilder:
     def __init__(self, planets: Tuple[str], is_recursive: bool, clear: bool,
                  clear_s3: bool, is_current: bool = False,
-                 phase_storage: PhaseStorage = PhaseStorage.redis):
+                 phase_storage: PhaseStorage = PhaseStorage.redis, is_verbose: bool = False):
+        self._is_verbose = is_verbose
         self._clear_s3 = clear_s3
         self._planets = planets
         self._is_recursive = is_recursive
@@ -47,6 +51,7 @@ class LibrationFilder:
         of three bodies (asteroid and two planets). After this it finds circulations in vector of
         resonant phases and solves, based in circulations, libration does exists or no.
 
+        :param aei_paths:
         :param start: start point of half-interval.
         :param stop: stop point of half-interval. It will be excluded.
         :return:
@@ -65,17 +70,22 @@ class LibrationFilder:
         phase_builder = PhaseBuilder(self._phase_storage)
         phase_cleaner = PhaseCleaner(self._phase_storage)
 
+        p_bar = None
+        if self._is_verbose:
+            p_bar = ProgressBar((stop + 1 - start), 'Find librations')
+        asteroid_name = None
         for resonance, aei_data in get_aggregated_resonances(start, stop, False, self._planets,
                                                              aei_getter):
-            broken_asteroid_mediator = _BrokenAsteroidMediator(resonance.small_body.name)
+            if self._is_verbose and asteroid_name != resonance.small_body.name:
+                p_bar.update()
+            asteroid_name = resonance.small_body.name
+            broken_asteroid_mediator = _BrokenAsteroidMediator(asteroid_name)
             if broken_asteroid_mediator.check():
                 continue
 
-            logging.debug('Analyze asteroid %s, resonance %s' % (resonance.small_body.name,
-                                                                 resonance))
+            logging.debug('Analyze asteroid %s, resonance %s' % (asteroid_name, resonance))
             resonance_id = resonance.id
             classifier.set_resonance(resonance)
-
             orbital_elem_set_facade = ResonanceOrbitalElementSetFacade(orbital_element_sets,
                                                                        resonance)
             try:

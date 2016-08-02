@@ -1,8 +1,8 @@
-import sys
 from typing import Dict, List, Tuple
 
 from catalog import build_possible_resonances
 from entities import ThreeBodyResonance
+from shortcuts import ProgressBar
 
 
 def load_resonances(from_filepath: str, start_asteroid: int, stop_asteroid: int,
@@ -18,17 +18,10 @@ def load_resonances(from_filepath: str, start_asteroid: int, stop_asteroid: int,
     :param stop_asteroid: stop point of half-interval. It will be excluded.
     :return: dictionary, where keys are number of asteroids and values are lists of resonances.
     """
-    divider = 2
-    toolbar_width = (stop_asteroid + 1 - start_asteroid) // divider
-    sys.stdout.write("Build resonances [%s]" % (" " * toolbar_width))
-    sys.stdout.flush()
-    sys.stdout.write("\b" * (toolbar_width + 1))
-
+    p_bar = ProgressBar((stop_asteroid + 1 - start_asteroid), 'Build resonances')
     res = {}
     for i in range(start_asteroid, stop_asteroid + 1):
         res[i] = build_possible_resonances(from_filepath, i, planets, axis_swing)
-        if i % divider == 0:
-            sys.stdout.write("#")
-            sys.stdout.flush()
-    sys.stdout.write("\n")
+        p_bar.update()
+    p_bar.fin()
     return res
