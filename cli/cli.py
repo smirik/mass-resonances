@@ -133,15 +133,17 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
               help='Directory or tar, where will be plots. By default is current directory.')
 @click.option('--integers', '-i', default=None, type=str, callback=validate_integer_expression,
               help='Integers are pointing by three values separated by space. Example: \'5 -1 -1\'')
+@click.option('--build-phase', '-b', default=False, type=bool, is_flag=True,
+              help='It will build phases')
 @aei_path_options()
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def plot(start: int, stop: int, phase_storage: str, only_librations: bool,
          integers: List[str], aei_paths: Tuple[str, ...], recursive: bool,
-         planets: Tuple[str], output: str):
+         planets: Tuple[str], output: str, build_phase: bool):
     from datamining import PhaseStorage
     from commands import plot as _plot
     _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)),
-          only_librations, integers, aei_paths, recursive, planets, output)
+          only_librations, integers, aei_paths, recursive, planets, output, build_phase)
 
 
 @cli.command(name='clear-phases',

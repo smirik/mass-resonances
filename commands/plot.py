@@ -1,7 +1,7 @@
 import logging
 import os
 import shutil
-from datamining import AEIDataGetter
+from datamining import AEIDataGetter, PhaseBuilder, ResonanceOrbitalElementSetFacade
 from math import pi
 
 from datamining import PhaseLoader, PhaseStorage
@@ -29,7 +29,7 @@ MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 
 def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: bool,
          integers: List[str], aei_paths: Tuple[str, ...], is_recursive: bool, planets: Tuple[str],
-         output: str):
+         output: str, build_phases: bool):
     is_s3 = _is_s3(output)
     is_tar = _is_tar(output)
     tarf = None
@@ -63,6 +63,10 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
     if not os.path.exists(output_gnu_path):
         os.makedirs(output_gnu_path)
 
+    phase_builder = PhaseBuilder(phase_storage)
+    orbital_element_sets = None
+    if build_phases:
+        orbital_element_sets = build_bigbody_elements(planet_aei_paths)
     phase_loader = PhaseLoader(phase_storage)
     aei_getter = AEIDataGetter(pathbuilder)
 
@@ -71,6 +75,10 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
 
     for resonance, aei_data in get_aggregated_resonances(start, stop, for_librations, planets,
                                                          aei_getter, integers):
+        if build_phases:
+            orbital_elem_set_facade = ResonanceOrbitalElementSetFacade(
+                orbital_element_sets, resonance)
+            phase_builder.build(aei_data, resonance.id, orbital_elem_set_facade)
         phases = phase_loader.load(resonance.id)
         apocentric_phases = [cutoff_angle(x + pi) for x in phases]
         res_filepath = opjoin(output_res_path, 'A%i_%i.res' %
