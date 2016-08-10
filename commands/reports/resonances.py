@@ -8,7 +8,8 @@ from datamining.resonances import PLANET_TABLES, GetQueryBuilder
 from entities import ResonanceMixin
 from entities import BodyNumberEnum
 from texttable import Texttable
-from .shortcuts import AsteroidCondition, PlanetCondition, add_integer_filter
+from .shortcuts import AsteroidCondition, PlanetCondition
+from shortcuts import add_integer_filter
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()

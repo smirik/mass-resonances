@@ -1,6 +1,6 @@
 from typing import List
 
-from commands.reports.shortcuts import add_integer_filter
+from shortcuts import add_integer_filter
 from datamining.resonances import GetQueryBuilder, PLANET_TABLES
 from entities.resonance.factory import BodyNumberEnum
 from .shortcuts import AsteroidCondition, PlanetCondition, AxisInterval, ResonanceIntegers

@@ -6,6 +6,7 @@ from typing import Dict, Union
 from typing import Iterable, Tuple, List
 
 import warnings
+from shortcuts import add_integer_filter
 from datamining.orbitalelements import FilepathBuilder
 from entities import ThreeBodyResonance, BodyNumberEnum, TwoBodyResonance
 from entities.body import Asteroid
@@ -99,10 +100,11 @@ def get_resonance_query(for_bodies: BodyNumberEnum) -> Query:
     return query
 
 
-def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[str, ...]) \
-        -> Iterable[ResonanceMixin]:
+def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[str, ...],
+                   integers: List[str] = None) -> Iterable[ResonanceMixin]:
     """
     Returns resonances related to asteroid in pointer interval from start to stop.
+    :param integers:
     :param planets:
     :param start: start of interval of asteroid numbers.
     :param stop: finish of interval of asteroid numbers.
@@ -120,6 +122,13 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
         resonances = resonances.filter(PLANET_TABLES[key].name == planets[i])
     resonances = resonances.filter(t1.number >= start, t1.number < stop)\
         .options(joinedload('libration')).order_by(builder.asteroid_alias.number)
+
+    if integers:
+        tables = [PLANET_TABLES['first_body']]
+        if body_count == BodyNumberEnum.three:
+            tables.append(PLANET_TABLES['second_body'])
+        tables.append(builder.asteroid_alias)
+        resonances = add_integer_filter(resonances, integers, tables)
 
     if only_librations:
         resonances = resonances.join('libration')
@@ -157,7 +166,8 @@ class AEIDataGetter:
 
 
 def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librations: bool,
-                              planets: Tuple[str, ...], aei_getter: AEIDataGetter) \
+                              planets: Tuple[str, ...], aei_getter: AEIDataGetter,
+                              integers: List[str] = None) \
         -> Iterable[Tuple[ResonanceMixin, List[str]]]:
     """Find resonances from /axis/resonances by asteroid axis. Currently
     described by 7 items list of floats. 6 is integers satisfying
@@ -172,7 +182,7 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librati
     :return:
     """
 
-    for resonance in get_resonances(from_asteroid, to_asteroid, only_librations, planets):
+    for resonance in get_resonances(from_asteroid, to_asteroid, only_librations, planets, integers):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=exc.SAWarning)
             aei_data = aei_getter.get_aei_data(resonance.asteroid_number)
