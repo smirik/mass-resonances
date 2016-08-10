@@ -28,7 +28,8 @@ MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 
 
 def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: bool,
-         aei_paths: Tuple[str, ...], is_recursive: bool, planets: Tuple[str], output: str):
+         integers: List[str], aei_paths: Tuple[str, ...], is_recursive: bool, planets: Tuple[str],
+         output: str):
     is_s3 = _is_s3(output)
     is_tar = _is_tar(output)
     tarf = None
@@ -69,7 +70,7 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
         tarf = tarfile.open(output, 'w')
 
     for resonance, aei_data in get_aggregated_resonances(start, stop, for_librations, planets,
-                                                         aei_getter):
+                                                         aei_getter, integers):
         phases = phase_loader.load(resonance.id)
         apocentric_phases = [cutoff_angle(x + pi) for x in phases]
         res_filepath = opjoin(output_res_path, 'A%i_%i.res' %
