@@ -1,9 +1,14 @@
 import logging
 import math
+from typing import List
+
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.s3.bucket import Bucket
 import sys
+
+from sqlalchemy.orm import Query
+from sqlalchemy.orm.util import AliasedClass
 
 
 def logging_done():
@@ -28,10 +33,10 @@ def cutoff_angle(value: float) -> float:
     """
     if value > math.pi:
         while value > math.pi:
-            value -= 2*math.pi
+            value -= 2 * math.pi
     else:
         while value < -math.pi:
-            value += 2*math.pi
+            value += 2 * math.pi
     return value
 
 
@@ -77,3 +82,11 @@ class ProgressBar:
     def __del__(self):
         self.fin()
 
+
+def add_integer_filter(query: Query, ints: List[str], body_tables: List[AliasedClass]) -> Query:
+    any_int = '*'
+
+    for integer, table in zip(ints, body_tables):
+        if integer != any_int:
+            query = query.filter(eval("table.longitude_coeff %s" % integer))
+    return query
