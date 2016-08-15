@@ -39,7 +39,7 @@ class LibrationFilder:
         self._planets = planets
         self._is_recursive = is_recursive
         self._is_current = is_current
-        self._phase_storage = phase_storage
+        self._phase_storage = None if clear else phase_storage
         self._clear = clear
         conn = engine.connect()
         conn.execute('SELECT setval(\'libration_id_seq\', '
@@ -68,7 +68,6 @@ class LibrationFilder:
         aei_getter = AEIDataGetter(pathbuilder, self._clear)
         classifier = LibrationClassifier(self._is_current, BodyNumberEnum(len(self._planets) + 1))
         phase_builder = PhaseBuilder(self._phase_storage)
-        phase_cleaner = PhaseCleaner(self._phase_storage)
 
         p_bar = None
         if self._is_verbose:
@@ -93,11 +92,8 @@ class LibrationFilder:
                                                         orbital_elem_set_facade)
             except AEIValueError:
                 broken_asteroid_mediator.save()
-                phase_cleaner.delete(resonance_id)
                 continue
             classifier.classify(orbital_elem_set_facade, serialized_phases)
-            if self._clear:
-                phase_cleaner.delete(resonance_id)
 
         session.flush()
         session.commit()

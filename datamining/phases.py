@@ -66,7 +66,7 @@ class PhaseLoader:
 
 
 class PhaseBuilder:
-    def __init__(self, phase_storage: PhaseStorage):
+    def __init__(self, phase_storage: PhaseStorage = None):
         self._phase_storage = phase_storage
 
     def build(self, by_aei_data: List[str], resonance_id: int,
@@ -75,12 +75,13 @@ class PhaseBuilder:
 
         serialized_phases = [dict(year=year, value=value) for year, value in
                              orbital_elem_set.get_resonant_phases(by_aei_data)]
-        if self._phase_storage == PhaseStorage.redis:
-            _save_redis(serialized_phases, _get_rediskey_name(resonance_id))
-        elif self._phase_storage == PhaseStorage.db:
-            _save_db(serialized_phases, resonance_id)
-        elif self._phase_storage == PhaseStorage.file:
-            _save_file(serialized_phases, get_file_name(resonance_id))
+        if self._phase_storage:
+            if self._phase_storage == PhaseStorage.redis:
+                _save_redis(serialized_phases, _get_rediskey_name(resonance_id))
+            elif self._phase_storage == PhaseStorage.db:
+                _save_db(serialized_phases, resonance_id)
+            elif self._phase_storage == PhaseStorage.file:
+                _save_file(serialized_phases, get_file_name(resonance_id))
 
         return serialized_phases
 
