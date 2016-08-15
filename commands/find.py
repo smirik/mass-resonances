@@ -99,6 +99,7 @@ class LibrationFilder:
             if self._clear:
                 phase_cleaner.delete(resonance_id)
 
+        session.flush()
         session.commit()
 
     def find_by_file(self, aei_paths: tuple):
