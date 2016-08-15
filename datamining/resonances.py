@@ -113,7 +113,7 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
     :return:
     """
     body_count = BodyNumberEnum(len(planets) + 1)
-    builder = GetQueryBuilder(body_count)
+    builder = GetQueryBuilder(body_count, True)
     resonances = builder.get_resonances()
     t1 = builder.asteroid_alias
     for i, key in enumerate(FOREIGNS):
