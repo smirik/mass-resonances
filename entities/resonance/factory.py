@@ -1,8 +1,10 @@
 from typing import Dict, Tuple, Union
 
+from shortcuts import fix_id_sequence
+from sqlalchemy.exc import IntegrityError
 from .threebodyresonance import ThreeBodyResonance
 from .twobodyresonance import TwoBodyResonance
-from sqlalchemy.sql import Select, Insert
+from sqlalchemy.sql import Select, Insert, TableClause
 from sqlalchemy.sql.base import ImmutableColumnCollection
 from sqlalchemy.sql.elements import ColumnClause
 from sqlalchemy.sql.expression import Executable, ClauseElement
@@ -10,7 +12,7 @@ from sqlalchemy.sql.expression import alias
 from sqlalchemy.sql.expression import and_
 from sqlalchemy.sql.expression import select
 from sqlalchemy.sql.expression import table
-from sqlalchemy import exc as sa_exc, column
+from sqlalchemy import exc as sa_exc, column, UniqueConstraint
 from sqlalchemy.dialects.postgresql.psycopg2 import PGCompiler_psycopg2
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.compiler import compiles
@@ -27,7 +29,7 @@ from abc import abstractmethod
 
 from entities.dbutills import engine, session
 
-_conflict_action = None
+_has_upsert = None
 _planet_table = Planet.__table__  # type: Table
 _asteroid_table = Asteroid.__table__  # type: Table
 
@@ -64,7 +66,7 @@ class ResonanceFactory:
         sel = select([x.c.id for x in self._body_tables.values()]).where(body_clause)
         resonance_exists = False
 
-        if not _get_conflict_action():
+        if not _is_support_upsert():
             subquery = session.query(self._resonance_cls)
             for key, value in self._body_tables.items():
                 subquery = subquery.join(value, getattr(self._resonance_cls, key))
@@ -75,7 +77,13 @@ class ResonanceFactory:
     def build(self, conn):
         resonance_exists, sel = self._is_resonance_exists(conn)
         if not resonance_exists:
-            conn.execute(_InsertFromSelect(self._resonance_table, sel))
+            resonance_insert = _InsertFromSelect(self._resonance_table, sel,
+                                                 self._resonance_cls.__table__)
+            try:
+                conn.execute(resonance_insert)
+            except IntegrityError:
+                fix_id_sequence(self._resonance_cls.__table__, conn)
+                conn.execute(resonance_insert)
 
     @property
     def _columns(self) -> List[ColumnClause]:
@@ -184,18 +192,19 @@ def _make_sql_condition(entity_cls: ImmutableColumnCollection, from_body_attrs: 
 class _InsertFromSelect(Executable, ClauseElement):
     _execution_options = Executable._execution_options.union({'autocommit': True})
 
-    def __init__(self, table_: Table, select_expr: Select):
+    def __init__(self, table_clause_: TableClause, select_expr: Select, table_: Table):
         self.table = table_
+        self.table_clause = table_clause_
         self.select = select_expr
 
 
 @compiles(_InsertFromSelect)
 def _visit_insert_from_select(element: _InsertFromSelect, compiler: PGCompiler_psycopg2, **kw):
     return "INSERT INTO %s (%s) %s %s" % (
-        compiler.process(element.table, asfrom=True),
-        ', '.join(element.table.c.keys()),
+        compiler.process(element.table_clause, asfrom=True),
+        ', '.join(element.table_clause.columns.keys()),
         compiler.process(element.select),
-        _get_conflict_action()
+        _get_conflict_action(_serialize_unique_cols(element.table))
     )
 
 
@@ -214,19 +223,32 @@ def _append_string(insert_expr: Insert, compiler: PGCompiler_psycopg2, **kw):
     return query_string
 
 
+def _execute_insert(by_conn: Connection, for_table: Table, insert_query):
+    try:
+        by_conn.execute(insert_query)
+    except IntegrityError:
+        fix_id_sequence(for_table, by_conn)
+        by_conn.execute(insert_query)
+
+
 def _build_planets(conn: Connection, planets: List[Dict[str, int]], small_body: Dict[str, int]):
-    conflict_action = _get_conflict_action()
-    if not conflict_action:
+    if not _is_support_upsert():
         for planet in planets:
             if not _check_body(Planet, planet):
-                conn.execute(_planet_table.insert(inline=True, values=planet))
+                _execute_insert(conn, Planet.__table__,
+                                _planet_table.insert(inline=True, values=planet))
         if not _check_body(Asteroid, small_body):
-            conn.execute(_asteroid_table.insert(inline=True, values=small_body))
+            _execute_insert(conn, Asteroid.__table__,
+                            _asteroid_table.insert(inline=True, values=small_body))
     else:
-        conn.execute(_planet_table.insert(append_string=conflict_action, inline=True,
-                                          values=planets))
-        conn.execute(_asteroid_table.insert(append_string=conflict_action, inline=True,
-                                            values=small_body))
+        planet_conflict_action = _get_conflict_action(_serialize_unique_cols(_planet_table))
+        asteroid_conflict_action = _get_conflict_action(_serialize_unique_cols(_asteroid_table))
+        planet_insert = _planet_table.insert(append_string=planet_conflict_action,
+                                             inline=True, values=planets)
+        asteroid_insert = _asteroid_table.insert(append_string=asteroid_conflict_action,
+                                                 inline=True, values=small_body)
+        _execute_insert(conn, Planet.__table__, planet_insert)
+        _execute_insert(conn, Asteroid.__table__, asteroid_insert)
 
 
 def _check_body(cls, parametes: Dict):
@@ -234,13 +256,32 @@ def _check_body(cls, parametes: Dict):
     return query(query(cls).filter_by(**parametes).exists()).scalar()
 
 
-def _get_conflict_action():
-    global _conflict_action
-    if _conflict_action is None:
+def _serialize_unique_cols(from_table: Table) -> str:
+    unique_contraints = [x for x in from_table.constraints if isinstance(x, UniqueConstraint)]
+    res = []
+    for constraint in unique_contraints:  # type: UniqueConstraint
+        res += constraint.columns.keys()
+    if res:
+        return '(%s)' % ', '.join(res)
+    else:
+        return ''
+
+
+def _is_support_upsert() -> bool:
+    global _has_upsert
+    if _has_upsert is None:
         conn = engine.connect()
         version_str = [x['version'] for x in conn.execute('SELECT version();')][0]
         if '9.5' in version_str:
-            _conflict_action = 'on conflict DO NOTHING'
+            _has_upsert = True
         else:
-            _conflict_action = ''
+            _has_upsert = False
+    return _has_upsert
+
+
+def _get_conflict_action(serialized_fields) -> str:
+    if _is_support_upsert():
+        _conflict_action = 'on conflict %s DO NOTHING' % serialized_fields
+    else:
+        _conflict_action = ''
     return _conflict_action

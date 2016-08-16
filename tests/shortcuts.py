@@ -1,8 +1,28 @@
+from typing import List
+
 import pytest
-from entities import TwoBodyResonance
+from entities import TwoBodyResonance, TwoBodyLibration, Libration
 from entities import ThreeBodyResonance
 from entities.body import Planet, Asteroid
 from entities.dbutills import engine
+from sqlalchemy import Table
+
+TARGET_TABLES = [x.__table__ for x in [  # type: List[Table]
+    TwoBodyLibration,
+    Libration,
+    TwoBodyResonance,
+    ThreeBodyResonance,
+    Planet,
+    Asteroid,
+]]
+
+
+def clear_resonance_finalizer(conn=None):
+    if not conn:
+        conn = engine.connect()
+
+    for table in TARGET_TABLES:
+        conn.execute(table.delete())
 
 
 def get_class_path(cls: type) -> str:
@@ -19,3 +39,4 @@ def resonancesfixture(request):
         conn.execute(Asteroid.__table__.delete())
 
     request.addfinalizer(tear_down)
+

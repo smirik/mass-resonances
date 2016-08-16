@@ -1,21 +1,11 @@
 from typing import Tuple, List
 import pytest
 from entities.body import Asteroid
-from entities.body import Planet
 from entities.dbutills import session, engine
 from entities import ThreeBodyResonance, TwoBodyResonance, get_resonance_factory, \
     build_resonance, Libration, TwoBodyLibration
 from datamining import get_resonances
-
-
-def tear_down():
-    conn = engine.connect()
-    conn.execute(TwoBodyLibration.__table__.delete())
-    conn.execute(Libration.__table__.delete())
-    conn.execute(TwoBodyResonance.__table__.delete())
-    conn.execute(ThreeBodyResonance.__table__.delete())
-    conn.execute(Planet.__table__.delete())
-    conn.execute(Asteroid.__table__.delete())
+from tests.shortcuts import clear_resonance_finalizer
 
 
 @pytest.fixture()
@@ -24,7 +14,7 @@ def _resonancesfixture(request):
     planets = ('JUPITER', 'SATURN'),
     line_data_set = ['1 1 1 0 0 -3 4.1509'.split(), '1 2 2 0 0 -5 3.5083'.split()]
     _fixture_base(asteroid_nums, planets, line_data_set)
-    request.addfinalizer(tear_down)
+    request.addfinalizer(clear_resonance_finalizer)
     return asteroid_nums, planets[0]
 
 
@@ -44,7 +34,7 @@ def _resonance_fixture_different_planets(request):
     planets = request.param['planets'], unreachable_planets
     line_data_set = request.param['line_data_set']
     _fixture_base(asteroid_nums, planets, line_data_set)
-    request.addfinalizer(tear_down)
+    request.addfinalizer(clear_resonance_finalizer)
     return asteroid_nums, planets[0]
 
 
@@ -59,7 +49,7 @@ def _resonance_fixture_different_librations(request):
     planets = request.param['planets']
     line_data_set = request.param['line_data_set']
     _fixture_base(asteroid_nums, (planets,), line_data_set)
-    request.addfinalizer(tear_down)
+    request.addfinalizer(clear_resonance_finalizer)
 
     cls = ThreeBodyResonance if len(planets) == 2 else TwoBodyResonance
     libration_cls = Libration if len(planets) == 2 else TwoBodyLibration
