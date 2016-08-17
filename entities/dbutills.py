@@ -28,7 +28,7 @@ if CONFIG['debug']:
     @event.listens_for(Engine, "before_cursor_execute")
     def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
         conn.info.setdefault('query_start_time', []).append(time.time())
-        logger.debug("Start Query: %s", statement)
+        logger.debug("Start Query: %s", statement % parameters)
 
     @event.listens_for(Engine, "after_cursor_execute")
     def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):

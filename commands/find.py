@@ -3,14 +3,13 @@ import logging
 
 from typing import List, Dict, Tuple
 
-import warnings
 from datamining import get_aggregated_resonances, PhaseBuilder
 from datamining import AEIDataGetter
 from datamining import LibrationClassifier
 from datamining.orbitalelements import FilepathBuilder
 from datamining.orbitalelements.collection import AEIValueError
-from datamining import PhaseStorage, PhaseCleaner
-from entities import BodyNumberEnum
+from datamining import PhaseStorage
+from entities import BodyNumberEnum, Libration, TwoBodyLibration
 from entities.body import BrokenAsteroid
 from entities.dbutills import REDIS, get_or_create, engine
 from datamining import ResonanceOrbitalElementSetFacade
@@ -18,9 +17,8 @@ from datamining import build_bigbody_elements
 from entities.dbutills import session
 from os.path import join as opjoin
 from settings import Config
-from shortcuts import get_asteroid_interval, ProgressBar
+from shortcuts import get_asteroid_interval, ProgressBar, fix_id_sequence
 from sqlalchemy import exists
-from sqlalchemy.orm import exc
 
 PROJECT_DIR = Config.get_project_dir()
 CONFIG = Config.get_params()
@@ -42,8 +40,8 @@ class LibrationFilder:
         self._phase_storage = None if clear else phase_storage
         self._clear = clear
         conn = engine.connect()
-        conn.execute('SELECT setval(\'libration_id_seq\', '
-                     'COALESCE((SELECT MAX(id)+1 FROM libration), 1), false);')
+        table = Libration.__table__ if len(planets) == 2 else TwoBodyLibration.__table__
+        fix_id_sequence(table, conn)
 
     def find(self, start: int, stop: int, aei_paths: tuple):
         """Analyze resonances for pointed half-interval of numbers of asteroids. It gets resonances

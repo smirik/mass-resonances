@@ -7,6 +7,8 @@ from boto.s3.key import Key
 from boto.s3.bucket import Bucket
 import sys
 
+from sqlalchemy import Table
+from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.util import AliasedClass
 
@@ -90,3 +92,10 @@ def add_integer_filter(query: Query, ints: List[str], body_tables: List[AliasedC
         if integer != any_int:
             query = query.filter(eval("table.longitude_coeff %s" % integer))
     return query
+
+
+def fix_id_sequence(for_table: Table, by_conn: Connection):
+    by_conn.execute(('SELECT setval(\'%s_id_seq\', ' % for_table.name) +
+                    'COALESCE((SELECT MAX(id)+1 FROM %s), 1), false);' % for_table.name)
+
+
