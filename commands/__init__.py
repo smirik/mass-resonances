@@ -9,7 +9,7 @@ from .cleaning import clear_phases
 from .fileoperations import extract
 from .fileoperations import package
 from .fileoperations import remove_export_directory
-from .find import LibrationFilder
+from .find import LibrationFinder
 from .load_resonances import load_resonances
 from .plot import plot
 from .genres import genres

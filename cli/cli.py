@@ -106,9 +106,9 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
     from commands import load_resonances as _load_resonances
     from datamining import PhaseStorage
     from commands import calc as _calc
-    from commands import LibrationFilder
+    from commands import LibrationFinder
 
-    finder = LibrationFilder(planets, recursive, clear, clear_s3, is_current,
+    finder = LibrationFinder(planets, recursive, clear, clear_s3, is_current,
                              PhaseStorage(PHASE_STORAGE.index(phase_storage)), verbose)
     if start == stop == -1 and aei_paths:
         finder.find_by_file(aei_paths)
