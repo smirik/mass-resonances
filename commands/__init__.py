@@ -3,6 +3,7 @@ from .reports import PlanetCondition, AxisInterval, ResonanceIntegers
 from .reports import show_librations
 from .reports import show_resonance_table
 from .reports import show_planets
+from .reports import dump_librations
 from .broken_bodies import show_broken_bodies
 from .calc import calc
 from .cleaning import clear_phases

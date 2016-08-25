@@ -1,29 +1,31 @@
 from typing import List
 
+from sqlalchemy.orm import Query
+
+from entities import ResonanceMixin
 from shortcuts import add_integer_filter
 from datamining.resonances import GetQueryBuilder, PLANET_TABLES
 from entities.resonance.factory import BodyNumberEnum
-from .shortcuts import AsteroidCondition, PlanetCondition, AxisInterval, ResonanceIntegers
+from .shortcuts import AsteroidCondition, PlanetCondition, AxisInterval
 from entities import Libration, TwoBodyLibration
 from sqlalchemy.orm import aliased, contains_eager
 from texttable import Texttable
 
 
-def show_librations(asteroid_condition: AsteroidCondition = None,
-                    planet_condtion: PlanetCondition = None,
-                    is_pure: bool = None, is_apocentric: bool = None,
-                    axis_interval: AxisInterval = None, integers: List[str] = None,
-                    body_count=3, limit=100, offset=0):
-    body_count = BodyNumberEnum(body_count)
+def _build_libration_query(asteroid_condition: AsteroidCondition,
+                           planet_condtion: PlanetCondition,
+                           is_pure: bool, is_apocentric: bool,
+                           axis_interval: AxisInterval, integers: List[str],
+                           body_count: BodyNumberEnum, limit=100, offset=0) -> Query:
 
     builder = GetQueryBuilder(body_count, True)
     resonance_cls = builder.resonance_cls
     is_three = (body_count == BodyNumberEnum.three)
     libration_cls = Libration if is_three else TwoBodyLibration
     t5 = aliased(libration_cls)
-    query = builder.get_resonances()\
+    query = builder.get_resonances() \
         .outerjoin(t5, resonance_cls.libration) \
-        .options(contains_eager(resonance_cls.libration, alias=t5))\
+        .options(contains_eager(resonance_cls.libration, alias=t5)) \
         .filter(t5.id.isnot(None))
 
     t1 = PLANET_TABLES['first_body']
@@ -57,7 +59,46 @@ def show_librations(asteroid_condition: AsteroidCondition = None,
         query = add_integer_filter(query, integers, tables)
 
     query = query.limit(limit).offset(offset)
+    return query
 
+
+def dump_librations(asteroid_condition: AsteroidCondition = None,
+                    planet_condtion: PlanetCondition = None,
+                    is_pure: bool = None, is_apocentric: bool = None,
+                    axis_interval: AxisInterval = None, integers: List[str] = None,
+                    body_count=3, limit=100, offset=0):
+    body_count = BodyNumberEnum(body_count)
+    query = _build_libration_query(asteroid_condition, planet_condtion, is_pure, is_apocentric,
+                                   axis_interval, integers, body_count, limit, offset)
+
+    headers = ['ID', 'asteroid',
+               'first_planet_longitude', 'second_planet_longitude', 'asteroid_longitude', 'axis',
+               'first_planet', 'second_planet',
+               'pure', 'apocentric']
+    print(';'.join(headers))
+    for resonance in query:  # type: ResonanceMixin
+        libration = resonance.libration
+        data = [str(libration.id), resonance.small_body.name[1:]]
+        data += [str(x.longitude_coeff) for x in resonance.get_big_bodies()]
+        data.append(str(resonance.small_body.longitude_coeff))
+        data.append(str(resonance.asteroid_axis))
+        data += [x.name for x in resonance.get_big_bodies()]
+        data += [
+            '%d' % libration.is_pure,
+            '%d' % libration.is_apocentric,
+        ]
+        print(';'.join(data))
+
+
+def show_librations(asteroid_condition: AsteroidCondition = None,
+                    planet_condtion: PlanetCondition = None,
+                    is_pure: bool = None, is_apocentric: bool = None,
+                    axis_interval: AxisInterval = None, integers: List[str] = None,
+                    body_count=3, limit=100, offset=0):
+    body_count = BodyNumberEnum(body_count)
+    is_three = (body_count == BodyNumberEnum.three)
+    query = _build_libration_query(asteroid_condition, planet_condtion, is_pure, is_apocentric,
+                                   axis_interval, integers, body_count, limit, offset)
     table = Texttable(max_width=120)
     witdths = [10] * body_count.value
     table.set_cols_width(witdths + [30, 15, 10, 10])
@@ -68,11 +109,9 @@ def show_librations(asteroid_condition: AsteroidCondition = None,
                 'axis (degrees)']
     table.add_row(headers)
 
-    for resonance in query:  # type: Libration
+    for resonance in query:  # type: ResonanceMixin
         libration = resonance.libration
-        data = [resonance.first_body.name]
-        if is_three:
-            data.append(resonance.second_body.name)
+        data = [x.name for x in resonance.get_big_bodies()]
         data += [
             resonance.small_body.name,
             resonance,
