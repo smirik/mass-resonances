@@ -3,5 +3,5 @@ from .shortcuts import AsteroidCondition, PlanetCondition, AxisInterval, Resonan
 from .planets import show_planets
 from .librations import PlanetCondition
 from .librations import AxisInterval
-from .librations import ResonanceIntegers
 from .resonances import show_resonance_table
+from .librations import dump_librations

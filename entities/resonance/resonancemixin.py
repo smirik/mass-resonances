@@ -1,6 +1,7 @@
 from typing import List
 from abc import abstractmethod
-from entities.body import Planet
+
+from entities.body import Planet, Asteroid
 from sqlalchemy import Integer
 from sqlalchemy import ForeignKey
 from sqlalchemy import Column
@@ -24,6 +25,7 @@ class ResonanceTableOptions:
 
 
 class ResonanceMixin:
+    libration = None  # type: 'LibrationMixin'
     id = Column(Integer, primary_key=True)
 
     @classmethod
@@ -43,12 +45,12 @@ class ResonanceMixin:
         return Column(Integer, ForeignKey('asteroid.id'), nullable=False)
 
     @declared_attr
-    def small_body(cls):
+    def small_body(cls) -> Asteroid:
         return relationship('Asteroid', foreign_keys=cls.small_body_id,
                             backref=cls._small_body_ref())
 
     @hybrid_property
-    def asteroid_axis(self):
+    def asteroid_axis(self) -> float:
         return self.small_body.axis
 
     @hybrid_property
