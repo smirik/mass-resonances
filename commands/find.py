@@ -28,7 +28,7 @@ OUTPUT_ANGLE = CONFIG['output']['angle']
 DEBUG = 10
 
 
-class LibrationFilder:
+class LibrationFinder:
     def __init__(self, planets: Tuple[str], is_recursive: bool, clear: bool,
                  clear_s3: bool, is_current: bool = False,
                  phase_storage: PhaseStorage = PhaseStorage.redis, is_verbose: bool = False):
