@@ -148,7 +148,10 @@ class _BrokenAsteroidMediator:
         self._asteroid_name = asteroid_name
 
     def check(self):
-        return session.query(exists().where(BrokenAsteroid.name == self._asteroid_name)).scalar()
+        with session.no_autoflush:
+            query = exists().where(BrokenAsteroid.name == self._asteroid_name)
+            return session.query(query).scalar()
 
     def save(self):
         get_or_create(BrokenAsteroid, name=self._asteroid_name)
+        session.flush()
