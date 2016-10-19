@@ -24,7 +24,7 @@ docker-machine create -d digitalocean --digitalocean-access-token=<your_token> \
 ```
 Docker has been installed. Now you need setup data container on it. Before it you must connect to this Docker host.
 Type this. `eval $(docker-machine env datanode)`. Now you can pull image and start it.
-Type `docker run -d --name some-resonances-data -p 5432:5432 amarkov/resonances-data:v3`. Take a look, you forwarded port 5432.
+Type `docker run -d --name some-resonances-data -p 5432:5432 4xxi/resonances-data`. Take a look, you forwarded port 5432.
 It means, that database is available for connection from out. Setup password for postgres user for preventing sneakers.
 And now create `.env` file on your local machine with next contents.
 ```
@@ -67,29 +67,29 @@ Details of them was discovered in [local.md](./local.md). But they are different
 ### Intergration
 ```
 docker run --env-file=<path/to/.env> -v `pwd`/aei-files:/aei-files:rw \
-    amarkov/resonances:v4 calc --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files
+    4xxi/resonances calc --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files
 ```
 
 ### Load resonance table.
 ```
 docker run --env-file=<path/to/.env> -v <path/to/file/with/integers>:/integers:ro \
-    amarkov/resonances:v4 load-resonances --start=1 --stop=101 --file=/resonances --axis-swing=0.1 JUPITER SATURN
+    4xxi/resonances load-resonances --start=1 --stop=101 --file=/resonances --axis-swing=0.1 JUPITER SATURN
 ```
 
 ### Show resonance table.
 ```
-docker run --link=some-resonances-data:postgres --env-file=<path/to/.env> amarkov/resonances:v4 resonances
+docker run --link=some-resonances-data:postgres --env-file=<path/to/.env> 4xxi/resonances resonances
 ```
 
 ### Search librations.
 ```
 docker run --env-file=<path/to/.env> -v `pwd`/aei-files:/aei-files:ro \
-    amarkov/resonances:v4 find --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files JUPITER SATURN
+    4xxi/resonances find --start=1 --stop=101 -p /aei-files JUPITER SATURN
 ```
 
 ### Show librations.
 ```
-docker run --env-file=<path/to/.env> amarkov/resonances:v4 librations
+docker run --env-file=<path/to/.env> 4xxi/resonances librations
 ```
 
 ## Multiple worker nodes.
@@ -121,11 +121,11 @@ This steps must be done on every node.
 Now, when you mounted NFS directory, you can mount this folder to container. Take a look.
 ```
 docker run --env-file=<path/to/.env> -v /mnt/resonances-data/aei/:/aei-files:rw \
-    amarkov/resonances:v4 calc --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files
+    4xxi/resonances calc --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files
 ```
 And after this command all aei files will be in /mnt/resonances-data/aei/ and NFS will share them to server and another clients.
 Way for reading aei files for search librations is similar.
 ```
 docker run --env-file=<path/to/.env> -v /mnt/resonances-data/aei/:/aei-files:ro \
-    amarkov/resonances:v4 find --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files JUPITER SATURN
+    4xxi/resonances find --start=1 --stop=101 -p /aei-files JUPITER SATURN
 ```
