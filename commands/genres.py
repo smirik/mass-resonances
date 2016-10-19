@@ -1,5 +1,6 @@
 from os import mkdir, getcwd
 from typing import Tuple, List
+import logging
 
 from datamining import PhaseBuilder, PhaseStorage, build_bigbody_elements, \
     ResonanceOrbitalElementSetFacade, PhaseLoader, PhaseCleaner
@@ -29,6 +30,9 @@ def genres(asteroid_number: int, integers: List[int], filepaths: List[str], plan
         .filter(Asteroid.name == 'A%i' % asteroid_number)
 
     resonance = query.first()
+    if not resonance:
+        logging.warning('There is no resonance by pointed filter.')
+        return
     resonance_id = resonance.id
 
     phase_storage = PhaseStorage.file

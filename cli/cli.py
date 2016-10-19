@@ -156,32 +156,6 @@ def clear_phases(start: int, stop: int, planets: Tuple[str]):
     _clear_phases(start, stop, planets)
 
 
-@cli.command(help='Removes data from export directory (%s).' %
-                  opjoin(PROJECT_DIR, CONFIG['export']['base_dir']))
-@asteroid_interval_options()
-def clean(start: int, stop: int):
-    from commands import remove_export_directory
-    remove_export_directory(start, stop)
-
-
-@cli.command()
-@click.option('--start', default=1)
-@click.option('--copy-aei', default=False, type=bool)
-def extract(start: int, copy_aei: bool):
-    from commands import extract as _extract
-    _extract(start, do_copy_aei=copy_aei)
-
-
-@cli.command()
-@asteroid_interval_options()
-@click.option('--res', default=False, type=bool)
-@click.option('--aei', default=False, type=bool)
-@click.option('--compress', default=False, type=bool)
-def package(start: int, stop: int, res: bool, aei: bool, compress: bool):
-    from commands import package as _package
-    _package(start, stop, res, aei, compress)
-
-
 @cli.command(help='Shows names of asteroid, that has got incorrect data in aei files.',
              name='broken-bodies')
 def broken_bodies():
