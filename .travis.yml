@@ -1,0 +1,74 @@
+language: python
+python: 3.5
+sudo: false
+addons:
+  postgresql: "9.4"
+  apt:
+    packages:
+      - gfortran
+      - gnuplot
+      - wget
+      - redis
+
+services:
+  - redis
+
+install:
+  - git submodule update --init
+  - cd ./mercury
+  - ./compile.sh
+  - cd -
+  - pip install -r reqs.pip
+  - pip install coverage pytest==2.8.3
+
+env:
+  global:
+    - POSTGRES_PORT_5432_TCP_ADDR=localhost
+    - RESONANCES_DB_USER=postgres
+    - RESONANCES_DB_NAME=resonances
+    - TEST_DBHOST=localhost
+    - TEST_DBUSER=postgres
+    - TEST_DB=resonances_unittest
+
+
+before_script:
+  - cd ./catalog
+  - wget http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat
+  - cd -
+  - mkdir axis
+  - cd axis
+  - wget https://raw.githubusercontent.com/smirik/Three-body-resonances/master/axis/resonances
+  - wget https://raw.githubusercontent.com/smirik/Three-body-resonances/two-body-resonances/axis/resonances -O res_J
+  - cd -
+  - psql -c 'create database resonances;' -U postgres
+  - psql -c 'create database resonances_unittest;' -U postgres
+  - cp alembic.ini.dist alembic.ini
+  - cp alembic.ini.dist alembic.test.ini
+  - sed -i.bak -r -e 's/^# sqlalchemy.url(.*)/sqlalchemy.url = postgresql:\/\/postgres@localhost\/resonances/g' alembic.ini
+  - sed -i.bak -r -e 's/^# sqlalchemy.url(.*)/sqlalchemy.url = postgresql:\/\/postgres@localhost\/resonances_unittest/g' alembic.test.ini
+  - alembic upgrade head
+  - alembic -c ./alembic.test.ini upgrade head
+
+script:
+  - python ./main.py --help
+  - python ./main.py calc
+  - python ./main.py load-resonances --start=1 --stop=101 --file=axis/res_J --axis-swing=0.01 JUPITER
+  - python ./main.py load-resonances --start=1 --stop=101 --file=axis/resonances --axis-swing=0.01 JUPITER SATURN
+  - python ./main.py find JUPITER SATURN
+  - python ./main.py plot -o ./js-plots JUPITER SATURN
+  - python ./main.py plot -b -o ./j-plots JUPITER
+  - ls -R ./js-plots/
+  - ls -R ./j-plots/
+  - python ./main.py genres -i '1 -1' -a 1 JUPITER
+  - python ./main.py genres -i '4 -2 -1' -a 10 JUPITER SATURN
+  - ls -R ./res
+  - python ./main.py clear-phases --start=1 --stop=101 JUPITER
+  - python ./main.py clear-phases --start=1 --stop=101 JUPITER SATURN
+  - python ./main.py librations --start=1 --stop=101 --first-planet=JUPITER --second-planet=SATURN -i '>0 >0 *' --pure=1 --apocentric=0 --axis-interval=0.0 90.0
+  - python ./main.py resonances --start=1 --stop=101  --first-planet=JUPITER --second-planet=SATURN -i '* * -1'
+  - python ./main.py planets --body-count=3
+  - python ./main.py planets --body-count=2
+  - coverage run --omit='/home/travis/virtualenv/*,./tests/*' -m pytest `find ./tests -name '*.py'`
+
+after_success:
+  - coverage report -m

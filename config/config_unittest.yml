@@ -1,0 +1,124 @@
+debug: false
+
+db_path: 'alembic.test.ini'
+
+resonance_table:
+  format: simple
+  file: resonances
+  
+catalog:
+  file: tests/fixtures/allnum.cat
+  type: astdys
+  
+  astdys:
+    skip: 6
+
+integrator:
+  type: mercury6
+  input: input/mercury
+  
+  dir: tests/fixtures/mercury
+  
+  files:
+    small_bodies: small.in
+
+  start: 2455400.5
+  step:  3650.25
+  number_of_bodies: 100
+
+resonance:
+  axis_error: 0.01
+  libration:
+    min: 20000
+  db_file: export/full.db
+  bodies:
+    - JUPITER
+    - SATURN
+  bodies_numbers:
+    - 5
+    - 6
+
+output:
+  angle:   tests/fixtures/output/res
+  gnuplot: tests/fixtures/output/gnu
+  images:  tests/fixtures/output/images
+
+  format:  png
+
+export:
+  base_dir: export
+  aei_dir:  aei
+  structure:
+    - aei
+    - mercury
+    - res
+    - png
+    - resonances
+    - gnu
+
+gnuplot:
+  x_stop: 100000
+  type:   points
+
+constants:
+  u:  0.0002959122082855911025
+  k:  0.017202098795
+  k2: 0.0002959122082855911025
+
+  planets:
+    - 0.0
+    - 1.66014780554019e-07
+    - 2.44733799205671e-06
+    - 3.00316726157559e-06
+    - 3.22683625760394e-07
+    - 0.000954502036096727
+    - 0.000285787542104469
+    - 4.36378261525313e-05
+    - 5.14956512995827e-05
+    - 6.56075612085868e-09
+
+  axis:
+    - 0.0
+    - 0.0
+    - 0.723332
+    - 1.00000261
+    - 1.523679
+    - 5.204267
+    - 9.58201720
+# in sec
+  mean_motion:
+    - 0.0
+    - 0.0
+    - 2106626.16642123
+    - 1297281.96342998
+    - 689017.369124865
+    - 109256.679
+    - 43995.910    
+  longitude_of_periapsis:
+    - 0.0
+    - 0.0
+    - 7.452
+    - 17.368
+    - 17.916
+    - 4.257
+    - 28.243
+
+redis:
+  host: localhost
+  port: 6379
+  db: 1
+
+phases_dir: '.phases_dir'
+extract_dir: '.from_archives'
+s3files_dir: '.s3files_dir'
+
+postgres:
+  host: $TEST_DBHOST
+  user: $TEST_DBUSER
+  password: $TEST_DBPASS
+  db: $TEST_DB
+
+s3:
+  access_key: null
+  secret_key: null
+  bucket: null

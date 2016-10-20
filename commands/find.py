@@ -1,124 +1,157 @@
+import json
 import logging
-import sys
-from typing import List
 
-import os
-from catalog import AstDys
-from mercury_bridge import calc
-from settings import ConfigSingleton
-from settings import PROJECT_DIR
-from storage import ResonanceDatabase
-from storage.resonance_archive import extract
-from utils.series import find_circulation, NoCirculationsException
-from utils.series import get_max_diff
+from typing import List, Dict, Tuple
 
-CONFIG = ConfigSingleton.get_singleton()
-X_STOP = CONFIG['gnuplot']['x_stop']
-AXIS_SWING = CONFIG['resonance']['axis_error']
-RESONANCE_TABLE_FILE = CONFIG['resonance_table']['file']
-RESONANCE_FILE = os.path.join(PROJECT_DIR, 'axis', RESONANCE_TABLE_FILE)
+from datamining import get_aggregated_resonances, PhaseBuilder
+from datamining import AEIDataGetter
+from datamining import LibrationClassifier
+from datamining.orbitalelements import FilepathBuilder
+from datamining.orbitalelements.collection import AEIValueError
+from datamining import PhaseStorage
+from entities import BodyNumberEnum, Libration, TwoBodyLibration
+from entities.body import BrokenAsteroid
+from entities.dbutills import REDIS, get_or_create, engine
+from datamining import ResonanceOrbitalElementSetFacade
+from datamining import build_bigbody_elements
+from entities.dbutills import session
+from os.path import join as opjoin
+from settings import Config
+from shortcuts import get_asteroid_interval, ProgressBar, fix_id_sequence
+from sqlalchemy import exists
 
-
-def _get_resonances(by_asteroid_axis: float, with_swing: float)\
-        -> List[List[float]]:
-    res = []
-    try:
-        with open(RESONANCE_FILE) as f:
-            for line in f:
-                resonance = [float(x) for x in line.split()]
-                if abs(resonance[6] - by_asteroid_axis) <= with_swing:
-                    res.append(resonance)
-    except FileNotFoundError:
-        logging.error('File %s not found. Try command resonance_table.' %
-                      RESONANCE_FILE)
-        sys.exit(1)
-
-    return res
+PROJECT_DIR = Config.get_project_dir()
+CONFIG = Config.get_params()
+BODIES_COUNTER = CONFIG['integrator']['number_of_bodies']
+MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
+OUTPUT_ANGLE = CONFIG['output']['angle']
+DEBUG = 10
 
 
-def _find_resonance_with_min_axis(by_axis: float, with_swing: float = 0.0001)\
-        -> List[float]:
-    resonances = _get_resonances(by_axis, with_swing)
-    index_of_min_axis = 0
+class LibrationFinder:
+    def __init__(self, planets: Tuple[str], is_recursive: bool, clear: bool,
+                 clear_s3: bool, is_current: bool = False,
+                 phase_storage: PhaseStorage = PhaseStorage.redis, is_verbose: bool = False):
+        self._is_verbose = is_verbose
+        self._clear_s3 = clear_s3
+        self._planets = planets
+        self._is_recursive = is_recursive
+        self._is_current = is_current
+        self._phase_storage = None if clear else phase_storage
+        self._clear = clear
+        conn = engine.connect()
+        table = Libration.__table__ if len(planets) == 2 else TwoBodyLibration.__table__
+        fix_id_sequence(table, conn)
 
-    def _delta(of_resonance: List[float]) -> float:
-        return of_resonance[6] - by_axis
+    def find(self, start: int, stop: int, aei_paths: tuple):
+        """Analyze resonances for pointed half-interval of numbers of asteroids. It gets resonances
+        aggregated to asteroids. Computes resonant phase by orbital elements from prepared aei files
+        of three bodies (asteroid and two planets). After this it finds circulations in vector of
+        resonant phases and solves, based in circulations, libration does exists or no.
 
-    for i, resonance in enumerate(resonances):
-        if _delta(resonance) < _delta(resonances[index_of_min_axis]):
-            index_of_min_axis = i
+        :param aei_paths:
+        :param start: start point of half-interval.
+        :param stop: stop point of half-interval. It will be excluded.
+        :return:
+        """
+        orbital_element_sets = None
+        pathbuilder = FilepathBuilder(aei_paths, self._is_recursive, self._clear_s3)
+        filepaths = [pathbuilder.build('%s.aei' % x) for x in self._planets]
+        try:
+            orbital_element_sets = build_bigbody_elements(filepaths)
+        except AEIValueError:
+            logging.error('Incorrect data in %s' % ' or in '.join(filepaths))
+            exit(-1)
 
-    return resonances[index_of_min_axis]
+        aei_getter = AEIDataGetter(pathbuilder, self._clear)
+        classifier = LibrationClassifier(self._is_current, BodyNumberEnum(len(self._planets) + 1))
+        phase_builder = PhaseBuilder(self._phase_storage)
+
+        p_bar = None
+        if self._is_verbose:
+            p_bar = ProgressBar((stop + 1 - start), 'Find librations')
+        asteroid_name = None
+        for resonance, aei_data in get_aggregated_resonances(start, stop, False, self._planets,
+                                                             aei_getter):
+            if self._is_verbose and asteroid_name != resonance.small_body.name:
+                p_bar.update()
+            asteroid_name = resonance.small_body.name
+            broken_asteroid_mediator = _BrokenAsteroidMediator(asteroid_name)
+            if broken_asteroid_mediator.check():
+                continue
+
+            logging.debug('Analyze asteroid %s, resonance %s' % (asteroid_name, resonance))
+            resonance_id = resonance.id
+            classifier.set_resonance(resonance)
+            orbital_elem_set_facade = ResonanceOrbitalElementSetFacade(orbital_element_sets,
+                                                                       resonance)
+            try:
+                serialized_phases = phase_builder.build(aei_data, resonance_id,
+                                                        orbital_elem_set_facade)
+            except AEIValueError:
+                broken_asteroid_mediator.save()
+                continue
+            classifier.classify(orbital_elem_set_facade, serialized_phases)
+
+        session.flush()
+        session.commit()
+
+    def find_by_file(self, aei_paths: tuple):
+        """Do same that find but asteroid interval will be determined by filenames.
+
+        :param aei_paths:
+        :return:
+        """
+        for path in aei_paths:
+            start, stop = get_asteroid_interval(path)
+            logging.info('find librations for asteroids [%i %i], from %s' % (start, stop, path))
+            self.find(start, stop, (path,))
 
 
-def _find_resonances(by_axis: float, with_swing: float = 0.0001) \
-        -> List[List[float]]:
-    """Find resonances from /axis/resonances by asteroid axis. Currently
-    described by 7 items list of floats. 6 is integers satisfying
-    D'Alembert rule. First 3 for longitutes, and second 3 for longitutes
-    perihilion. Seventh value is asteroid axis.
-    :param by_axis:
-    :param with_swing:
-    :return:
-    """
-    return _get_resonances(by_axis, with_swing)
+def _build_redis_phases(by_aei_data: List[str], in_key: str,
+                        orbital_elem_set: ResonanceOrbitalElementSetFacade) \
+        -> List[Dict[str, float]]:
+    pipe = REDIS.pipeline()
+    serialized_phases = []
+    for year, value in orbital_elem_set.get_resonant_phases(by_aei_data):
+        serialized_phase = dict(year=year, value=value)
+        pipe = pipe.rpush(in_key, '%s' % serialized_phase)
+        serialized_phases.append(serialized_phase)
+    pipe.execute()
+    return serialized_phases
 
 
-def find(start: int, stop: int):
-    """Find all possible resonances for all asteroids from start to stop.
+def _save_resonances_tofile(by_aei_data: List[str], in_file: str,
+                            orbital_elem_set: ResonanceOrbitalElementSetFacade) \
+        -> List[Dict[str, float]]:
+    serialized_phases = []
+    with open(in_file, 'w') as f:
+        for year, value in orbital_elem_set.get_resonant_phases(by_aei_data):
+            serialized_phase = dict(year=year, value=value)
+            f.write(str(serialized_phase))
+            f.write('\n')
+            serialized_phases.append(serialized_phase)
+    return serialized_phases
 
-    :param stop:
-    :param start:
-    :return:
-    """
-    resonances = []
-    delta = stop - start
 
-    logging.info("Finding asteroids and possible resonances")
-    for i in range(delta + 1):
-        num = start + i
-        arr = AstDys.find_by_number(num)
-        resonances.append(_find_resonances(arr[1], AXIS_SWING))
+def _get_phases_fromfile(from_file):
+    with open(from_file, 'r') as f:
+        phases = [
+            json.loads(x.replace('\'', '"'))['value']
+            for x in f
+        ]
+    return phases
 
-    rdb = ResonanceDatabase('export/full.db')
-    extract(start)
 
-    for i in range(delta + 1):
-        asteroid_num = start + i
-        if resonances[i]:
-            for resonance in resonances[i]:
-                logging.debug("Check asteroid %i" % asteroid_num)
-                calc(asteroid_num, resonance)
+class _BrokenAsteroidMediator:
+    def __init__(self, asteroid_name: str):
+        self._asteroid_name = asteroid_name
 
-                try:
-                    breaks, libration_percent, average_delta = find_circulation(
-                        asteroid_num, 0, X_STOP, False)
-                    # apocentric libration
-                    if breaks or libration_percent or average_delta:
-                        max_diff = get_max_diff(breaks)
-                        if libration_percent:
-                            logging.info(
-                                'A%i, % = %f%, medium period = %f, max = %f, resonance = %s' % (
-                                    asteroid_num, libration_percent, average_delta,
-                                    max_diff, str(resonance)
-                                )
-                            )
-                            s = '%i;%s;2;%f;%f' % (asteroid_num, str(resonance),
-                                                   average_delta, max_diff)
-                            rdb.add_string(s)
-                        else:
-                            logging.debug('A%i, NO RESONANCE, resonance = %s, max = %f' % (
-                                asteroid_num, str(resonance), max_diff
-                            ))
-                except NoCirculationsException:
-                    logging.info('A%i, pure resonance %s' % (asteroid_num, str(resonance)))
-                    s = '%i;%s;1' % (asteroid_num, str(resonance))
-                    rdb.add_string(s)
-                try:
-                    find_circulation(asteroid_num, 0, X_STOP, True)
-                except NoCirculationsException:
-                    logging.info('A%i, pure apocentric resonance %s' % (
-                        asteroid_num, str(resonance)
-                    ))
-                    s = '%i;%s;3' % (asteroid_num, str(resonance))
-                    rdb.add_string(s)
+    def check(self):
+        with session.no_autoflush:
+            query = exists().where(BrokenAsteroid.name == self._asteroid_name)
+            return session.query(query).scalar()
+
+    def save(self):
+        get_or_create(BrokenAsteroid, name=self._asteroid_name)
+        session.flush()
