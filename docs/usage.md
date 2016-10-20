@@ -6,7 +6,7 @@ asteroid, any integers. But before this operation you *must load resonance table
 For this operation you need aei files. For example you need generate this for asteroid *A490* with Jupiter and Saturn. Take a look.
 ```
 docker run --link=some-resonances-data:postgres -v <path/to/aei/files>:/aei-files:ro -v `pwd`/res:/opt/resonances/res:rw\
-    --env-file=<path/to/.env> amarkov/resonances:v4 genres -p /aei-files -a 490 JUPITER SATURN
+    --env-file=<path/to/.env> 4xxi/resonances genres -p /aei-files -a 490 JUPITER SATURN
 ```
 You must get `res` folder in you current working directory, because there is this option
 ```
@@ -15,7 +15,7 @@ You must get `res` folder in you current working directory, because there is thi
 Maybe you have aei files inside tar.gz archive. You can point pass it to application. And let add filter by integers.
 ```
 docker run --link=some-resonances-data:postgres -v <path/to/tar.gz>:/aei-401-501.tar.gz:ro -v `pwd`/res:/opt/resonances/res:rw\
-    --env-file=<path/to/.env> amarkov/resonances:v4 genres -p /aei-401-501.tar.gz -a 490 -i '5 -2 -2' JUPITER SATURN
+    --env-file=<path/to/.env> 4xxi/resonances genres -p /aei-401-501.tar.gz -a 490 -i '5 -2 -2' JUPITER SATURN
 ```
 This command will generate res file in res directory for asteroid A490 with Jupiter and Saturn.
 *NOTE* If you run it on cluster remove option `--link=some-resonances-data:postgres`. Options for connection to database must be in `.env` file.
@@ -24,16 +24,16 @@ This command will generate res file in res directory for asteroid A490 with Jupi
 Semi major axises will load by command `load-resonances` [howto](./installation/local.md). Application can show them.
 Execute this.
 ```
-docker run --link=some-resonances-data:postgres --env-file=<path/to/.env> amarkov/resonances:v4 resonances
+docker run --link=some-resonances-data:postgres --env-file=<path/to/.env> 4xxi/resonances resonances
 ```
 Last column contains semi major axises.
 If you want to see semi major axises for resonance `5J -2S -2`. Execute this.
 ```
-docker run --link=some-resonances-data:postgres --env-file=<path/to/.env> amarkov/resonances:v4 resonances -i '5 -2 -2'
+docker run --link=some-resonances-data:postgres --env-file=<path/to/.env> 4xxi/resonances resonances -i '5 -2 -2'
 ```
 If want to see semi major axises and for planets Earth and Jupiter execute this.
 ```
-docker run --link=some-resonances-data:postgres --env-file=<path/to/.env> amarkov/resonances:v4 resonances \
+docker run --link=some-resonances-data:postgres --env-file=<path/to/.env> 4xxi/resonances resonances \
     --first-planet=EARTHMOO --second-planet=JUPTER
 ```
 *NOTE* If you run it on cluster remove option `--link=some-resonances-data:postgres`. Options for connection to database must be in `.env` file.
@@ -46,7 +46,7 @@ your catalog, you can mount to this path your catalog and the application will u
 ```
 docker run --link=some-resonances-data:postgres --env-file=<path/to/.env> \
     -v <path/to/catalog_file>:/opt/resonances/catalog/allnum.cat:ro -v `pwd`/aei-files:/aei-files:rw \
-    amarkov/resonances:v4 load-resonances --start=1 --stop=101 --file=/resonances --axis-swing=0.1 JUPITER SATURN
+    4xxi/resonances load-resonances --start=1 --stop=101 --file=/resonances --axis-swing=0.1 JUPITER SATURN
 ```
 *NOTE* If you run it on cluster remove option `--link=some-resonances-data:postgres`. Options for connection to database must be in `.env` file.
 
@@ -57,7 +57,7 @@ For any remote executing of commands you need activate environment of cluster ma
 for any asteroid, Mars and Saturn you need aei files, if you have no aei files execute this command for first 100 asteroids.
 ```
 docker run --env-file=<path/to/.env> -v /mnt/resonances-data/aei/:/aei-files:rw \
-    amarkov/resonances:v4 calc --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files
+    4xxi/resonances calc --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101 -p /aei-files
 ```
 Currently we have 464622 asteroids. If you want integrate all asteroids, change `--stop=101` to `--stop=464622`
 if you want start search libration on 3 nodes, for this you need execute same command three times with different options.
@@ -69,7 +69,7 @@ The manager will assign tasks to nodes proportional itself.
 Now you are ready for search librations.
 ```
 docker run --env-file=<path/to/.env> -v /mnt/resonances-data/aei/:/aei-files:ro \
-    amarkov/resonances:v4 find --start=-1 --stop=-1 -p /aei-files MARS SATURN
+    4xxi/resonances find --start=-1 --stop=-1 -p /aei-files MARS SATURN
 ```
 Options `--start=-1` and `--stop=-1` means that you want to get all asteroid, that has aei files inside directory
 `/mnt/resonances-data/aei/`.
