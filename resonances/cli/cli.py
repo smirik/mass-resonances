@@ -261,3 +261,10 @@ def genres(asteroid: int, integers: List[int], aei_paths: Tuple, planets: Tuple)
     from resonances.commands import genres as _genres
     assert integers
     _genres(asteroid, integers, [x for x in aei_paths], planets)
+
+
+@cli.command(help='Generates resonance table')
+@click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
+def rtable(planets):
+    from resonances.commands import generate_resonance_table
+    generate_resonance_table(*planets)
