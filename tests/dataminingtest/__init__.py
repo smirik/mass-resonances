@@ -2,8 +2,8 @@ from typing import List, Dict
 from unittest import mock
 
 import pytest
-from datamining.librations.finder import CirculationYearsFinder, NoPhaseException
 
+from resonances.datamining.librations.finder import CirculationYearsFinder, NoPhaseException
 
 PHASES = [
     {'year': 0.0, 'value': -0.51},
@@ -39,7 +39,7 @@ VALUES = [
 
 @pytest.mark.parametrize('phase_arguments, result_years, for_apocentric', VALUES,
                          ids=VALUES)
-@mock.patch('entities.Phase')
+@mock.patch('resonances.entities.Phase')
 def test_getting_years(Phase, phase_arguments: List[Dict],
                        result_years: List[float], for_apocentric: bool):
 

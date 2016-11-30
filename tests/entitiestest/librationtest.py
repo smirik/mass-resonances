@@ -3,10 +3,9 @@ from unittest import mock
 
 import pytest
 
-from entities import Libration, ThreeBodyResonance
-from settings import Config
+from resonances.entities import Libration, ThreeBodyResonance
+from resonances.settings import Config
 from tests.shortcuts import get_class_path
-
 
 CONFIG = Config.get_params()
 

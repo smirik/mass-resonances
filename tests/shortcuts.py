@@ -1,11 +1,9 @@
-from typing import List
-
 import pytest
-from entities import TwoBodyResonance, TwoBodyLibration, Libration
-from entities import ThreeBodyResonance
-from entities.body import Planet, Asteroid
-from entities.dbutills import engine
-from sqlalchemy import Table
+from resonances.entities import ThreeBodyResonance
+from resonances.entities import TwoBodyResonance, TwoBodyLibration, Libration
+from resonances.entities.dbutills import engine
+
+from resonances.entities.body import Planet, Asteroid
 
 TARGET_TABLES = [x.__table__ for x in [  # type: List[Table]
     TwoBodyLibration,

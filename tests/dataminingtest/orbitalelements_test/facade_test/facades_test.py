@@ -1,18 +1,18 @@
+from abc import abstractmethod
 from typing import List
 from unittest import mock
 
 import pytest
-from abc import abstractmethod
-from entities import ThreeBodyResonance
-from datamining import ComputedOrbitalElementSetFacade, OrbitalElementSetCollection
-from datamining import IOrbitalElementSetFacade
-from datamining import ResonanceOrbitalElementSetFacade
-from datamining import ElementCountException
-from datamining import PhaseCountException
-from .shortcuts import first_aei_data, second_aei_data
+from resonances.datamining import ComputedOrbitalElementSetFacade, OrbitalElementSetCollection
+from resonances.datamining import ElementCountException
+from resonances.datamining import IOrbitalElementSetFacade
+from resonances.datamining import PhaseCountException
+from resonances.datamining import ResonanceOrbitalElementSetFacade
+
+from resonances.entities import ThreeBodyResonance
 from tests.shortcuts import get_class_path
 from .shortcuts import build_orbital_collection, build_elem_set
-
+from .shortcuts import first_aei_data, second_aei_data
 
 TEST_HEADER = 'some expected header content'.split()
 

@@ -1,8 +1,10 @@
-import pytest
-from view import make_plot
 import os
 from os.path import join as opjoin
-from settings import Config
+
+import pytest
+
+from resonances.settings import Config
+from resonances.view import make_plot
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()

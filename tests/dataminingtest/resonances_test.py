@@ -1,10 +1,11 @@
 from typing import Tuple, List
+
 import pytest
-from entities.body import Asteroid
-from entities.dbutills import session, engine
-from entities import ThreeBodyResonance, TwoBodyResonance, get_resonance_factory, \
+from resonances.datamining import get_resonances
+from resonances.entities import ThreeBodyResonance, TwoBodyResonance, get_resonance_factory, \
     build_resonance, Libration, TwoBodyLibration
-from datamining import get_resonances
+from resonances.entities.dbutills import session
+from resonances.entities.body import Asteroid
 from tests.shortcuts import clear_resonance_finalizer
 
 
