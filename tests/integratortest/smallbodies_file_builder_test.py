@@ -1,9 +1,9 @@
-import unittest
-from os.path import join as opjoin
-from os.path import exists as opexists
 import os
-from settings import Config
+import unittest
+from os.path import exists as opexists
+from os.path import join as opjoin
 
+from resonances.settings import Config
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -18,7 +18,7 @@ class SmallBodiesFileBuilderTestCase(unittest.TestCase):
             os.remove(self.FILEPATH)
 
     def test_create_small_body_file(self):
-        from integrator import SmallBodiesFileBuilder
+        from resonances.integrator import SmallBodiesFileBuilder
 
         def _test_with_symlink():
             builder = SmallBodiesFileBuilder(self.FILEPATH, self.SYMLINK)
@@ -43,7 +43,7 @@ class SmallBodiesFileBuilderTestCase(unittest.TestCase):
         _test_without_symlink()
 
     def test_flush(self):
-        from integrator import SmallBodiesFileBuilder
+        from resonances.integrator import SmallBodiesFileBuilder
 
         def _test_file_existance():
             builder = SmallBodiesFileBuilder(self.FILEPATH)

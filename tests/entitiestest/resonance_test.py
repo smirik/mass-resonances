@@ -1,24 +1,26 @@
-from typing import List, Dict, Tuple
-from entities import get_resonance_factory, ResonanceFactory, TwoBodyResonance
-from entities import BodyNumberEnum
 import math
+from typing import List, Dict, Tuple
 from unittest import mock
+
 import pytest
-from entities import ThreeBodyResonance, build_resonance
-from entities.body import Asteroid
-from entities.body import LONG
-from entities.body import PERI
-from entities.body import LONG_COEFF
-from entities.body import PERI_COEFF
-from entities.body import Planet
-from tests.shortcuts import TARGET_TABLES, clear_resonance_finalizer
-from entities.dbutills import session, engine
-from shortcuts import cutoff_angle
-from sqlalchemy.orm import Query
+from resonances.entities import BodyNumberEnum
+from resonances.entities import ThreeBodyResonance, build_resonance
+from resonances.entities import get_resonance_factory, ResonanceFactory, TwoBodyResonance
+from resonances.entities.dbutills import session, engine
 from sqlalchemy import and_, Table
+from sqlalchemy.orm import Query
 from sqlalchemy.orm import joinedload, aliased
-from tests.shortcuts import resonancesfixture, get_class_path
-from sqlalchemy.exc import IntegrityError
+
+from resonances.entities.body import Asteroid
+from resonances.entities.body import LONG
+from resonances.entities.body import LONG_COEFF
+from resonances.entities.body import PERI
+from resonances.entities.body import PERI_COEFF
+from resonances.entities.body import Planet
+from resonances.shortcuts import cutoff_angle
+from tests.shortcuts import TARGET_TABLES, clear_resonance_finalizer
+from tests.shortcuts import get_class_path
+from tests.shortcuts import resonancesfixture
 
 BODY_FOREIGNS = ['first_body', 'second_body']
 

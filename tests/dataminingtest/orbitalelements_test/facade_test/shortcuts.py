@@ -1,10 +1,10 @@
 from typing import List
-from typing import Tuple
 from unittest import mock
 
 import pytest
-from datamining import OrbitalElementSet
-from datamining import OrbitalElementSetCollection
+
+from resonances.datamining import OrbitalElementSet
+from resonances.datamining import OrbitalElementSetCollection
 from tests.shortcuts import get_class_path
 
 

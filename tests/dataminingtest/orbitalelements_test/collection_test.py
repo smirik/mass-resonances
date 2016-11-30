@@ -1,11 +1,12 @@
 from math import radians
+from os.path import join as opjoin
 
 import pytest
-from datamining import OrbitalElementSet
-from datamining import OrbitalElementSetCollection
-from datamining.orbitalelements.collection import AEIValueError
-from os.path import join as opjoin
-from settings import Config
+from resonances.datamining import OrbitalElementSet
+from resonances.datamining import OrbitalElementSetCollection
+
+from resonances.datamining.orbitalelements.collection import AEIValueError
+from resonances.settings import Config
 
 PROJECT_DIR = Config.get_project_dir()
 PARAMS = Config.get_params()
