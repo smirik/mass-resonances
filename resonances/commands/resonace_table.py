@@ -3,6 +3,7 @@ import math
 from typing import Dict
 from enum import Enum
 from enum import unique
+from typing import List
 
 
 @unique
@@ -15,6 +16,7 @@ CONFIG = Config.get_params()
 FORMAT = _FormatEnum(CONFIG['resonance_table']['format'])
 _Body = Dict[str, float]
 MAX_ORDER = 7
+_AXIS_MIN = 1.5
 
 
 _PLANET_NUMBER = {
@@ -28,10 +30,7 @@ _PLANET_NUMBER = {
 }
 
 
-def generate_resonance_table(body1: str, body2: str):
-    """
-    Generates resonance table
-    """
+def _resonance_gen():
     for i in range(1, 9):
         for j in range(-MAX_ORDER, MAX_ORDER+1):
             for k in range(-MAX_ORDER, MAX_ORDER+1):
@@ -39,22 +38,34 @@ def generate_resonance_table(body1: str, body2: str):
                 if i == 0 or j == 0 or k == 0 or abs(diff) > MAX_ORDER:
                     continue
                 resonance = [i, j, k, 0, 0, diff]
-                try:
-                    first_body = _build_body(body1)
-                    second_body = _build_body(body2)
-                    asteroid = _build_asteroid(resonance, first_body, second_body)
-                except _MeanMotionException:
-                    continue
-                if abs(diff) < MAX_ORDER and asteroid['axis'] > 1.5:
-                    if (asteroid['axis'] != 0):
-                        line_data = (resonance[0], resonance[1], resonance[2],
-                                     resonance[5], asteroid['axis'])
-                        if (FORMAT == _FormatEnum.tex):
-                            print("%d & %d & %d & %d & %2.4f \\\\" % line_data)
-                        elif (format == 'simple'):
-                            print("%d %d %d 0 0 %d %2.4f" % line_data)
-                        else:
-                            print("%d %d %d 0 0 %d %2.4f" % line_data)
+                yield resonance
+
+
+def generate_resonance_table(body1: str, body2: str, axis_top: float = None) -> List[str]:
+    """
+    Generates resonance table
+    """
+    data = []
+    for resonance in _resonance_gen():
+        try:
+            first_body = _build_body(body1)
+            second_body = _build_body(body2)
+            asteroid = _build_asteroid(resonance, first_body, second_body)
+        except _MeanMotionException:
+            continue
+        if abs(resonance[5]) < MAX_ORDER and asteroid['axis'] > _AXIS_MIN:
+            if axis_top is not None and asteroid['axis'] >= axis_top:
+                continue
+            line_data = (resonance[0], resonance[1], resonance[2],
+                         resonance[5], asteroid['axis'])
+            if (FORMAT == _FormatEnum.tex):
+                result = "%d & %d & %d & %d & %2.4f \\\\" % line_data
+            elif (FORMAT == _FormatEnum.simple):
+                result = "%d %d %d 0 0 %d %2.4f" % line_data
+            else:
+                result = "%d %d %d 0 0 %d %2.4f" % line_data
+            data.append(result)
+    return data
 
 
 class _MeanMotionException(Exception):

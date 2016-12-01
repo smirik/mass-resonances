@@ -58,24 +58,28 @@ FIND_HELP_PREFIX = 'If true, the application will'
          RESONANCE_FILEPATH + 'resonances, that related to asteroid from catalog by' +
          ' comparing axis from this file and catalog', name='load-resonances')
 @asteroid_interval_options()
-@click.option('--file', default=RESONANCE_FILEPATH, type=str,
-              help='Name of file in axis directory with resonances default: %s' %
-                   RESONANCE_FILEPATH)
-@click.option('--axis-swing', type=float,
+@click.option('--file', type=click.Path(resolve_path=True),
+              help='Name of file in axis directory with resonances.')
+@click.option('--axis-swing', '-a', type=float,
               help='Axis swing determines swing between semi major axis of asteroid from astdys '
                    'catalog and resonance table.')
+@click.option('--gen', '-g', is_flag=True)
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def load_resonances(start: int, stop: int, file: str, axis_swing: float,
-                    planets: Tuple[str]):
+                    planets: Tuple[str], gen: bool):
     assert axis_swing > 0.
+
+    from resonances.shortcuts import FAIL, ENDC
+    if gen and file and os.path.isdir(file):
+        print("%s--gen and --file conflict, point only one of them%s" % (FAIL, ENDC))
+        exit(-1)
+
     from resonances.commands import load_resonances as _load_resonances
-    if not os.path.isabs(file):
-        file = os.path.normpath(opjoin(os.getcwd(), file))
     if file == RESONANCE_FILEPATH:
         logging.info('%s will be used as source of integers' % file)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
-        _load_resonances(file, i, end, planets, axis_swing)
+        _load_resonances(file, i, end, planets, axis_swing, gen)
 
 
 @cli.command(
@@ -264,7 +268,14 @@ def genres(asteroid: int, integers: List[int], aei_paths: Tuple, planets: Tuple)
 
 
 @cli.command(help='Generates resonance table')
+@click.option('--file', '-f', type=click.Path(resolve_path=True))
+@click.option('--axis-max', '-f', type=float, default=None)
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
-def rtable(planets):
+def rtable(planets, file: str, axis_max: float):
     from resonances.commands import generate_resonance_table
-    generate_resonance_table(*planets)
+    import sys
+    data = generate_resonance_table(*planets, axis_max)
+    with open(file, 'w') if file else sys.stdout as out:
+        for line in data:
+            print(line, file=out)
+
