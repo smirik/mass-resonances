@@ -4,6 +4,7 @@ from typing import Dict
 from enum import Enum
 from enum import unique
 from typing import List
+from fractions import gcd
 
 
 @unique
@@ -15,7 +16,6 @@ class _FormatEnum(Enum):
 CONFIG = Config.get_params()
 FORMAT = _FormatEnum(CONFIG['resonance_table']['format'])
 _Body = Dict[str, float]
-MAX_ORDER = 7
 _AXIS_MIN = 1.5
 
 
@@ -30,41 +30,82 @@ _PLANET_NUMBER = {
 }
 
 
-def _resonance_gen():
-    for i in range(1, 9):
-        for j in range(-MAX_ORDER, MAX_ORDER+1):
-            for k in range(-MAX_ORDER, MAX_ORDER+1):
-                diff = int(0.0 - i - j - k)
-                if i == 0 or j == 0 or k == 0 or abs(diff) > MAX_ORDER:
+class _ResonanceGeneratorBuilder:
+    def __init__(self, body_count: int, order_max: int):
+        self.body_count = body_count
+
+        if order_max is not None:
+            self.order_max = order_max
+        elif body_count == 2:
+            self.order_max = 7
+        else:
+            self.order_max = 25
+
+    def build(self):
+        if self.body_count == 2:
+            return self._3b_resonance_gen()
+        else:
+            return self._2b_resonance_gen()
+
+    def _3b_resonance_gen(self):
+        for i in range(1, 9):
+            for j in range(-self.order_max, self.order_max+1):
+                for k in range(-self.order_max, self.order_max+1):
+                    diff = int(0.0 - i - j - k)
+                    if i == 0 or j == 0 or k == 0 or abs(diff) > self.order_max:
+                        continue
+                    resonance = [i, j, k, 0, 0, diff]
+                    yield resonance
+
+    def _2b_resonance_gen(self):
+        for i in range(1, self.order_max + 1):
+            for j in range(1, self.order_max + 1):
+                if i < j or gcd(i, j) > 1:
                     continue
-                resonance = [i, j, k, 0, 0, diff]
+                diff = i - j
+                resonance = [i,-j,0,-diff]
                 yield resonance
 
 
-def generate_resonance_table(body1: str, body2: str, axis_top: float = None) -> List[str]:
+def _build_line_data(resonance: List[int], axis: float) -> str:
+    if (FORMAT == _FormatEnum.tex):
+        line_data = ' & '.join(str(x) for x in resonance) + ' & %2.4f \\\\' % axis
+    else:
+        line_data = ' '.join(str(x) for x in resonance) + ' %2.4f' % axis
+    return line_data
+
+
+def generate_resonance_table(body_names: List[str], axis_max: float = None,
+                             order_max: int = None) -> List[str]:
     """
     Generates resonance table
     """
     data = []
-    for resonance in _resonance_gen():
-        try:
-            first_body = _build_body(body1)
-            second_body = _build_body(body2)
-            asteroid = _build_asteroid(resonance, first_body, second_body)
-        except _MeanMotionException:
-            continue
-        if abs(resonance[5]) < MAX_ORDER and asteroid['axis'] > _AXIS_MIN:
-            if axis_top is not None and asteroid['axis'] >= axis_top:
+
+    body_count = len(body_names)
+    builder = _ResonanceGeneratorBuilder(body_count, order_max)
+    for resonance in builder.build():
+        if body_count == 2:
+            try:
+                bodies = [_build_body(x) for x in body_names]
+                axis = _build_resonance_axis(resonance, bodies)
+            except _MeanMotionException:
+                pass
                 continue
-            line_data = (resonance[0], resonance[1], resonance[2],
-                         resonance[5], asteroid['axis'])
-            if (FORMAT == _FormatEnum.tex):
-                result = "%d & %d & %d & %d & %2.4f \\\\" % line_data
-            elif (FORMAT == _FormatEnum.simple):
-                result = "%d %d %d 0 0 %d %2.4f" % line_data
-            else:
-                result = "%d %d %d 0 0 %d %2.4f" % line_data
-            data.append(result)
+            if abs(resonance[5]) >= builder.order_max or axis <= _AXIS_MIN:
+                continue
+            if axis_max is not None and axis >= axis_max:
+                continue
+            line_data = _build_line_data(resonance, axis)
+        elif body_count == 1:
+            body_axis = _build_body(body_names[0])['axis']
+            ratio = (-resonance[1]) / resonance[0]
+            axis = body_axis * (ratio ** (2/3))
+            line_data = _build_line_data(resonance, axis)
+        else:
+            raise Exception('Unexpected count of bodies.')
+        pass
+        data.append(line_data)
     return data
 
 
@@ -72,34 +113,32 @@ class _MeanMotionException(Exception):
     pass
 
 
-def _build_asteroid(resonance, jupiter: _Body, saturn: _Body) -> _Body:
+def _build_resonance_axis(resonance, bodies: List[_Body]) -> float:
+    jupiter = bodies[0]
+    body_count = len(bodies)
     K = CONFIG['constants']['k']
-    lin_combination = sum([
-        -resonance[0] * jupiter['mean_motion'],
-        -resonance[1] * saturn['mean_motion'],
-        -resonance[3] * jupiter['longitude_of_periapsis'],
-        -resonance[4] * saturn['longitude_of_periapsis'],
-    ])
+
+    items = []
+    for i, body in enumerate(bodies):
+        items.append(-resonance[i] * body['mean_motion'])
+        items.append(-resonance[i + body_count + 1] * body['longitude_of_periapsis'])
+    lin_combination = sum(items)
     mean_motion = lin_combination / resonance[2]
     if mean_motion < 0:
         raise _MeanMotionException()
 
-    axis = (K / (mean_motion))**(2.0/3)
+    axis = (K / mean_motion) ** (2.0/3)
     eps = (jupiter['axis'] - axis) / jupiter['axis']
-    longitude_of_periapsis = (K / (2 * math.pi) *
-                              math.sqrt(axis / jupiter['axis']) *
-                              (eps ** 2) *
-                              jupiter['mean_motion'])
+    longitude_of_periapsis = (
+        K / (2 * math.pi) * math.sqrt(axis / jupiter['axis']) *
+        (eps ** 2) * jupiter['mean_motion']
+    )
     mean_motion = (lin_combination - resonance[2] * longitude_of_periapsis) / resonance[2]
     if mean_motion < 0:
         raise _MeanMotionException()
 
-    asteroid = {
-        'axis': (K / mean_motion)**(2.0/3),
-        'mean_motion': mean_motion,
-        'longitude_of_periapsis': longitude_of_periapsis
-    }
-    return asteroid
+    axis = (K / mean_motion) ** (2.0/3)
+    return axis
 
 
 def _build_body(by_name: str) -> _Body:

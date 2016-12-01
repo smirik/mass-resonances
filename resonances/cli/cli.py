@@ -269,12 +269,13 @@ def genres(asteroid: int, integers: List[int], aei_paths: Tuple, planets: Tuple)
 
 @cli.command(help='Generates resonance table')
 @click.option('--file', '-f', type=click.Path(resolve_path=True))
-@click.option('--axis-max', '-f', type=float, default=None)
+@click.option('--axis-max', type=float, default=None)
+@click.option('--order-max', type=int, default=None)
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
-def rtable(planets, file: str, axis_max: float):
+def rtable(planets, file: str, axis_max: float, order_max: int):
     from resonances.commands import generate_resonance_table
     import sys
-    data = generate_resonance_table(*planets, axis_max)
+    data = generate_resonance_table([x for x in planets], axis_max, order_max)
     with open(file, 'w') if file else sys.stdout as out:
         for line in data:
             print(line, file=out)
