@@ -6,14 +6,14 @@ from enum import unique
 
 
 @unique
-class FormatEnum(Enum):
+class _FormatEnum(Enum):
     tex = 'tex'
     simple = 'simple'
 
 
 CONFIG = Config.get_params()
-FORMAT = FormatEnum(CONFIG['resonance_table']['format'])
-Body = Dict[str, float]
+FORMAT = _FormatEnum(CONFIG['resonance_table']['format'])
+_Body = Dict[str, float]
 MAX_ORDER = 7
 
 
@@ -40,26 +40,28 @@ def generate_resonance_table(body1: str, body2: str):
                     continue
                 resonance = [i, j, k, 0, 0, diff]
                 try:
-                    asteroid = _build_asteroid(resonance, _build_body(body1), _build_body(body2))
-                except MeanMotionException:
+                    first_body = _build_body(body1)
+                    second_body = _build_body(body2)
+                    asteroid = _build_asteroid(resonance, first_body, second_body)
+                except _MeanMotionException:
                     continue
                 if abs(diff) < MAX_ORDER and asteroid['axis'] > 1.5:
-                    if (asteroid.axis != 0):
+                    if (asteroid['axis'] != 0):
                         line_data = (resonance[0], resonance[1], resonance[2],
                                      resonance[5], asteroid['axis'])
-                        if (FORMAT == FormatEnum.tex):
-                            print("%d & %d & %d & %d & %2.4f \\\\ \n" % line_data)
+                        if (FORMAT == _FormatEnum.tex):
+                            print("%d & %d & %d & %d & %2.4f \\\\" % line_data)
                         elif (format == 'simple'):
-                            print("%d %d %d 0 0 %d %2.4f \n" % line_data)
+                            print("%d %d %d 0 0 %d %2.4f" % line_data)
                         else:
-                            print("%d %d %d 0 0 %d %2.4f \n" % line_data)
+                            print("%d %d %d 0 0 %d %2.4f" % line_data)
 
 
-class MeanMotionException(Exception):
+class _MeanMotionException(Exception):
     pass
 
 
-def _build_asteroid(resonance, jupiter: Body, saturn: Body) -> Body:
+def _build_asteroid(resonance, jupiter: _Body, saturn: _Body) -> _Body:
     K = CONFIG['constants']['k']
     lin_combination = sum([
         -resonance[0] * jupiter['mean_motion'],
@@ -69,7 +71,7 @@ def _build_asteroid(resonance, jupiter: Body, saturn: Body) -> Body:
     ])
     mean_motion = lin_combination / resonance[2]
     if mean_motion < 0:
-        raise MeanMotionException()
+        raise _MeanMotionException()
 
     axis = (K / (mean_motion))**(2.0/3)
     eps = (jupiter['axis'] - axis) / jupiter['axis']
@@ -78,31 +80,35 @@ def _build_asteroid(resonance, jupiter: Body, saturn: Body) -> Body:
                               (eps ** 2) *
                               jupiter['mean_motion'])
     mean_motion = (lin_combination - resonance[2] * longitude_of_periapsis) / resonance[2]
+    if mean_motion < 0:
+        raise _MeanMotionException()
 
     asteroid = {
-        'axis': (K / (mean_motion))**(2.0/3),
+        'axis': (K / mean_motion)**(2.0/3),
         'mean_motion': mean_motion,
         'longitude_of_periapsis': longitude_of_periapsis
     }
     return asteroid
 
 
-def _build_body(by_name: str) -> Body:
+def _build_body(by_name: str) -> _Body:
     planet_index = _PLANET_NUMBER[by_name]
     constants = CONFIG['constants']
-    longitude_of_periapsis = from_day_to_year(from_sec(
+    longitude_of_periapsis = _from_day_to_year(_from_sec(
         constants['longitude_of_periapsis'][planet_index]))
+    mean_motion = _from_day_to_year(_from_sec(
+        constants['mean_motion'][planet_index]))
     res = {
         'axis': constants['axis'][planet_index],
-        'mean_motion': constants['mean_motion'][planet_index],
-        'longitude_of_periapsis': longitude_of_periapsis
+        'mean_motion': mean_motion,
+        'longitude_of_periapsis': float("%.6f" % longitude_of_periapsis)
     }
     return res
 
 
-def from_sec(value):
+def _from_sec(value):
     return (value/3600.0)*math.pi/180.0
 
 
-def from_day_to_year(value):
+def _from_day_to_year(value):
     return value / 365.25
