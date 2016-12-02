@@ -1,10 +1,27 @@
+from .resonace_table import generate_resonance_table as gentable
+
 from typing import Dict, List, Tuple
-import logging
 
 from resonances.entities import ThreeBodyResonance
-from .resonace_table import generate_resonance_table
 from resonances.catalog import build_possible_resonances
 from resonances.shortcuts import ProgressBar
+
+
+class _DataAdapter:
+    """
+    Class adapts list for "with" statement.
+    """
+    def __init__(self, data: List[str]):
+        self._data = data
+
+    def __iter__(self):
+        return self._data.__iter__()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        pass
 
 
 def load_resonances(from_source: str, start_asteroid: int, stop_asteroid: int,
@@ -18,25 +35,16 @@ def load_resonances(from_source: str, start_asteroid: int, stop_asteroid: int,
     :param from_filepath: file path of catalog.
     :param start_asteroid: start point of half-interval.
     :param stop_asteroid: stop point of half-interval. It will be excluded.
+    :param gen: indicates about need to generate data.
     :return: dictionary, where keys are number of asteroids and values are lists of resonances.
     """
 
-    if gen:
-        source = generate_resonance_table(*planets)
-    else:
-        try:
-            source = open(from_source)
-        except FileNotFoundError:
-            logging.error('File %s not found. Try command resonance_table.', from_source)
-            exit(-1)
+    with _DataAdapter(gentable([x for x in planets])) if gen else open(from_source) as source:
+        p_bar = ProgressBar((stop_asteroid - start_asteroid), 'Build resonances')
+        res = {}
+        for i in range(start_asteroid, stop_asteroid):
+            res[i] = build_possible_resonances(source, i, planets, axis_swing)
+            p_bar.update()
+        p_bar.fin()
 
-    p_bar = ProgressBar((stop_asteroid - start_asteroid), 'Build resonances')
-    res = {}
-    for i in range(start_asteroid, stop_asteroid):
-        res[i] = build_possible_resonances(source, i, planets, axis_swing)
-        p_bar.update()
-    p_bar.fin()
-
-    if not gen:
-        source.close()
     return res

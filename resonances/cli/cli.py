@@ -63,7 +63,7 @@ FIND_HELP_PREFIX = 'If true, the application will'
 @click.option('--axis-swing', '-a', type=float,
               help='Axis swing determines swing between semi major axis of asteroid from astdys '
                    'catalog and resonance table.')
-@click.option('--gen', '-g', is_flag=True)
+@click.option('--gen', '-g', is_flag=True, help='If up it will generate resonance table.')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def load_resonances(start: int, stop: int, file: str, axis_swing: float,
                     planets: Tuple[str], gen: bool):
