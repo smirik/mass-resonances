@@ -7,23 +7,6 @@ from resonances.catalog import build_possible_resonances
 from resonances.shortcuts import ProgressBar
 
 
-class _DataAdapter:
-    """
-    Class adapts list for "with" statement.
-    """
-    def __init__(self, data: List[str]):
-        self._data = data
-
-    def __iter__(self):
-        return self._data.__iter__()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args, **kwargs):
-        pass
-
-
 def load_resonances(from_source: str, start_asteroid: int, stop_asteroid: int,
                     planets: Tuple[str], axis_swing: float = 0.01, gen: bool = False)\
         -> Dict[int, List[ThreeBodyResonance]]:
@@ -39,12 +22,17 @@ def load_resonances(from_source: str, start_asteroid: int, stop_asteroid: int,
     :return: dictionary, where keys are number of asteroids and values are lists of resonances.
     """
 
-    with _DataAdapter(gentable([x for x in planets])) if gen else open(from_source) as source:
-        p_bar = ProgressBar((stop_asteroid - start_asteroid), 'Build resonances')
-        res = {}
-        for i in range(start_asteroid, stop_asteroid):
-            res[i] = build_possible_resonances(source, i, planets, axis_swing)
-            p_bar.update()
-        p_bar.fin()
+    if gen:
+        source = gentable([x for x in planets])
+    else:
+        with open(from_source) as fd:
+            source = [x for x in fd]
+
+    p_bar = ProgressBar((stop_asteroid - start_asteroid), 'Build resonances')
+    res = {}
+    for i in range(start_asteroid, stop_asteroid):
+        res[i] = build_possible_resonances(source, i, planets, axis_swing)
+        p_bar.update()
+    p_bar.fin()
 
     return res
