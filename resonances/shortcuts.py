@@ -13,6 +13,11 @@ from sqlalchemy.orm import Query
 from sqlalchemy.orm.util import AliasedClass
 
 
+FAIL = '\033[91m'
+ENDC = '\033[0m'
+OK = '\033[92m'
+
+
 def logging_done():
     logging.info('[done]')
 

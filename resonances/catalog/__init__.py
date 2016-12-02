@@ -1,7 +1,6 @@
 import logging
 import os
-import sys
-from typing import List, Tuple
+from typing import List, Tuple, Iterable
 
 from resonances.entities import ThreeBodyResonance, build_resonance, BodyNumberEnum
 from resonances.entities import get_resonance_factory
@@ -37,7 +36,7 @@ def find_by_number(number: int) -> List[float]:
         exit(-1)
 
 
-def build_possible_resonances(from_filepath: str, for_asteroid_num: int, planets: Tuple[str],
+def build_possible_resonances(from_source: Iterable, for_asteroid_num: int, planets: Tuple[str],
                               axis_swing: float) -> List[ThreeBodyResonance]:
     """
     Builds resonances, that can be for pointed asteroid. Resonance is considering if it's semi major
@@ -52,21 +51,16 @@ def build_possible_resonances(from_filepath: str, for_asteroid_num: int, planets
     res = []
     asteroid_parameters = find_by_number(for_asteroid_num)
     asteroid_axis = asteroid_parameters[1]
-    try:
-        with open(from_filepath) as resonance_file:
-            for line in resonance_file:
-                line_data = line.split()
+    for line in from_source:
+        line_data = line.split()
 
-                body_count = BodyNumberEnum(len(planets) + 1)
-                assert (body_count == BodyNumberEnum.three and len(line_data) > 5 or
-                        body_count == BodyNumberEnum.two)
-                resonant_asteroid_axis = float(line_data[AXIS_COLUMNS[body_count]])
-                if abs(resonant_asteroid_axis - asteroid_axis) <= axis_swing:
-                    resonance_factory = get_resonance_factory(planets, line_data,
-                                                              for_asteroid_num)
-                    res.append(build_resonance(resonance_factory))
-    except FileNotFoundError:
-        logging.error('File %s not found. Try command resonance_table.', from_filepath)
-        sys.exit(1)
+        body_count = BodyNumberEnum(len(planets) + 1)
+        assert (body_count == BodyNumberEnum.three and len(line_data) > 5 or
+                body_count == BodyNumberEnum.two)
+        resonant_asteroid_axis = float(line_data[AXIS_COLUMNS[body_count]])
+        if abs(resonant_asteroid_axis - asteroid_axis) <= axis_swing:
+            resonance_factory = get_resonance_factory(planets, line_data,
+                                                      for_asteroid_num)
+            res.append(build_resonance(resonance_factory))
 
     return res
