@@ -54,6 +54,8 @@ script:
   - python -m resonances calc
   - python -m resonances load-resonances --start=1 --stop=101 --file=axis/res_J --axis-swing=0.01 JUPITER
   - python -m resonances load-resonances --start=1 --stop=101 --file=axis/resonances --axis-swing=0.01 JUPITER SATURN
+  - python -m resonances load-resonances --start=1 --stop=11 --axis-swing=0.05 -g MARS JUPITER
+  - python -m resonances load-resonances --start=1 --stop=11 --axis-swing=0.1 -g SATURN
   - python -m resonances find JUPITER SATURN
   - python -m resonances plot -o ./js-plots JUPITER SATURN
   - python -m resonances plot -b -o ./j-plots JUPITER
