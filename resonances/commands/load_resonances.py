@@ -1,14 +1,18 @@
 from .resonace_table import generate_resonance_table as gentable
 
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 from resonances.entities import ThreeBodyResonance
-from resonances.catalog import build_possible_resonances
 from resonances.shortcuts import ProgressBar
+from resonances.settings import Config
+from resonances.catalog import PossibleResonanceBuilder
+
+CONFIG = Config.get_params()
+PROJECT_DIR = Config.get_project_dir()
 
 
 def load_resonances(from_source: str, start_asteroid: int, stop_asteroid: int,
-                    planets: Tuple[str], axis_swing: float = 0.01, gen: bool = False)\
+                    builder: PossibleResonanceBuilder, gen: bool = False)\
         -> Dict[int, List[ThreeBodyResonance]]:
     """
     Makes all possible resonances for asteroids, that pointed by half-interval.
@@ -23,7 +27,7 @@ def load_resonances(from_source: str, start_asteroid: int, stop_asteroid: int,
     """
 
     if gen:
-        source = gentable([x for x in planets])
+        source = gentable([x for x in builder.planets])
     else:
         with open(from_source) as fd:
             source = [x for x in fd]
@@ -31,7 +35,7 @@ def load_resonances(from_source: str, start_asteroid: int, stop_asteroid: int,
     p_bar = ProgressBar((stop_asteroid - start_asteroid), 'Build resonances')
     res = {}
     for i in range(start_asteroid, stop_asteroid):
-        res[i] = build_possible_resonances(source, i, planets, axis_swing)
+        res[i] = builder.build(source, i)
         p_bar.update()
     p_bar.fin()
 

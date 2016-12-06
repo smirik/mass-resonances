@@ -3,6 +3,7 @@ import os
 import tarfile
 from glob import iglob
 from os.path import join as opjoin
+import shutil
 
 from boto.s3.key import Key
 from resonances.integrator import SmallBodiesFileBuilder, set_time_interval
@@ -89,7 +90,7 @@ def _save_aei_files(output_path: str, s3_bucket_key: Key):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         for path in iglob(os.path.join(INTEGRATOR_PATH, '*.aei')):
-            os.rename(path, os.path.join(output_path, os.path.basename(path)))
+            shutil.move(path, os.path.join(output_path, os.path.basename(path)))
 
 
 def _integrate(start: int, stop: int):

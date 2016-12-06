@@ -25,7 +25,6 @@ CONFIG = Config.get_params()
 BODIES_COUNTER = CONFIG['integrator']['number_of_bodies']
 MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 OUTPUT_ANGLE = CONFIG['output']['angle']
-DEBUG = 10
 
 
 class LibrationFinder:

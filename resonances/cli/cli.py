@@ -74,12 +74,14 @@ def load_resonances(start: int, stop: int, file: str, axis_swing: float,
         print("%s--gen and --file conflict, point only one of them%s" % (FAIL, ENDC))
         exit(-1)
 
+    from resonances.catalog import PossibleResonanceBuilder
     from resonances.commands import load_resonances as _load_resonances
+    builder = PossibleResonanceBuilder(planets, axis_swing)
     if file == RESONANCE_FILEPATH:
         logging.info('%s will be used as source of integers' % file)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
-        _load_resonances(file, i, end, planets, axis_swing, gen)
+        _load_resonances(file, i, end, builder, gen)
 
 
 @cli.command(
@@ -126,6 +128,20 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
         if reload_resonances:
             _load_resonances(RESONANCE_FILEPATH, i, end, planets)
         finder.find(i, end, aei_paths)
+
+
+@cli.command(help='')
+@asteroid_time_intervals_options()
+@click.option('--gen', '-g', is_flag=True, help='If up it will generate resonance table.')
+@click.option('--axis-swing', '-a', type=float,
+              help='Axis swing determines swing between semi major axis of asteroid from astdys '
+                   'catalog and resonance table.')
+@click.option('--catalog', type=click.Path(resolve_path=True, exists=True))
+@click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
+def integrate(start: int, stop: int, from_day: float, to_day: float, planets: Tuple[str],
+              catalog: str, axis_swing: float, gen: bool = False):
+    from resonances.commands.integrate import integrate as _integrate
+    _integrate(start, stop, from_day, to_day, planets, catalog, axis_swing, gen)
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
