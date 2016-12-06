@@ -10,6 +10,7 @@ from .internal import Path
 from .internal import aei_path_options
 from .internal import asteroid_interval_options
 from .internal import asteroid_time_intervals_options
+from .internal import time_interval
 from .internal import build_logging, validate_ints, validate_planets, validate_integer_expression, \
     validate_or_set_body_count
 from .internal import report_interval_options
@@ -47,7 +48,9 @@ def cli(loglevel: str = 'DEBUG', logfile: str = None):
               help='Path where will be stored aei files. It can be tar.gz archive.')
 def calc(start: int, stop: int, from_day: float, to_day: float, aei_path: str):
     from resonances.commands import calc as _calc
-    _calc(start, stop, STEP, from_day, to_day, aei_path)
+    from resonances.catalog import asteroid_list_gen
+    asteroids = asteroid_list_gen(STEP, start=start, stop=stop)
+    _calc(asteroids, from_day, to_day, aei_path)
 
 
 FIND_HELP_PREFIX = 'If true, the application will'
@@ -131,17 +134,17 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
 
 
 @cli.command(help='')
-@asteroid_time_intervals_options()
+@time_interval()
 @click.option('--gen', '-g', is_flag=True, help='If up it will generate resonance table.')
 @click.option('--axis-swing', '-a', type=float,
               help='Axis swing determines swing between semi major axis of asteroid from astdys '
                    'catalog and resonance table.')
 @click.option('--catalog', type=click.Path(resolve_path=True, exists=True))
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
-def integrate(start: int, stop: int, from_day: float, to_day: float, planets: Tuple[str],
+def integrate(from_day: float, to_day: float, planets: Tuple[str],
               catalog: str, axis_swing: float, gen: bool = False):
     from resonances.commands.integrate import integrate as _integrate
-    _integrate(start, stop, from_day, to_day, planets, catalog, axis_swing, gen)
+    _integrate(from_day, to_day, planets, catalog, axis_swing, gen)
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'

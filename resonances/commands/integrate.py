@@ -1,6 +1,6 @@
 from os.path import join as opjoin
+from os.path import exists as opexists
 from os import remove
-from os.path import join as opexists
 from typing import Tuple
 from resonances.settings import Config
 from resonances.commands import load_resonances as _load_resonances
@@ -39,7 +39,7 @@ class Integration:
 
     def save(self, state: IntegrationState):
         with open(self.state_file, 'w') as fd:
-            fd.write(self.state)
+            fd.write(str(state.value))
         self._state = state
 
     def open(self):
@@ -48,7 +48,7 @@ class Integration:
 
     @property
     def state_file(self) -> str:
-        return opjoin('/tmp', 'Integration_state.txt')
+        return opjoin('/tmp', 'integration_state.txt')
 
     @property
     def state(self) -> IntegrationState:
@@ -56,10 +56,11 @@ class Integration:
 
 
 class ACommand(object):
-    def __init__(self, integration: Integration, interval: Interval):
+    def __init__(self, integration: Integration, catalog: str):
+        from resonances.catalog import asteroid_list_gen
         self._integration = integration
-        self._start = interval[0]
-        self._stop = interval[1]
+        self._catalog = catalog
+        self._asteroid_list_gen = asteroid_list_gen(STEP, self._catalog)
 
     @abstractmethod
     def exec(self):
@@ -67,17 +68,16 @@ class ACommand(object):
 
 
 class CalcCommand(ACommand):
-    def __init__(self, integration: Integration, interval: Interval,
+    def __init__(self, integration: Integration, catalog: str,
                  from_day: float, to_day: float):
-        super(CalcCommand, self).__init__(integration)
+        super(CalcCommand, self).__init__(integration, catalog)
         self._from_day = from_day
         self._to_day = to_day
         self._state = IntegrationState.calc
 
     def exec(self):
         if self._integration.state == IntegrationState.start:
-            _calc(self._interval[0], self._interval[1], STEP,
-                  self._from_day, self._to_day, self.aei_path)
+            _calc(self._asteroid_list_gen, self._from_day, self._to_day, self.aei_path)
             self._integration.save(self._state)
 
     @property
@@ -86,33 +86,30 @@ class CalcCommand(ACommand):
 
 
 class LoadCommand(ACommand):
-    def __init__(self, integration: Integration, interval: Interval,
-                 planets: Tuple[str], catalog: str, axis_swing: float, gen: bool):
-        super(LoadCommand, self).__init__(integration)
+    def __init__(self, integration: Integration, catalog: str,
+                 planets: Tuple[str], axis_swing: float, gen: bool):
+        super(LoadCommand, self).__init__(integration, catalog)
         self._builder = PossibleResonanceBuilder(planets, axis_swing, catalog)
         self._gen = gen
         self._state = IntegrationState.load
 
     def exec(self):
         if self._integration.state == IntegrationState.calc:
-            self._integration.state = IntegrationState.load
-            for i in range(self._start, self._stop, STEP):
-                end = i + STEP if i + STEP < self._stop else self._stop
-                _load_resonances(RESONANCE_FILEPATH, i, end, self._builder, self._gen)
+            for asteroid_buffer in self._asteroid_list_gen:
+                _load_resonances(RESONANCE_FILEPATH, asteroid_buffer, self._builder, self._gen)
             self._integration.save(self._state)
 
 
 class FindCommand(ACommand):
-    def __init__(self, integration: Integration, interval: Interval,
+    def __init__(self, integration: Integration, catalog: str,
                  planets: Tuple[str], aei_path: str):
-        super(FindCommand, self).__init__(integration, interval)
+        super(FindCommand, self).__init__(integration, catalog)
         self._aei_path = aei_path
         self._finder = LibrationFinder(planets, False, True, False, False, PhaseStorage.file, True)
         self._state = IntegrationState.find
 
     def exec(self):
         if self._integration.state == IntegrationState.load:
-            self._integration.state = IntegrationState.find
             self._finder.find_by_file(self._aei_path)
             for i in range(self._start, self._stop, STEP):
                 end = i + STEP if i + STEP < self._stop else self._stop
@@ -120,15 +117,14 @@ class FindCommand(ACommand):
             self._integration.save(self._state)
 
 
-def integrate(start: int, stop: int, from_day: float, to_day: float, planets: Tuple[str],
+def integrate(from_day: float, to_day: float, planets: Tuple[str],
               catalog: str, axis_swing: float, gen: bool = False):
     integration = Integration()
-    intervnal = (start, stop)
-    calcCmd = CalcCommand(integration, intervnal, from_day, to_day)
+    calcCmd = CalcCommand(integration, catalog, from_day, to_day)
     commands = [
         calcCmd,
-        LoadCommand(integration, intervnal, planets, catalog, axis_swing, gen),
-        FindCommand(integration, intervnal, planets, calcCmd.aei_path),
+        LoadCommand(integration, catalog, planets, axis_swing, gen),
+        FindCommand(integration, catalog, planets, calcCmd.aei_path),
     ]
 
     for cmd in commands:

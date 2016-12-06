@@ -113,9 +113,13 @@ def aei_path_options():
 
 
 def asteroid_time_intervals_options():
+    return _unite_decorators(
+        asteroid_interval_options(), time_interval())
+
+
+def time_interval():
     prefix = 'This parameter will be passed to param.in file for integrator Mercury6 as'
     return _unite_decorators(
-        asteroid_interval_options(),
         click.option('--from-day', default=2451000.5, help='%s start time pointed in days.' %
                                                            prefix),
         click.option('--to-day', default=2501000.5,

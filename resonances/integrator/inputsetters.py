@@ -1,6 +1,6 @@
 import os
 from os.path import join as opjoin
-from typing import List, Callable, TextIO, Iterable
+from typing import List, Callable, TextIO, Iterable, Dict
 
 from resonances.settings import Config
 
@@ -26,7 +26,7 @@ class SmallBodiesFileBuilder(object):
         """
         self._symlink_path = symlink
         self._filepath = filepath
-        self._bodies = []
+        self._bodies = []  # type: List[Dict[str, List[float]]]
 
     def create_small_body_file(self):
         """Creates file by pointed path and adds header to it. If path of
@@ -43,14 +43,14 @@ class SmallBodiesFileBuilder(object):
                 os.remove(self._symlink_path)
             os.symlink(self._filepath, self._symlink_path)
 
-    def add_body(self, number: int, elements: List[float]):
+    def add_body(self, asteroid_name: str, elements: List[float]):
         """Write to file, which contains data of asteroids.
 
         :param int number: number of asteroid.
         :param list elements: parameters.
         """
         self._bodies.append({
-            'number': number,
+            'number': asteroid_name,
             'elements': elements[1:7]
         })
 
@@ -63,10 +63,8 @@ class SmallBodiesFileBuilder(object):
             raise FileNotFoundError
         with open(self._filepath, 'a+') as integrator_file:
             for body in self._bodies:
-                integrator_file.write(' A%i ep=%s\n' % (body['number'],
-                                                        INTEGRATOR_START))
-                integrator_file.write(' %s 0 0 0\n' % ' '.join(
-                    [str(x) for x in body['elements']]))
+                integrator_file.write(' A%s ep=%s\n' % (body['number'], INTEGRATOR_START))
+                integrator_file.write(' %s 0 0 0\n' % ' '.join([str(x) for x in body['elements']]))
             self._bodies.clear()
 
 

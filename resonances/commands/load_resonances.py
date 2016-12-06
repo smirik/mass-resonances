@@ -1,17 +1,19 @@
 from .resonace_table import generate_resonance_table as gentable
 
-from typing import Dict, List
+from typing import Dict, List, Iterable
 
 from resonances.entities import ThreeBodyResonance
 from resonances.shortcuts import ProgressBar
 from resonances.settings import Config
 from resonances.catalog import PossibleResonanceBuilder
+from resonances.catalog import AsteroidData
+
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
 
 
-def load_resonances(from_source: str, start_asteroid: int, stop_asteroid: int,
+def load_resonances(from_source: str, asteroids: List[AsteroidData],
                     builder: PossibleResonanceBuilder, gen: bool = False)\
         -> Dict[int, List[ThreeBodyResonance]]:
     """
@@ -19,9 +21,8 @@ def load_resonances(from_source: str, start_asteroid: int, stop_asteroid: int,
     Orbital elements for every asteroid will got from catalog, which has pointed filepath.
     :param axis_swing:
     :param planets:
-    :param from_filepath: file path of catalog.
-    :param start_asteroid: start point of half-interval.
-    :param stop_asteroid: stop point of half-interval. It will be excluded.
+    :param from_source: data of catalog.
+    :param asteroids:
     :param gen: indicates about need to generate data.
     :return: dictionary, where keys are number of asteroids and values are lists of resonances.
     """
@@ -32,10 +33,10 @@ def load_resonances(from_source: str, start_asteroid: int, stop_asteroid: int,
         with open(from_source) as fd:
             source = [x for x in fd]
 
-    p_bar = ProgressBar((stop_asteroid - start_asteroid), 'Build resonances')
+    p_bar = ProgressBar(len(asteroids), 'Build resonances')
     res = {}
-    for i in range(start_asteroid, stop_asteroid):
-        res[i] = builder.build(source, i)
+    for asteroid in asteroids:
+        res[asteroid[0]] = builder.build(source, asteroid)
         p_bar.update()
     p_bar.fin()
 

@@ -112,7 +112,7 @@ class ThreeBodyResonanceFactory(ResonanceFactory):
                 PERI_COEFF: int(data[4])
             },
             small_body={
-                'name': 'A%i' % asteroid_num,
+                'name': 'A%s' % asteroid_num,
                 LONG_COEFF: int(data[2]),
                 PERI_COEFF: int(data[5]),
                 'axis': float(data[6])
@@ -143,7 +143,7 @@ class TwoBodyResonanceFactory(ResonanceFactory):
                 PERI_COEFF: int(data[2])
             },
             small_body={
-                'name': 'A%i' % asteroid_num,
+                'name': 'A%s' % asteroid_num,
                 LONG_COEFF: int(data[1]),
                 PERI_COEFF: int(data[3]),
                 'axis': float(data[4])
