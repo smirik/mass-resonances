@@ -110,10 +110,10 @@ class FindCommand(ACommand):
 
     def exec(self):
         if self._integration.state == IntegrationState.load:
-            self._finder.find_by_file(tuple(self._aei_path))
-            for i in range(self._start, self._stop, STEP):
-                end = i + STEP if i + STEP < self._stop else self._stop
-                self._finder.find(i, end, tuple(self._aei_path))
+            for asteroid_buffer in self._asteroid_list_gen:
+            #for i in range(self._start, self._stop, STEP):
+                #end = i + STEP if i + STEP < self._stop else self._stop
+                self._finder.find_by_resonances(i, end, tuple(self._aei_path))
             self._integration.save(self._state)
 
 

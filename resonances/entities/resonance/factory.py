@@ -55,7 +55,7 @@ class ResonanceFactory:
     def _get_asteroid(self) -> Dict[str, int]:
         pass
 
-    def _is_resonance_exists(self, conn):
+    def _is_resonance_exists(self, conn) -> Tuple[bool, Select]:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=sa_exc.SAWarning)
             _build_planets(conn, self._get_planets(), self._get_asteroid())
@@ -73,16 +73,21 @@ class ResonanceFactory:
 
         return resonance_exists, sel
 
-    def build(self, conn):
+    def build(self, conn: Connection) -> int:
+        """Builds query to insert resonance to DB and return id of it.
+
+        :param conn:
+        """
         resonance_exists, sel = self._is_resonance_exists(conn)
         if not resonance_exists:
             resonance_insert = _InsertFromSelect(self._resonance_table, sel,
                                                  self._resonance_cls.__table__)
             try:
-                conn.execute(resonance_insert)
+                resonance_id = conn.execute(resonance_insert).first()
             except IntegrityError:
                 fix_id_sequence(self._resonance_cls.__table__, conn)
-                conn.execute(resonance_insert)
+                resonance_id = conn.execute(resonance_insert).first()
+            return resonance_id
 
     @property
     def _columns(self) -> List[ColumnClause]:
@@ -164,14 +169,14 @@ class TwoBodyResonanceFactory(ResonanceFactory):
         return self.bodies['small_body']
 
 
-def build_resonance(resonance_factory: ResonanceFactory) -> ThreeBodyResonance:
-    """Builds instance of ThreeBodyResonance by passed list of string values.
+def build_resonance(resonance_factory: ResonanceFactory) -> int:
+    """Builds SQL query to add instance ResonanceMixin and return id of it.
 
     :param resonance_factory:
     :return:
     """
     conn = engine.connect()
-    resonance_factory.build(conn)
+    return resonance_factory.build(conn)
 
 
 def get_resonance_factory(planets: Tuple, data: List[str],
@@ -203,7 +208,7 @@ def _visit_insert_from_select(element: _InsertFromSelect, compiler: PGCompiler_p
         compiler.process(element.table_clause, asfrom=True),
         ', '.join(element.table_clause.columns.keys()),
         compiler.process(element.select),
-        _get_conflict_action(_serialize_unique_cols(element.table))
+        _get_conflict_action(element.table, True)
     )
 
 
@@ -240,8 +245,8 @@ def _build_planets(conn: Connection, planets: List[Dict[str, int]], small_body: 
             _execute_insert(conn, Asteroid.__table__,
                             _asteroid_table.insert(inline=True, values=small_body))
     else:
-        planet_conflict_action = _get_conflict_action(_serialize_unique_cols(_planet_table))
-        asteroid_conflict_action = _get_conflict_action(_serialize_unique_cols(_asteroid_table))
+        planet_conflict_action = _get_conflict_action(_planet_table)
+        asteroid_conflict_action = _get_conflict_action(_asteroid_table)
         planet_insert = _planet_table.insert(append_string=planet_conflict_action,
                                              inline=True, values=planets)
         asteroid_insert = _asteroid_table.insert(append_string=asteroid_conflict_action,
@@ -253,17 +258,6 @@ def _build_planets(conn: Connection, planets: List[Dict[str, int]], small_body: 
 def _check_body(cls, parametes: Dict):
     query = session.query
     return query(query(cls).filter_by(**parametes).exists()).scalar()
-
-
-def _serialize_unique_cols(from_table: Table) -> str:
-    unique_contraints = [x for x in from_table.constraints if isinstance(x, UniqueConstraint)]
-    res = []
-    for constraint in unique_contraints:  # type: UniqueConstraint
-        res += constraint.columns.keys()
-    if res:
-        return '(%s)' % ', '.join(res)
-    else:
-        return ''
 
 
 def _is_support_upsert() -> bool:
@@ -278,9 +272,26 @@ def _is_support_upsert() -> bool:
     return _has_upsert
 
 
-def _get_conflict_action(serialized_fields) -> str:
+def _get_conflict_action(for_table: Table, need_id: bool = False) -> str:
+    """Makes part of SQL query contains action that will be produced on conflict.
+
+    :param for_table: table which will take new record.
+    :param need_id: indicates that query must return id.
+    """
+    from functools import reduce
+    from operator import add
+    unique_contraints = [x for x in for_table.constraints if isinstance(x, UniqueConstraint)]
+    column_names = reduce(add, [x.columns.keys() for x in unique_contraints])
+    #column_names = [x.columns.keys() for x in unique_contraints]
+
+    if need_id and column_names:
+        action = 'DO UPDATE SET {0}=EXCLUDED.{0} RETURNING id;'.format(column_names[0])
+    else:
+        action = 'DO NOTHING'
+
     if _is_support_upsert():
-        _conflict_action = 'on conflict %s DO NOTHING' % serialized_fields
+        serialized_fields = ('(%s)' % ', '.join(column_names)) if column_names else ''
+        _conflict_action = 'on conflict %s %s' % (serialized_fields, action)
     else:
         _conflict_action = ''
     return _conflict_action

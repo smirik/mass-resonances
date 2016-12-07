@@ -96,9 +96,9 @@ class LibrationFinder:
         :param stop: stop point of half-interval. It will be excluded.
         :return:
         """
-        orbital_element_sets = None
         pathbuilder = FilepathBuilder(aei_paths, self._is_recursive, self._clear_s3)
         filepaths = [pathbuilder.build('%s.aei' % x) for x in self._planets]
+        orbital_element_sets = None
         try:
             orbital_element_sets = build_bigbody_elements(filepaths)
         except AEIValueError:
@@ -109,6 +109,17 @@ class LibrationFinder:
         resonances_data_gen = get_aggregated_resonances(
             start, stop, False, self._planets, aei_getter)
         self._find(resonances_data_gen, stop + 1 - start, orbital_element_sets)
+
+    def find_by_resonances(self, resonances_data: Iterable[ResonanceData], aei_paths: tuple):
+        pathbuilder = FilepathBuilder(aei_paths, self._is_recursive, self._clear_s3)
+        filepaths = [pathbuilder.build('%s.aei' % x) for x in self._planets]
+        orbital_element_sets = None
+        try:
+            orbital_element_sets = build_bigbody_elements(filepaths)
+        except AEIValueError:
+            logging.error('Incorrect data in %s' % ' or in '.join(filepaths))
+            exit(-1)
+        self._find(resonances_data, len(resonances_data), orbital_element_sets)
 
     def find_by_file(self, aei_paths: tuple):
         """Do same that find but asteroid interval will be determined by filenames.

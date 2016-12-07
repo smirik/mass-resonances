@@ -91,17 +91,18 @@ class PossibleResonanceBuilder:
         self.axis_swing = axis_swing
         self.catalog_path = catalog_path
 
-    def build(self, from_source: Iterable, asteroid: AsteroidData) -> List[ResonanceMixin]:
+    def build(self, from_source: Iterable, asteroid: AsteroidData) -> List[int]:
         """
-        Builds resonances, that can be for pointed asteroid. Resonance is considering if it's semi major
-        axis similar to semi major axis of asteroid from catalog. Them compares with some swing, which
+        Saves resonances to database, that are possible for pointed asteroid.
+        Resonance is considering if it's semi major axis similar to semi major
+        axis of asteroid from catalog. Them compares with some swing, which
         which pointed in settings.
 
         :param from_source: iterable data with resonance matrix.
         :param asteroid: asteroid's name and asteroid's data from catalog.
-        :return: list of resonances.
+        :return: list of id numbers of resonances.
         """
-        res = []
+        possible_resonances = []
         asteroid_parameters = asteroid[1]
         asteroid_axis = asteroid_parameters[1]
         for line in from_source:
@@ -114,6 +115,6 @@ class PossibleResonanceBuilder:
             if abs(resonant_asteroid_axis - asteroid_axis) <= self.axis_swing:
                 resonance_factory = get_resonance_factory(
                     self.planets, line_data, asteroid[0])
-                res.append(build_resonance(resonance_factory))
+                possible_resonances.append(build_resonance(resonance_factory))
 
-        return res
+        return possible_resonances

@@ -22,4 +22,4 @@ from .phases import PhaseStorage
 from .phases import PhaseCleaner
 from .phases import get_file_name
 
-
+from .resonances import ResonanceData

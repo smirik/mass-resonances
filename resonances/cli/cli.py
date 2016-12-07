@@ -79,12 +79,13 @@ def load_resonances(start: int, stop: int, file: str, axis_swing: float,
 
     from resonances.catalog import PossibleResonanceBuilder
     from resonances.commands import load_resonances as _load_resonances
+    from resonances.catalog import asteroid_list_gen
+    _asteroid_list_gen = asteroid_list_gen(STEP, start=start, stop=stop)
     builder = PossibleResonanceBuilder(planets, axis_swing)
     if file == RESONANCE_FILEPATH:
         logging.info('%s will be used as source of integers' % file)
-    for i in range(start, stop, STEP):
-        end = i + STEP if i + STEP < stop else stop
-        _load_resonances(file, i, end, builder, gen)
+    for asteroid_buffer in _asteroid_list_gen:
+        _load_resonances(file, asteroid_buffer, builder, gen)
 
 
 @cli.command(
