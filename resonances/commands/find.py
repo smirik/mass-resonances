@@ -1,14 +1,20 @@
 import json
 import logging
 from os.path import join as opjoin
-from typing import List, Dict, Tuple
+from typing import List
+from typing import Dict
+from typing import Tuple
+from typing import Iterable
 
+from resonances.datamining import OrbitalElementSetCollection
 from resonances.datamining import AEIDataGetter
 from resonances.datamining import LibrationClassifier
 from resonances.datamining import PhaseStorage
 from resonances.datamining import ResonanceOrbitalElementSetFacade
 from resonances.datamining import build_bigbody_elements
-from resonances.datamining import get_aggregated_resonances, PhaseBuilder
+from resonances.datamining import get_aggregated_resonances
+from resonances.datamining import ResonanceData
+from resonances.datamining import PhaseBuilder
 from resonances.datamining.orbitalelements import FilepathBuilder
 from resonances.datamining.orbitalelements.collection import AEIValueError
 from resonances.entities import BodyNumberEnum, Libration, TwoBodyLibration
@@ -42,6 +48,43 @@ class LibrationFinder:
         table = Libration.__table__ if len(planets) == 2 else TwoBodyLibration.__table__
         fix_id_sequence(table, conn)
 
+    def _find(self, resonances_data: Iterable[ResonanceData], length: int,
+              orbital_element_sets: List[OrbitalElementSetCollection]):
+        """
+        :param resonances_data:
+        :param length:
+        :param orbital_element_sets:
+        """
+        classifier = LibrationClassifier(self._is_current, BodyNumberEnum(len(self._planets) + 1))
+        phase_builder = PhaseBuilder(self._phase_storage)
+        p_bar = None
+        if self._is_verbose:
+            p_bar = ProgressBar(length, 'Find librations')
+        asteroid_name = None
+        for resonance, aei_data in resonances_data:
+            if self._is_verbose and asteroid_name != resonance.small_body.name:
+                p_bar.update()
+            asteroid_name = resonance.small_body.name
+            broken_asteroid_mediator = _BrokenAsteroidMediator(asteroid_name)
+            if broken_asteroid_mediator.check():
+                continue
+
+            logging.debug('Analyze asteroid %s, resonance %s' % (asteroid_name, resonance))
+            resonance_id = resonance.id
+            classifier.set_resonance(resonance)
+            orbital_elem_set_facade = ResonanceOrbitalElementSetFacade(
+                orbital_element_sets, resonance)
+            try:
+                serialized_phases = phase_builder.build(
+                    aei_data, resonance_id, orbital_elem_set_facade)
+            except AEIValueError:
+                broken_asteroid_mediator.save()
+                continue
+            classifier.classify(orbital_elem_set_facade, serialized_phases)
+
+        session.flush()
+        session.commit()
+
     def find(self, start: int, stop: int, aei_paths: tuple):
         """Analyze resonances for pointed half-interval of numbers of asteroids. It gets resonances
         aggregated to asteroids. Computes resonant phase by orbital elements from prepared aei files
@@ -63,37 +106,9 @@ class LibrationFinder:
             exit(-1)
 
         aei_getter = AEIDataGetter(pathbuilder, self._clear)
-        classifier = LibrationClassifier(self._is_current, BodyNumberEnum(len(self._planets) + 1))
-        phase_builder = PhaseBuilder(self._phase_storage)
-
-        p_bar = None
-        if self._is_verbose:
-            p_bar = ProgressBar((stop + 1 - start), 'Find librations')
-        asteroid_name = None
-        for resonance, aei_data in get_aggregated_resonances(start, stop, False, self._planets,
-                                                             aei_getter):
-            if self._is_verbose and asteroid_name != resonance.small_body.name:
-                p_bar.update()
-            asteroid_name = resonance.small_body.name
-            broken_asteroid_mediator = _BrokenAsteroidMediator(asteroid_name)
-            if broken_asteroid_mediator.check():
-                continue
-
-            logging.debug('Analyze asteroid %s, resonance %s' % (asteroid_name, resonance))
-            resonance_id = resonance.id
-            classifier.set_resonance(resonance)
-            orbital_elem_set_facade = ResonanceOrbitalElementSetFacade(orbital_element_sets,
-                                                                       resonance)
-            try:
-                serialized_phases = phase_builder.build(aei_data, resonance_id,
-                                                        orbital_elem_set_facade)
-            except AEIValueError:
-                broken_asteroid_mediator.save()
-                continue
-            classifier.classify(orbital_elem_set_facade, serialized_phases)
-
-        session.flush()
-        session.commit()
+        resonances_data_gen = get_aggregated_resonances(
+            start, stop, False, self._planets, aei_getter)
+        self._find(resonances_data_gen, stop + 1 - start, orbital_element_sets)
 
     def find_by_file(self, aei_paths: tuple):
         """Do same that find but asteroid interval will be determined by filenames.
