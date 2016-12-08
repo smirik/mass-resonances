@@ -11,7 +11,7 @@ from typing import Union
 from resonances.datamining.orbitalelements import FilepathBuilder
 from resonances.entities import ThreeBodyResonance, BodyNumberEnum, TwoBodyResonance
 from resonances.entities.dbutills import session
-from resonances.entities.resonance.twobodyresonance import ResonanceMixin
+from resonances.entities import ResonanceMixin
 from resonances.shortcuts import add_integer_filter
 from sqlalchemy import exc
 from sqlalchemy.orm import Query, contains_eager
@@ -28,7 +28,7 @@ MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 
 FOREIGNS = ['first_body', 'second_body']
 PLANET_TABLES = {x: aliased(Planet) for x in FOREIGNS}  # type: Dict[str, Planet]
-ResonanceData = Tuple[ResonanceMixin, List[str]]
+ResonanceAeiData = Tuple[ResonanceMixin, List[str]]
 
 
 class GetQueryBuilder:
@@ -102,6 +102,30 @@ def get_resonance_query(for_bodies: BodyNumberEnum) -> Query:
     return query
 
 
+def _modify_resonance_query(query: Query, builder, only_librations, integers) -> Query:
+    if integers:
+        tables = [PLANET_TABLES['first_body']]
+        if builder.for_bodies == BodyNumberEnum.three:
+            tables.append(PLANET_TABLES['second_body'])
+        tables.append(builder.asteroid_alias)
+        query = add_integer_filter(query, integers, tables)
+
+    if only_librations:
+        query = query.join('libration')
+
+    return query
+
+
+def _iterate_resonances(query: Query, empty_message: str) -> Iterable[ResonanceMixin]:
+    is_empty = True
+    for resonance in query:
+        is_empty = False
+        yield resonance
+
+    if is_empty:
+        logging.info(empty_message)
+
+
 def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[str, ...],
                    integers: List[str] = None) -> Iterable[ResonanceMixin]:
     """
@@ -125,24 +149,23 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
     resonances = resonances.filter(t1.number >= start, t1.number < stop)\
         .options(joinedload('libration')).order_by(builder.asteroid_alias.number)
 
-    if integers:
-        tables = [PLANET_TABLES['first_body']]
-        if body_count == BodyNumberEnum.three:
-            tables.append(PLANET_TABLES['second_body'])
-        tables.append(builder.asteroid_alias)
-        resonances = add_integer_filter(resonances, integers, tables)
+    resonances = _modify_resonance_query(resonances, builder, only_librations, integers)
+    msg = 'We have no resonances, try command load-resonances --start=%i --stop=%i' % (start, stop)
+    yield from _iterate_resonances(resonances, msg)
 
-    if only_librations:
-        resonances = resonances.join('libration')
 
-    is_empty = True
-    for resonance in resonances:
-        is_empty = False
-        yield resonance
-
-    if is_empty:
-        logging.info('We have no resonances, try command load-resonances --start=%i --stop=%i'
-                     % (start, stop))
+def get_resonances_with_id(id_list, planets: Tuple[str, ...]) -> Iterable[ResonanceMixin]:
+    body_count = BodyNumberEnum(len(planets) + 1)
+    builder = GetQueryBuilder(body_count, True)
+    resonances = builder.get_resonances()
+    for i, key in enumerate(FOREIGNS):
+        if i >= (body_count.value - 1):
+            break
+        resonances = resonances.filter(PLANET_TABLES[key].name == planets[i])
+    resonances = resonances.filter(builder.resonance_cls.id.in_(id_list))\
+        .order_by(builder.asteroid_alias.name)
+    msg = 'We have no resonances'
+    yield from _iterate_resonances(resonances, msg)
 
 
 class AEIDataGetter:
@@ -172,7 +195,7 @@ class AEIDataGetter:
 def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librations: bool,
                               planets: Tuple[str, ...], aei_getter: AEIDataGetter,
                               integers: List[str] = None) \
-        -> Iterable[ResonanceData]:
+        -> Iterable[ResonanceAeiData]:
     """Find resonances from /axis/resonances by asteroid axis. Currently
     described by 7 items list of floats. 6 is integers satisfying
     D'Alembert rule. First 3 for longitutes, and second 3 for longitutes

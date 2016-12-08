@@ -1,16 +1,29 @@
+import logging
+import json
 from os.path import join as opjoin
 from os.path import exists as opexists
 from os import remove
+from os import mkdir
+from resonances.datamining import ResonanceAeiData
+from typing import Iterable
+from shutil import rmtree
 from typing import Tuple
+from typing import List
+from typing import Dict
+from functools import reduce
+from operator import add
 from resonances.settings import Config
-from resonances.commands import load_resonances as _load_resonances
+from resonances.commands import load_resonances
 from resonances.datamining import PhaseStorage
-from resonances.commands import calc as _calc
+from resonances.commands import calc
 from resonances.commands import LibrationFinder
 from resonances.catalog import PossibleResonanceBuilder
+from resonances.datamining import get_resonances_with_id
+from resonances.entities import ResonanceMixin
 from abc import abstractmethod
 from enum import Enum
 from enum import unique
+from resonances.catalog import asteroid_list_gen
 
 CONFIG = Config.get_params()
 RESONANCE_TABLE_FILE = CONFIG['resonance_table']['file']
@@ -31,11 +44,13 @@ Interval = Tuple[int, int]
 
 
 class Integration:
-    def __init__(self):
+    def __init__(self, catalog: str):
         if opexists(self.state_file):
             self.open()
         else:
             self._state = IntegrationState.start
+        self.catalog = catalog
+        self.files_with_aggregated_asteroids = []
 
     def save(self, state: IntegrationState):
         with open(self.state_file, 'w') as fd:
@@ -47,6 +62,10 @@ class Integration:
             self._state = IntegrationState(int(fd.read(1)))
 
     @property
+    def folder(self):
+        return opjoin('/tmp', 'resonances')
+
+    @property
     def state_file(self) -> str:
         return opjoin('/tmp', 'integration_state.txt')
 
@@ -54,12 +73,15 @@ class Integration:
     def state(self) -> IntegrationState:
         return self._state
 
+    @property
+    def aei_path(self):
+        return opjoin('/tmp', 'aei')
+
 
 class ACommand(object):
-    def __init__(self, integration: Integration, catalog: str):
-        from resonances.catalog import asteroid_list_gen
+    def __init__(self, integration: Integration):
         self._integration = integration
-        self._catalog = catalog
+        self._catalog = integration.catalog
         self._asteroid_list_gen = asteroid_list_gen(STEP, self._catalog)
 
     @abstractmethod
@@ -68,66 +90,98 @@ class ACommand(object):
 
 
 class CalcCommand(ACommand):
-    def __init__(self, integration: Integration, catalog: str,
-                 from_day: float, to_day: float):
-        super(CalcCommand, self).__init__(integration, catalog)
+    def __init__(self, integration: Integration, from_day: float, to_day: float):
+        super(CalcCommand, self).__init__(integration)
         self._from_day = from_day
         self._to_day = to_day
         self._state = IntegrationState.calc
 
     def exec(self):
         if self._integration.state == IntegrationState.start:
-            _calc(self._asteroid_list_gen, self._from_day, self._to_day, self.aei_path)
+            calc(self._asteroid_list_gen, self._from_day, self._to_day, self._integration.aei_path)
             self._integration.save(self._state)
-
-    @property
-    def aei_path(self):
-        return opjoin('/tmp', 'aei')
 
 
 class LoadCommand(ACommand):
-    def __init__(self, integration: Integration, catalog: str,
-                 planets: Tuple[str], axis_swing: float, gen: bool):
-        super(LoadCommand, self).__init__(integration, catalog)
-        self._builder = PossibleResonanceBuilder(planets, axis_swing, catalog)
+    def __init__(self, integration: Integration, planets: Tuple[str], axis_swing: float, gen: bool):
+        super(LoadCommand, self).__init__(integration)
+        self._builder = PossibleResonanceBuilder(planets, axis_swing, self._catalog)
         self._gen = gen
         self._state = IntegrationState.load
 
     def exec(self):
+        """
+        Loads resonances and makes list of files contains aggregated the
+        resonances' id by asteroid.
+        """
         if self._integration.state == IntegrationState.calc:
-            for asteroid_buffer in self._asteroid_list_gen:
-                _load_resonances(RESONANCE_FILEPATH, asteroid_buffer, self._builder, self._gen)
+            for i, asteroid_buffer in enumerate(self._asteroid_list_gen):
+                aggregated_resonances = load_resonances(
+                    RESONANCE_FILEPATH, asteroid_buffer, self._builder, self._gen)
+                folder = self._integration.folder
+                if opexists(folder):
+                    rmtree(folder)
+                mkdir(folder)
+                filename = opjoin(folder, 'agres-%i.json' % i)
+                with open(filename, 'w') as fd:
+                    json.dump(aggregated_resonances, fd)
+                self._integration.files_with_aggregated_asteroids.append(filename)
             self._integration.save(self._state)
 
 
 class FindCommand(ACommand):
-    def __init__(self, integration: Integration, catalog: str,
-                 planets: Tuple[str], aei_path: str):
-        super(FindCommand, self).__init__(integration, catalog)
-        self._aei_path = aei_path
+    def __init__(self, integration: Integration, planets: Tuple[str]):
+        super(FindCommand, self).__init__(integration)
+        self._aei_path = self._integration.aei_path
         self._finder = LibrationFinder(planets, False, True, False, False, PhaseStorage.file, True)
         self._state = IntegrationState.find
+        self._planets = planets
+
+    def _resonace_aei_gen(self, resonances: Iterable[ResonanceMixin]) -> Iterable[ResonanceAeiData]:
+        asteroid_name = None
+        aei_data = None
+        for resonance in resonances:
+            print(resonance.id)
+            if asteroid_name != resonance.small_body.name:
+                asteroid_name = resonance.small_body.name
+                with open(opjoin(self._aei_path, '%s.aei' % asteroid_name)) as fd:
+                    aei_data = [x for x in fd]
+            assert aei_data
+            yield resonance, aei_data
 
     def exec(self):
+        from os import listdir
+        if not self._integration.files_with_aggregated_asteroids:
+            folder = self._integration.folder
+            self._integration.files_with_aggregated_asteroids =\
+                [opjoin(folder, x) for x in listdir(folder)]
+
+        if not self._integration.files_with_aggregated_asteroids:
+            logging.error('We have no resonances')
+            exit(-1)
+
         if self._integration.state == IntegrationState.load:
-            for asteroid_buffer in self._asteroid_list_gen:
-            #for i in range(self._start, self._stop, STEP):
-                #end = i + STEP if i + STEP < self._stop else self._stop
-                self._finder.find_by_resonances(i, end, tuple(self._aei_path))
+            for filename in self._integration.files_with_aggregated_asteroids:
+                with open(filename) as fd:
+                    aggregated_resonances_id = json.load(fd)  # type: Dict[str, List[int]]
+                    resonaces_id = reduce(add, aggregated_resonances_id.values())
+                    resonance_gen = get_resonances_with_id(resonaces_id, self._planets)
+                    gen = self._resonace_aei_gen(resonance_gen)
+
+                    self._finder.find_by_resonances(gen, (self._aei_path,))
             self._integration.save(self._state)
 
 
 def integrate(from_day: float, to_day: float, planets: Tuple[str],
               catalog: str, axis_swing: float, gen: bool = False):
-    integration = Integration()
-    calcCmd = CalcCommand(integration, catalog, from_day, to_day)
-    commands = [
-        calcCmd,
-        LoadCommand(integration, catalog, planets, axis_swing, gen),
-        FindCommand(integration, catalog, planets, calcCmd.aei_path),
+    integration = Integration(catalog)
+    cmds = [
+        CalcCommand(integration, from_day, to_day),
+        LoadCommand(integration, planets, axis_swing, gen),
+        FindCommand(integration, planets)
     ]
 
-    for cmd in commands:
+    for cmd in cmds:
         cmd.exec()
 
     remove(integration.state_file)

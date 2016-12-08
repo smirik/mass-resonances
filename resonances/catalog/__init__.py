@@ -2,7 +2,7 @@ import logging
 from typing import List, Tuple, Iterable
 from typing import Generator
 
-from resonances.entities import ResonanceMixin, build_resonance, BodyNumberEnum
+from resonances.entities import build_resonance, BodyNumberEnum
 from resonances.entities import get_resonance_factory
 from resonances.settings import Config
 from os.path import join as opjoin

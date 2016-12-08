@@ -3,6 +3,8 @@ from abc import abstractmethod
 from enum import Enum, unique
 from typing import Dict, Tuple
 from typing import List
+from functools import reduce
+from operator import add
 
 from resonances.entities.dbutills import engine, session
 from sqlalchemy import Table
@@ -83,10 +85,10 @@ class ResonanceFactory:
             resonance_insert = _InsertFromSelect(self._resonance_table, sel,
                                                  self._resonance_cls.__table__)
             try:
-                resonance_id = conn.execute(resonance_insert).first()
+                resonance_id = conn.execute(resonance_insert).scalar()
             except IntegrityError:
                 fix_id_sequence(self._resonance_cls.__table__, conn)
-                resonance_id = conn.execute(resonance_insert).first()
+                resonance_id = conn.execute(resonance_insert).scalar()
             return resonance_id
 
     @property
@@ -278,11 +280,8 @@ def _get_conflict_action(for_table: Table, need_id: bool = False) -> str:
     :param for_table: table which will take new record.
     :param need_id: indicates that query must return id.
     """
-    from functools import reduce
-    from operator import add
     unique_contraints = [x for x in for_table.constraints if isinstance(x, UniqueConstraint)]
     column_names = reduce(add, [x.columns.keys() for x in unique_contraints])
-    #column_names = [x.columns.keys() for x in unique_contraints]
 
     if need_id and column_names:
         action = 'DO UPDATE SET {0}=EXCLUDED.{0} RETURNING id;'.format(column_names[0])
