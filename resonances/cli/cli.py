@@ -119,6 +119,7 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
     from resonances.datamining import PhaseStorage
     from resonances.commands import calc as _calc
     from resonances.commands import LibrationFinder
+    from resonances.catalog import asteroid_list_gen
 
     finder = LibrationFinder(planets, recursive, clear, clear_s3, is_current,
                              PhaseStorage(PHASE_STORAGE.index(phase_storage)), verbose)
@@ -126,7 +127,8 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
         finder.find_by_file(aei_paths)
 
     if recalc:
-        _calc(start, stop, STEP, from_day, to_day)
+        asteroids = asteroid_list_gen(STEP, start=start, stop=stop)
+        _calc(asteroids, from_day, to_day)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
         if reload_resonances:

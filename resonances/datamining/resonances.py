@@ -190,8 +190,6 @@ class AEIDataGetter:
         return self._aei_data
 
 
-
-
 def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librations: bool,
                               planets: Tuple[str, ...], aei_getter: AEIDataGetter,
                               integers: List[str] = None) \
@@ -199,7 +197,7 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librati
     """Find resonances from /axis/resonances by asteroid axis. Currently
     described by 7 items list of floats. 6 is integers satisfying
     D'Alembert rule. First 3 for longitutes, and second 3 for longitutes
-    perihilion. Seventh value is asteroid axis.
+    perihelion. Seventh value is asteroid axis.
 
     :param integers:
     :param aei_getter:
@@ -216,3 +214,4 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librati
             aei_data = aei_getter.get_aei_data(resonance.asteroid_number)
             assert len(aei_data) > 0
             yield resonance, aei_data
+

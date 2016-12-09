@@ -52,7 +52,7 @@ class LibrationFinder:
               orbital_element_sets: List[OrbitalElementSetCollection]):
         """
         :param resonances_data:
-        :param length:
+        :param length: used only for progress bar.
         :param orbital_element_sets:
         """
         classifier = LibrationClassifier(self._is_current, BodyNumberEnum(len(self._planets) + 1))

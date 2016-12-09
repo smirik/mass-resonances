@@ -36,7 +36,6 @@ class LibrationClassifier:
         """
         self._resonance = resonance
         self._resonance_str = str(resonance)
-        #self._asteroid_num = self._resonance.asteroid_number
         self._asteroid_name = self._resonance.small_body.name
         self._libration = self._resonance.libration
 
