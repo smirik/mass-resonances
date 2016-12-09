@@ -102,5 +102,3 @@ def add_integer_filter(query: Query, ints: List[str], body_tables: List[AliasedC
 def fix_id_sequence(for_table: Table, by_conn: Connection):
     by_conn.execute(('SELECT setval(\'%s_id_seq\', ' % for_table.name) +
                     'COALESCE((SELECT MAX(id)+1 FROM %s), 1), false);' % for_table.name)
-
-

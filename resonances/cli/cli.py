@@ -303,4 +303,3 @@ def rtable(planets, file: str, axis_max: float, order_max: int):
     with open(file, 'w') if file else sys.stdout as out:
         for line in data:
             print(line, file=out)
-

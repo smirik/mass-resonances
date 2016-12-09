@@ -120,7 +120,8 @@ class _LoadCommand(_ACommand):
     Command generates resonance table, loads it to database and saves
     resonances id to /tmp/resonances/agres-<asteroid-buffer-number>.json.
     """
-    def __init__(self, integration: _Integration, planets: Tuple[str], axis_swing: float, gen: bool):
+    def __init__(self, integration: _Integration, planets: Tuple[str],
+                 axis_swing: float, gen: bool):
         super(_LoadCommand, self).__init__(integration)
         self._builder = PossibleResonanceBuilder(planets, axis_swing, self._catalog)
         self._gen = gen
@@ -183,7 +184,7 @@ class _FindCommand(_ACommand):
             Integration instance if it is neccessary.
             2) Stops the application if files not found.
             3) Gets resonances from database and filter them by integer expression.
-            4) Links to mined resonances' asteroid predicted orbital elements from aei data. 
+            4) Links to mined resonances' asteroid predicted orbital elements from aei data.
             5) Finds librations in resonances.
         """
         if not self._integration.files_with_aggregated_asteroids:
@@ -232,4 +233,3 @@ def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
         cmd.exec()
 
     remove(integration.state_file)
-

@@ -152,4 +152,3 @@ class FilepathBuilder:
 
         if self._is_clear_downloaded and opexists(S3_FILES_DIR):
             shutil.rmtree(S3_FILES_DIR)
-

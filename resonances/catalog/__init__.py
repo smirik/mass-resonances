@@ -14,7 +14,7 @@ AXIS_COLUMNS = {BodyNumberEnum.two: 4, BodyNumberEnum.three: 6}
 ASTDYS = opjoin(PROJECT_DIR, CONFIG['catalog']['file'])
 
 
-def find_by_number(number: int, catalog_path:str = ASTDYS) -> List[float]:
+def find_by_number(number: int, catalog_path: str = ASTDYS) -> List[float]:
     """Find asteroid parameters by number in catalog.
 
     :param int number: num for search.
@@ -62,7 +62,7 @@ def _parse_asteroid_data(line: str) -> AsteroidData:
     return asteroid_name, arr
 
 
-def asteroid_list_gen(step: int, catalog_path:str = ASTDYS, start = None, stop = None)\
+def asteroid_list_gen(step: int, catalog_path: str = ASTDYS, start: int = None, stop: int = None)\
         -> Generator[List[AsteroidData], None, None]:
     with open(catalog_path, 'r') as fd:
         id_buffer = []
@@ -86,7 +86,7 @@ def asteroid_list_gen(step: int, catalog_path:str = ASTDYS, start = None, stop =
 
 
 class PossibleResonanceBuilder:
-    def __init__(self, planets: Tuple[str], axis_swing: float = 0.01, catalog_path = ASTDYS):
+    def __init__(self, planets: Tuple[str], axis_swing: float = 0.01, catalog_path: str = ASTDYS):
         self.planets = planets
         self.axis_swing = axis_swing
         self.catalog_path = catalog_path

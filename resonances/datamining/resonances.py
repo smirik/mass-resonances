@@ -225,4 +225,3 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librati
             aei_data = aei_getter.get_aei_data(resonance.asteroid_number)
             assert len(aei_data) > 0
             yield resonance, aei_data
-

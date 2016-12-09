@@ -63,7 +63,7 @@ class _ResonanceGeneratorBuilder:
                 if i < j or gcd(i, j) > 1:
                     continue
                 diff = i - j
-                resonance = [i,-j,0,-diff]
+                resonance = [i, -j, 0, -diff]
                 yield resonance
 
 

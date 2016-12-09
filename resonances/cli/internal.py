@@ -160,4 +160,3 @@ def validate_planets(ctx: click.Context, option: click.Option, value: str):
     if len(value) == len(ctx.params['integers']) - 1:
         return value
     raise click.BadParameter('Incorrect number of planets for pointed integers.')
-

@@ -135,5 +135,3 @@ class LibrationMixin:
     def as_pure_apocentric(self) -> str:
         return '%s;%s;%i' % (self.asteroid_number, str(self.resonance),
                              self.APOCENTRIC_PURE_ID)
-
-
