@@ -15,6 +15,7 @@ services:
   - postgres
 
 install:
+  - ln -s `which gfortran-4.8` $HOME/gfortran
   - ./gnuplot-install.sh
   - git submodule update --init
   - cd ./mercury
@@ -31,6 +32,7 @@ env:
     - TEST_DBHOST=localhost
     - TEST_DBUSER=postgres
     - TEST_DB=resonances_unittest
+    - PATH=$PATH:$HOME
     - PATH=$PATH:`pwd`/gnuplot-5.0.5/bin
 
 
