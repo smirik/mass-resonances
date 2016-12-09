@@ -31,9 +31,11 @@ env:
     - TEST_DBHOST=localhost
     - TEST_DBUSER=postgres
     - TEST_DB=resonances_unittest
+    - PATH=$PATH:`pwd`/gnuplot-5.0.5/bin
 
 
 before_script:
+  - gnuplot --help
   - mkdir ./catalog && cd ./catalog
   - wget http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat
   - cd -
