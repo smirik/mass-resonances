@@ -49,8 +49,8 @@ class _ResonanceGeneratorBuilder:
 
     def _3b_resonance_gen(self):
         for i in range(1, 9):
-            for j in range(-self.order_max, self.order_max+1):
-                for k in range(-self.order_max, self.order_max+1):
+            for j in range(-self.order_max, self.order_max + 1):
+                for k in range(-self.order_max, self.order_max + 1):
                     diff = int(0.0 - i - j - k)
                     if i == 0 or j == 0 or k == 0 or abs(diff) > self.order_max:
                         continue
@@ -78,7 +78,7 @@ def _build_line_data(resonance: List[int], axis: float) -> str:
 def generate_resonance_table(body_names: List[str], axis_max: float = None,
                              order_max: int = None) -> List[str]:
     """
-    Generates resonance table
+    Generates resonance table.
     """
     data = []
 

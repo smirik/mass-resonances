@@ -155,12 +155,13 @@ class _FindCommand(_ACommand):
         * resonances id number for mining the resonances from a database and search
         librations in him for asteroids represented in aei files.
     """
-    def __init__(self, integration: _Integration, planets: Tuple[str]):
+    def __init__(self, integration: _Integration, planets: Tuple[str], integers: List[str]):
         super(_FindCommand, self).__init__(integration)
         self._aei_path = self._integration.aei_path
         self._finder = LibrationFinder(planets, False, True, False, False, PhaseStorage.file, True)
         self._state = _IntegrationState.find
         self._planets = planets
+        self._integers = integers
 
     def _resonace_aei_gen(self, resonances: Iterable[ResonanceMixin]) -> Iterable[ResonanceAeiData]:
         """Resolves aei data and resonance by resonance's asteroid."""
@@ -181,7 +182,7 @@ class _FindCommand(_ACommand):
             1) Check /tmp/resonances/agres-*.json files and set them to
             Integration instance if it is neccessary.
             2) Stops the application if files not found.
-            3) Gets resonances from database.
+            3) Gets resonances from database and filter them by integer expression.
             4) Links to mined resonances' asteroid predicted orbital elements from aei data. 
             5) Finds librations in resonances.
         """
@@ -199,15 +200,16 @@ class _FindCommand(_ACommand):
                 with open(filename) as fd:
                     aggregated_resonances_id = json.load(fd)  # type: Dict[str, List[int]]
                     resonaces_id = reduce(add, aggregated_resonances_id.values())
-                    resonance_gen = get_resonances_with_id(resonaces_id, self._planets)
+                    resonance_gen = get_resonances_with_id(
+                        resonaces_id, self._planets, self._integers)
                     gen = self._resonace_aei_gen(resonance_gen)
 
                     self._finder.find_by_resonances(gen, (self._aei_path,))
             self._integration.save(self._state)
 
 
-def integrate(from_day: float, to_day: float, planets: Tuple[str],
-              catalog: str, axis_swing: float, gen: bool = False):
+def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
+              axis_swing: float, gen: bool, integers: List[str]):
     """
     Make complete cycle from calculation aei files to search librations. State
     of the cycle is saved after every step to file /tmp/integration_state.txt.
@@ -223,10 +225,11 @@ def integrate(from_day: float, to_day: float, planets: Tuple[str],
     cmds = [
         _CalcCommand(integration, from_day, to_day),
         _LoadCommand(integration, planets, axis_swing, gen),
-        _FindCommand(integration, planets)
+        _FindCommand(integration, planets, integers)
     ]
 
     for cmd in cmds:
         cmd.exec()
 
     remove(integration.state_file)
+

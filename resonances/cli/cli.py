@@ -144,10 +144,12 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
                    'catalog and resonance table.')
 @click.option('--catalog', type=click.Path(resolve_path=True, exists=True))
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
-def integrate(from_day: float, to_day: float, planets: Tuple[str],
-              catalog: str, axis_swing: float, gen: bool = False):
+@click.option('--integers', '-i', type=str, callback=validate_integer_expression, default=None,
+              help='Examples: \'>1 1\', \'>=3 <5\', \'1 -1 *\'')
+def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
+              axis_swing: float, integers: List[str], gen: bool = False):
     from resonances.commands.integrate import integrate as _integrate
-    _integrate(from_day, to_day, planets, catalog, axis_swing, gen)
+    _integrate(from_day, to_day, planets, catalog, axis_swing, gen, integers)
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'

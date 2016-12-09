@@ -102,16 +102,13 @@ def get_resonance_query(for_bodies: BodyNumberEnum) -> Query:
     return query
 
 
-def _modify_resonance_query(query: Query, builder, only_librations, integers) -> Query:
+def _filter_by_integers(query: Query, builder, integers) -> Query:
     if integers:
         tables = [PLANET_TABLES['first_body']]
         if builder.for_bodies == BodyNumberEnum.three:
             tables.append(PLANET_TABLES['second_body'])
         tables.append(builder.asteroid_alias)
         query = add_integer_filter(query, integers, tables)
-
-    if only_librations:
-        query = query.join('libration')
 
     return query
 
@@ -140,32 +137,46 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
     """
     body_count = BodyNumberEnum(len(planets) + 1)
     builder = GetQueryBuilder(body_count, True)
-    resonances = builder.get_resonances()
+    query = builder.get_resonances()
     t1 = builder.asteroid_alias
     for i, key in enumerate(FOREIGNS):
         if i >= (body_count.value - 1):
             break
-        resonances = resonances.filter(PLANET_TABLES[key].name == planets[i])
-    resonances = resonances.filter(t1.number >= start, t1.number < stop)\
+        query = query.filter(PLANET_TABLES[key].name == planets[i])
+    query = query.filter(t1.number >= start, t1.number < stop)\
         .options(joinedload('libration')).order_by(builder.asteroid_alias.number)
 
-    resonances = _modify_resonance_query(resonances, builder, only_librations, integers)
+    query = _filter_by_integers(query, builder, integers)
+    if only_librations:
+        query = query.join('libration')
+
     msg = 'We have no resonances, try command load-resonances --start=%i --stop=%i' % (start, stop)
-    yield from _iterate_resonances(resonances, msg)
+    yield from _iterate_resonances(query, msg)
 
 
-def get_resonances_with_id(id_list, planets: Tuple[str, ...]) -> Iterable[ResonanceMixin]:
+def get_resonances_with_id(id_list, planets: Tuple[str, ...], integers: List[str])\
+        -> Iterable[ResonanceMixin]:
+    """get_resonances_with_id returns generator of resonances mined from
+    database by pointed id numbers and integers satisfying D'Alambert rule.
+
+    :param id_list:
+    :param planets:
+    :param integers:
+    """
     body_count = BodyNumberEnum(len(planets) + 1)
     builder = GetQueryBuilder(body_count, True)
-    resonances = builder.get_resonances()
+    query = builder.get_resonances()
     for i, key in enumerate(FOREIGNS):
         if i >= (body_count.value - 1):
             break
-        resonances = resonances.filter(PLANET_TABLES[key].name == planets[i])
-    resonances = resonances.filter(builder.resonance_cls.id.in_(id_list))\
+        query = query.filter(PLANET_TABLES[key].name == planets[i])
+    query = query.filter(builder.resonance_cls.id.in_(id_list))\
         .order_by(builder.asteroid_alias.name)
+
+    if integers:
+        query = _filter_by_integers(query, builder, integers)
     msg = 'We have no resonances'
-    yield from _iterate_resonances(resonances, msg)
+    yield from _iterate_resonances(query, msg)
 
 
 class AEIDataGetter:
