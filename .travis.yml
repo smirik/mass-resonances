@@ -1,19 +1,22 @@
 language: python
 python: 3.5
+dist: trusty
 sudo: false
 addons:
-  postgresql: "9.4"
+  postgresql: "9.5"
   apt:
     packages:
-      - gfortran
-      - gnuplot
+      - gfortran-4.8
       - wget
-      - redis
+      - redis-server
 
 services:
   - redis
+  - postgres
 
 install:
+  - ln -s `which gfortran-4.8` $HOME/gfortran
+  - ./gnuplot-install.sh
   - git submodule update --init
   - cd ./mercury
   - ./compile.sh
@@ -29,6 +32,8 @@ env:
     - TEST_DBHOST=localhost
     - TEST_DBUSER=postgres
     - TEST_DB=resonances_unittest
+    - PATH=$PATH:$HOME
+    - PATH=$PATH:`pwd`/gnuplot-5.0.5/bin
 
 
 before_script:
