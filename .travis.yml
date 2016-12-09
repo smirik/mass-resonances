@@ -37,10 +37,6 @@ env:
 
 
 before_script:
-  - gnuplot --help
-  - ls /home/travis/build/4xxi/resonances/mercury/
-  - ls /home/travis/build/4xxi/resonances/mercury/mercury6
-  - ls /home/travis/build/4xxi/resonances/resonances/../mercury/mercury6
   - mkdir ./catalog && cd ./catalog
   - wget http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat
   - cd -
