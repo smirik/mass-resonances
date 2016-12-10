@@ -1,6 +1,7 @@
 import logging
 import math
 from typing import List
+from typing import Tuple
 
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
@@ -11,6 +12,50 @@ from sqlalchemy import Table
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.util import AliasedClass
+from itertools import product
+from itertools import combinations
+from functools import reduce
+from operator import add
+
+
+PLANETS = ['EARTHMOO', 'JUPITER', 'MARS', 'NEPTUNE',
+           'SATURN', 'URANUS', 'VENUS']
+
+ANY_PLANET = 'all'
+
+def planets_gen(planets: Tuple[str]):
+    """
+    Method generates combinations of planets. If pointed word "all" instead
+    planet name then method will make combination without repeatitions.
+    """
+    if any([x == ANY_PLANET for x in planets]):
+        variations = [None for x in planets]
+
+        for i, planet_expr in enumerate(planets):
+            if planet_expr != ANY_PLANET:
+                variations[i] = [planet_expr]
+
+        explicit_defined_planets = [x for x in variations if x]
+        if explicit_defined_planets:
+            possible_planets = [x for x in PLANETS if x not in reduce(add, explicit_defined_planets)]
+        else:
+            possible_planets = PLANETS
+
+        variation_vector_count = sum([1 for x in variations if x is None])
+        planet_combinations = [x for x in combinations(possible_planets, variation_vector_count)]
+
+        j = 0
+        for i, item in enumerate(variations):
+            if item is None:
+                variations[i] = [x[j] for x in planet_combinations]
+                j += 1
+            else:
+                variations[i] = item * len(planet_combinations)
+
+        for i in range(len(variations[0])):
+            yield tuple(variations[x][i] for x in range(len(variations)))
+    else:
+        yield planets
 
 
 FAIL = '\033[91m'

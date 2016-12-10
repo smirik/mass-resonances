@@ -25,7 +25,6 @@ def load_resonances(from_source: str, asteroids: List[AsteroidData],
     :return: dictionary, where keys are number of asteroids and values are
     lists of id numbers of resonances.
     """
-
     if gen:
         source = gentable([x for x in builder.planets])
     else:

@@ -14,11 +14,10 @@ from .internal import time_interval
 from .internal import build_logging, validate_ints, validate_planets, validate_integer_expression, \
     validate_or_set_body_count
 from .internal import report_interval_options
+from resonances.shortcuts import PLANETS
 
 LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 PHASE_STORAGE = ['REDIS', 'DB', 'FILE']
-PLANETS = ['EARTHMOO', 'JUPITER', 'MARS', 'MERCURY', 'NEPTUNE', 'PLUTO', 'SATURN', 'URANUS',
-           'VENUS']
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -143,7 +142,7 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
               help='Axis swing determines swing between semi major axis of asteroid from astdys '
                    'catalog and resonance table.')
 @click.option('--catalog', type=click.Path(resolve_path=True, exists=True))
-@click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
+@click.argument('planets', type=click.Choice(PLANETS + ['all']), nargs=-1)
 @click.option('--integers', '-i', type=str, callback=validate_integer_expression, default=None,
               help='Examples: \'>1 1\', \'>=3 <5\', \'1 -1 *\'')
 def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,

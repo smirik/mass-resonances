@@ -48,6 +48,10 @@ class LibrationFinder:
         table = Libration.__table__ if len(planets) == 2 else TwoBodyLibration.__table__
         fix_id_sequence(table, conn)
 
+    @property
+    def planets(self):
+        return self._planets
+
     def _find(self, resonances_data: Iterable[ResonanceAeiData], length: int,
               orbital_element_sets: List[OrbitalElementSetCollection]):
         """

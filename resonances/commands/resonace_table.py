@@ -21,7 +21,7 @@ _AXIS_MIN = 1.5
 
 _PLANET_NUMBER = {
     'VENUS': 2,
-    'EARTH': 3,
+    'EARTHMOO': 3,
     'MARS': 4,
     'JUPITER': 5,
     'SATURN': 6,
