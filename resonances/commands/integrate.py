@@ -124,7 +124,8 @@ class _CalcCommand(_ACommand):
 
     def exec(self):
         if self._integration.state == _IntegrationState.start:
-            calc(self.get_asteroid_list_gen(), self._from_day, self._to_day, self._integration.aei_path)
+            calc(self.get_asteroid_list_gen(), self._from_day,
+                 self._to_day, self._integration.aei_path)
             self._integration.save(self._state)
 
 
@@ -185,7 +186,8 @@ class _FindCommand(_ACommand):
         self._state = _IntegrationState.find
         self._integers = integers
 
-    def _resonance_aei_gen(self, resonances: Iterable[ResonanceMixin]) -> Iterable[ResonanceAeiData]:
+    def _resonance_aei_gen(self, resonances: Iterable[ResonanceMixin])\
+            -> Iterable[ResonanceAeiData]:
         """Resolves aei data and resonance by resonance's asteroid."""
         asteroid_name = None
         aei_data = None
@@ -225,7 +227,8 @@ class _FindCommand(_ACommand):
                         aggregated_resonances_id = json.load(fd)  # type: Dict[str, List[int]]
                         resonances_id = reduce(add, aggregated_resonances_id.values())
 
-                        resonance_gen = get_resonances_with_id(resonances_id, planets, self._integers)
+                        resonance_gen = get_resonances_with_id(
+                            resonances_id, planets, self._integers)
                         gen = self._resonance_aei_gen(resonance_gen)
                         finder.find_by_resonances(gen, (self._aei_path,))
             self._integration.save(self._state)

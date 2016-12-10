@@ -2,6 +2,7 @@ import logging
 import math
 from typing import List
 from typing import Tuple
+from typing import Iterable
 
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
@@ -23,7 +24,8 @@ PLANETS = ['EARTHMOO', 'JUPITER', 'MARS', 'NEPTUNE',
 
 ANY_PLANET = 'all'
 
-def planets_gen(planets: Tuple[str]):
+
+def planets_gen(planets: Tuple[str]) -> Iterable[Tuple[str]]:
     """
     Method generates combinations of planets. If pointed word "all" instead
     planet name then method will make combination without repeatitions.
@@ -35,9 +37,9 @@ def planets_gen(planets: Tuple[str]):
             if planet_expr != ANY_PLANET:
                 variations[i] = [planet_expr]
 
-        explicit_defined_planets = [x for x in variations if x]
+        explicit_defined_planets = reduce(add, [x for x in variations if x is not None])
         if explicit_defined_planets:
-            possible_planets = [x for x in PLANETS if x not in reduce(add, explicit_defined_planets)]
+            possible_planets = [x for x in PLANETS if x not in explicit_defined_planets]
         else:
             possible_planets = PLANETS
 
