@@ -8,7 +8,6 @@ from resonances.shortcuts import planets_gen
 from os.path import join as opjoin
 from os.path import exists as opexists
 from os import remove
-from os import mkdir
 from os import makedirs
 from resonances.datamining import ResonanceAeiData
 from typing import Iterable
@@ -150,11 +149,13 @@ class _LoadCommand(_ACommand):
         """
         if self._integration.state == _IntegrationState.calc:
             for builder in self._builders:
+                planets = builder.planets
+                logging.debug('Load resonances for %s' % ', '.join(planets))
                 for i, asteroid_buffer in enumerate(self.get_asteroid_list_gen()):
                     aggregated_resonances = load_resonances(
                         RESONANCE_FILEPATH, asteroid_buffer, builder, self._gen)
 
-                    folder = self._integration.get_agres_folder(builder.planets)
+                    folder = self._integration.get_agres_folder(planets)
                     if opexists(folder):
                         rmtree(folder)
                     makedirs(folder)
@@ -209,18 +210,10 @@ class _FindCommand(_ACommand):
             4) Links to mined resonances' asteroid predicted orbital elements from aei data.
             5) Finds librations in resonances.
         """
-        if not self._integration.files_with_aggregated_asteroids:
-            agres_folder = self._integration.agres_folder
-            self._integration.files_with_aggregated_asteroids =\
-                [opjoin(agres_folder, x) for x in listdir(agres_folder)]
-
-        if not self._integration.files_with_aggregated_asteroids:
-            logging.error('We have no resonances')
-            exit(-1)
-
         if self._integration.state == _IntegrationState.load:
             for finder in self._finders:
                 planets = finder.planets
+                logging.debug('Find librations for %s' % ', '.join(planets))
                 folder = self._integration.get_agres_folder(planets)
                 for filename in listdir(folder):
                     with open(opjoin(folder, filename)) as fd:
