@@ -15,7 +15,11 @@ pylint -E `git ls | grep py$ | grep -v --regexp="\(alembic\|fabfile\.py\|setup\.
     --ignored-modules=resonances.entities.resonance.twobodyresonance,resonances.entities.resonance.threebodyresonance,resonances.entities.resonance.resonancemixin
 PYLINTVAL=$?
 
-if [ $RETVAL -eq 0 -o $PYLINTVAL -ne 0 ]
+echo "PEP8 check..."
+pep8 `git ls-files | grep -e 'py$' | grep -e '^resonances'`
+PEP8VAL=$?
+
+if [ $RETVAL -eq 0 -o $PYLINTVAL -ne 0 -o $PEP8VAL -ne 0 ]
 then
     exit 1
 else

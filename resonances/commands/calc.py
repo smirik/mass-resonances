@@ -1,8 +1,10 @@
+from typing import Iterable
 import logging
 import os
 import tarfile
 from glob import iglob
 from os.path import join as opjoin
+import shutil
 
 from boto.s3.key import Key
 from resonances.integrator import SmallBodiesFileBuilder, set_time_interval
@@ -13,8 +15,8 @@ from resonances.integrator import simple_clean
 from resonances.shortcuts import create_aws_s3_key
 from resonances.shortcuts import is_tar as _is_tar
 from resonances.shortcuts import is_tar as _is_s3
+from resonances.catalog import AsteroidData
 
-from resonances.catalog import find_by_number
 from resonances.settings import Config
 
 CONFIG = Config.get_params()
@@ -43,7 +45,13 @@ def _execute_mercury():
         raise e
 
 
-def calc(start: int, stop: int, step: int, from_day: float, to_day: float,
+def number_gen(start: int, stop: int, step: int):
+    for i in range(start, stop, step):
+        end = i + step if i + step < stop else stop
+        yield i, end
+
+
+def calc(buffered_asteroid_names: Iterable[AsteroidData], from_day: float, to_day: float,
          output_path: str = INTEGRATOR_PATH):
     """
     :param from_day:
@@ -63,9 +71,8 @@ def calc(start: int, stop: int, step: int, from_day: float, to_day: float,
                                           CONFIG['s3']['secret_key'],
                                           CONFIG['s3']['bucket'], output_path)
 
-    for i in range(start, stop, step):
-        end = i + step if i + step < stop else stop
-        _integrate(i, end)
+    for asteroid_names in buffered_asteroid_names:
+        _integrate(asteroid_names)
 
     _save_aei_files(output_path, s3_bucket_key)
 
@@ -89,10 +96,10 @@ def _save_aei_files(output_path: str, s3_bucket_key: Key):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         for path in iglob(os.path.join(INTEGRATOR_PATH, '*.aei')):
-            os.rename(path, os.path.join(output_path, os.path.basename(path)))
+            shutil.move(path, os.path.join(output_path, os.path.basename(path)))
 
 
-def _integrate(start: int, stop: int):
+def _integrate(asteroid_data: AsteroidData):
     """Gets from astdys catalog parameters of orbital elements. Represents them
     to small.in file and makes symlink of this file in directory of application
     mercury6.
@@ -104,11 +111,11 @@ def _integrate(start: int, stop: int):
     symlink = os.path.join(INTEGRATOR_PATH, SMALL_BODIES_FILENAME)
     small_bodies_storage = SmallBodiesFileBuilder(filepath, symlink)
     small_bodies_storage.create_small_body_file()
-    logging.info('Create initial conditions for asteroids from %i to %i', start, stop)
+    logging.info('Create initial conditions for asteroids from %s to %s',
+                 asteroid_data[0][0], asteroid_data[-1][0])
 
-    for i in range(start, stop):
-        arr = find_by_number(i)
-        small_bodies_storage.add_body(i, arr)
+    for name, data in asteroid_data:
+        small_bodies_storage.add_body(name, data)
     small_bodies_storage.flush()
 
     logging.info('Integrating orbits...')

@@ -24,7 +24,7 @@ class LibrationClassifier:
         self._libration_director = LibrationDirector(body_count)
         self._resonance = None  # type: ResonanceMixin
         self._resonance_str = None  # type: str
-        self._asteroid_num = None  # type: int
+        self._asteroid_name = None  # type: str
         self._libration = None  # type: Libration
 
     def set_resonance(self, resonance: ResonanceMixin):
@@ -36,7 +36,7 @@ class LibrationClassifier:
         """
         self._resonance = resonance
         self._resonance_str = str(resonance)
-        self._asteroid_num = self._resonance.asteroid_number
+        self._asteroid_name = self._resonance.small_body.name
         self._libration = self._resonance.libration
 
     def classify(self, orbital_elem_set: ResonanceOrbitalElementSetFacade,
@@ -56,11 +56,11 @@ class LibrationClassifier:
             return True
 
         try:
-            if _save_as_transient(self._libration, self._resonance, self._asteroid_num,
+            if _save_as_transient(self._libration, self._resonance, self._asteroid_name,
                                   self._resonance_str):
                 return True
             elif not self._libration.is_apocentric:
-                logging.info('A%i, pure resonance %s', self._asteroid_num, self._resonance_str)
+                logging.info('%s, pure resonance %s', self._asteroid_name, self._resonance_str)
                 return True
             raise _NoTransientException()
         except _NoTransientException:
@@ -69,7 +69,7 @@ class LibrationClassifier:
                 self._libration = self._libration_director.build(builder)
 
             if self._libration.is_pure:
-                logging.info('A%i, pure apocentric resonance %s', self._asteroid_num,
+                logging.info('%s, pure apocentric resonance %s', self._asteroid_name,
                              self._resonance_str)
                 return True
             else:
@@ -77,18 +77,18 @@ class LibrationClassifier:
         return False
 
 
-def _save_as_transient(libration: LibrationMixin, resonance: ResonanceMixin, asteroid_num: int,
-                       resonance_str: str):
+def _save_as_transient(libration: LibrationMixin, resonance: ResonanceMixin,
+                       asteroid_name: str, resonance_str: str):
     if not libration.is_pure:
         if libration.is_transient:
             if libration.percentage:
-                logging.info('A%i, %s, resonance = %s', asteroid_num,
+                logging.info('%s, %s, resonance = %s', asteroid_name,
                              str(libration), str(resonance))
                 return True
             else:
                 logging.debug(
-                    'A%i, NO RESONANCE, resonance = %s, max = %f',
-                    asteroid_num, resonance_str, libration.max_diff
+                    '%s, NO RESONANCE, resonance = %s, max = %f',
+                    asteroid_name, resonance_str, libration.max_diff
                 )
                 session.expunge(libration)
                 raise _NoTransientException()

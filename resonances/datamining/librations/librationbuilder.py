@@ -3,7 +3,11 @@ from typing import Dict, List, cast
 
 from resonances.datamining import IOrbitalElementSetFacade
 
-from resonances.entities import Libration, ResonanceMixin, BodyNumberEnum, TwoBodyLibration, TwoBodyResonance
+from resonances.entities import Libration
+from resonances.entities import ResonanceMixin
+from resonances.entities import BodyNumberEnum
+from resonances.entities import TwoBodyLibration
+from resonances.entities import TwoBodyResonance
 from resonances.entities import LibrationMixin
 from resonances.entities import ThreeBodyResonance
 from resonances.settings import Config

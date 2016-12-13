@@ -113,9 +113,13 @@ def aei_path_options():
 
 
 def asteroid_time_intervals_options():
+    return _unite_decorators(
+        asteroid_interval_options(), time_interval())
+
+
+def time_interval():
     prefix = 'This parameter will be passed to param.in file for integrator Mercury6 as'
     return _unite_decorators(
-        asteroid_interval_options(),
         click.option('--from-day', default=2451000.5, help='%s start time pointed in days.' %
                                                            prefix),
         click.option('--to-day', default=2501000.5,
@@ -156,4 +160,3 @@ def validate_planets(ctx: click.Context, option: click.Option, value: str):
     if len(value) == len(ctx.params['integers']) - 1:
         return value
     raise click.BadParameter('Incorrect number of planets for pointed integers.')
-

@@ -103,7 +103,8 @@ class FilepathBuilder:
 
     def build(self, for_name: str) -> str:
         """ Builds full path by pointed filename.
-        :param for_name: pointed filename.
+
+        :param for_name: pointed filename of aei file.
         :return:
         """
         res = self._build_from_dirs(for_name)
@@ -151,4 +152,3 @@ class FilepathBuilder:
 
         if self._is_clear_downloaded and opexists(S3_FILES_DIR):
             shutil.rmtree(S3_FILES_DIR)
-

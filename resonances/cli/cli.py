@@ -10,14 +10,14 @@ from .internal import Path
 from .internal import aei_path_options
 from .internal import asteroid_interval_options
 from .internal import asteroid_time_intervals_options
+from .internal import time_interval
 from .internal import build_logging, validate_ints, validate_planets, validate_integer_expression, \
     validate_or_set_body_count
 from .internal import report_interval_options
+from resonances.shortcuts import PLANETS
 
 LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 PHASE_STORAGE = ['REDIS', 'DB', 'FILE']
-PLANETS = ['EARTHMOO', 'JUPITER', 'MARS', 'MERCURY', 'NEPTUNE', 'PLUTO', 'SATURN', 'URANUS',
-           'VENUS']
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -47,7 +47,9 @@ def cli(loglevel: str = 'DEBUG', logfile: str = None):
               help='Path where will be stored aei files. It can be tar.gz archive.')
 def calc(start: int, stop: int, from_day: float, to_day: float, aei_path: str):
     from resonances.commands import calc as _calc
-    _calc(start, stop, STEP, from_day, to_day, aei_path)
+    from resonances.catalog import asteroid_list_gen
+    asteroids = asteroid_list_gen(STEP, start=start, stop=stop)
+    _calc(asteroids, from_day, to_day, aei_path)
 
 
 FIND_HELP_PREFIX = 'If true, the application will'
@@ -74,12 +76,15 @@ def load_resonances(start: int, stop: int, file: str, axis_swing: float,
         print("%s--gen and --file conflict, point only one of them%s" % (FAIL, ENDC))
         exit(-1)
 
+    from resonances.catalog import PossibleResonanceBuilder
     from resonances.commands import load_resonances as _load_resonances
+    from resonances.catalog import asteroid_list_gen
+    _asteroid_list_gen = asteroid_list_gen(STEP, start=start, stop=stop)
+    builder = PossibleResonanceBuilder(planets, axis_swing)
     if file == RESONANCE_FILEPATH:
         logging.info('%s will be used as source of integers' % file)
-    for i in range(start, stop, STEP):
-        end = i + STEP if i + STEP < stop else stop
-        _load_resonances(file, i, end, planets, axis_swing, gen)
+    for asteroid_buffer in _asteroid_list_gen:
+        _load_resonances(file, asteroid_buffer, builder, gen)
 
 
 @cli.command(
@@ -113,6 +118,7 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
     from resonances.datamining import PhaseStorage
     from resonances.commands import calc as _calc
     from resonances.commands import LibrationFinder
+    from resonances.catalog import asteroid_list_gen
 
     finder = LibrationFinder(planets, recursive, clear, clear_s3, is_current,
                              PhaseStorage(PHASE_STORAGE.index(phase_storage)), verbose)
@@ -120,12 +126,29 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
         finder.find_by_file(aei_paths)
 
     if recalc:
-        _calc(start, stop, STEP, from_day, to_day)
+        asteroids = asteroid_list_gen(STEP, start=start, stop=stop)
+        _calc(asteroids, from_day, to_day)
     for i in range(start, stop, STEP):
         end = i + STEP if i + STEP < stop else stop
         if reload_resonances:
             _load_resonances(RESONANCE_FILEPATH, i, end, planets)
         finder.find(i, end, aei_paths)
+
+
+@cli.command(help='')
+@time_interval()
+@click.option('--gen', '-g', is_flag=True, help='If up it will generate resonance table.')
+@click.option('--axis-swing', '-a', type=float,
+              help='Axis swing determines swing between semi major axis of asteroid from astdys '
+                   'catalog and resonance table.')
+@click.option('--catalog', type=click.Path(resolve_path=True, exists=True))
+@click.argument('planets', type=click.Choice(PLANETS + ['all']), nargs=-1)
+@click.option('--integers', '-i', type=str, callback=validate_integer_expression, default=None,
+              help='Examples: \'>1 1\', \'>=3 <5\', \'1 -1 *\'')
+def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
+              axis_swing: float, integers: List[str], gen: bool = False):
+    from resonances.commands.integrate import integrate as _integrate
+    _integrate(from_day, to_day, planets, catalog, axis_swing, gen, integers)
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
@@ -279,4 +302,3 @@ def rtable(planets, file: str, axis_max: float, order_max: int):
     with open(file, 'w') if file else sys.stdout as out:
         for line in data:
             print(line, file=out)
-
