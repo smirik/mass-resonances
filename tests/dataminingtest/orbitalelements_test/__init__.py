@@ -1,8 +1,10 @@
-import pytest
-from datamining.orbitalelements import FilepathBuilder, FilepathException
-from settings import Config
-from os.path import join as opjoin
 import os
+from os.path import join as opjoin
+
+import pytest
+
+from resonances.datamining.orbitalelements import FilepathBuilder, FilepathException
+from resonances.settings import Config
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()

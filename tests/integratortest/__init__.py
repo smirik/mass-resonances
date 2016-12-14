@@ -1,7 +1,8 @@
+import os
 from os.path import join as opjoin
 from shutil import copyfile
-import os
-from settings import Config
+
+from resonances.settings import Config
 
 PROJECT_DIR = Config.get_project_dir()
 INTEGRATOR_PATH = opjoin(PROJECT_DIR, Config.get_params()['integrator']['dir'])
@@ -9,7 +10,7 @@ PARAMS = Config.get_params()
 
 
 def test_set_time_interval():
-    from integrator import set_time_interval
+    from resonances.integrator import set_time_interval
 
     def _copyfile(name: str):
         path = opjoin(INTEGRATOR_PATH, name)

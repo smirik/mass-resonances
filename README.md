@@ -6,9 +6,7 @@ This is Python fork of Three-body-resonances (https://github.com/smirik/Three-bo
 Technical documentation is in docs directory.
 
 # Installation
-* virtualenv .venv
-* source .venv/bin/activate
-* pip install -r reqs.pip
+* pip install git+https://github.com/4xxi/resonances
 * If it needs, you can override settings by file config/local_config.yml
 * move alembic.ini.dist alembic.ini and point in this file path to database in parameter 
 `sqlalchemy.url` in section `[alembic]`
@@ -55,15 +53,15 @@ For more details invoke --help or see [Usage](#usage)
 # Run over Docker
 
 The application also available over docker. Image for docker container is
-[here](https://hub.docker.com/r/amarkov/resonances/). It contains reference how to launch Resonances
+[here](https://hub.docker.com/r/4xxi/resonances/). It contains reference how to launch Resonances
 over container. Commonly it is very similar, but instead `main.py` you need `docker run --rm
 --volumes-from=resonances-data-container --link resonances-data-container:postgres
 --link some-redis:redis --name resonances -e RESONANCES_DB_NAME=resonances
--e RESONANCES_DB_USER=postgres amarkov/resonances` after name of image `amarkov/resonances`
+-e RESONANCES_DB_USER=postgres 4xxi/resonances` after name of image `4xxi/resonances`
 container takes arguments for the application. If you type `--help` in tail (`docker run -it --rm
 --volumes-from=resonances-data-container --link resonances-data-container:postgres
 --link some-redis:redis --name resonances -e RESONANCES_DB_NAME=resonances
--e RESONANCES_DB_USER=postgres amarkov/resonances --help`) you will get help message of the
+-e RESONANCES_DB_USER=postgres 4xxi/resonances --help`) you will get help message of the
 application, that also in [Usage](#usage) section.
 
 What about another parameters before image's name?
@@ -84,7 +82,7 @@ will get environment variables of `resonances-data-container`.
 `resonances-data-container` has database `resonances` and it is need to point this to the container
 of our application.
 * `-e RESONANCES_DB_USER=postgres` same as above point.
-* `amarkov/resonances` name of images, that will be loaded from hub.docker.com, if you don't have it.
+* `4xxi/resonances` name of images, that will be loaded from hub.docker.com, if you don't have it.
 
 # pylint cheat sheet
 ``pylint -E `git ls | grep py$ | grep -v --regexp="\(alembic\|fabfile\.py\)"` --disable=E1136 --disable=E1126``
@@ -109,15 +107,17 @@ in catalog.
   planets, that will be stored in aei files.
 
 Options:
-  --start INTEGER   Start asteroid number. Counting from 1.
-  --stop INTEGER    Stop asteroid number. Excepts last. Means, that asteroid
-                    with number, that equals this parameter, will not be
-                    integrated.
-  --from-day FLOAT  This parameter will be passed to param.in file for
-                    integrator Mercury6 as start time pointed in days.
-  --to-day FLOAT    This parameter will be passed to param.in file for
-                    integrator Mercury6 as stop time pointed in days.
-  --help            Show this message and exit.
+  --start INTEGER      Start asteroid number. Counting from 1.
+  --stop INTEGER       Stop asteroid number. Excepts last. Means, that
+                       asteroid with number, that equals this parameter, will
+                       not be integrated.
+  --from-day FLOAT     This parameter will be passed to param.in file for
+                       integrator Mercury6 as start time pointed in days.
+  --to-day FLOAT       This parameter will be passed to param.in file for
+                       integrator Mercury6 as stop time pointed in days.
+  -p, --aei-path PATH  Path where will be stored aei files. It can be tar.gz
+                       archive.
+  --help               Show this message and exit.
 ```
   
 **Usage: main.py find [OPTIONS]**
@@ -125,7 +125,9 @@ Options:
 ```
   Computes resonant phases, find in them circulations and saves to
   librations. Parameters --from-day and --to-day are use only --recalc
-  option is true.
+  option is true. Example: find --start=1 --stop=101 --phase-storage=FILE
+  JUPITER MARS. If you point --start=-1 --stop=-1 -p path/to/tar,
+  application will load data every asteroid from archive and work with it.
 
 Options:
   --start INTEGER                 Start asteroid number. Counting from 1.
@@ -139,8 +141,8 @@ Options:
                                   file for integrator Mercury6 as stop time
                                   pointed in days.
   --reload-resonances BOOLEAN     If true, the application will load integers,
-                                  satisfying D'Alamebrt rule, from /home/uantl
-                                  ord/Develop/resonances/axis/resonances.
+                                  satisfying D'Alamebrt rule, from
+                                  /path/to/app/axis/resonances.
   --recalc BOOLEAN                If true, the application will invoke calc
                                   method before
   --is-current BOOLEAN            If true, the application will librations
@@ -149,13 +151,16 @@ Options:
   -s, --phase-storage [REDIS|DB|FILE]
                                   will save phases to redis or postgres or
                                   file
-  -p, --aei-path PATH             Path to aei files. It can be folder or
+  -p, --aei-paths PATH            Path to aei files. It can be folder or
                                   tar.gz archive. You can point several paths.
                                   Example: -p /mnt/aei/ -p /tmp/aei
   -r, --recursive                 Indicates about recursive search aei file in
                                   pointed paths.
-  -c, --clear                     Will clear resonance phases aftersearch
+  -c, --clear                     Will clear resonance phases after search
                                   librations.
+  --clear-s3                      Will clear downloaded s3 files after search
+                                  librations.
+  -v, --verbose                   Shows progress bar.
   --help                          Show this message and exit.
 ```
   
@@ -175,7 +180,12 @@ Options:
                                   postgres or file
   --only-librations BOOLEAN       flag indicates about plotting only for
                                   resonances, that librates
-  -p, --aei-path PATH             Path to aei files. It can be folder or
+  -o, --output PATH               Directory or tar, where will be plots. By
+                                  default is current directory.
+  -i, --integers TEXT             Integers are pointing by three values
+                                  separated by space. Example: '5 -1 -1'
+  -b, --build-phase               It will build phases
+  -p, --aei-paths PATH            Path to aei files. It can be folder or
                                   tar.gz archive. You can point several paths.
                                   Example: -p /mnt/aei/ -p /tmp/aei
   -r, --recursive                 Indicates about recursive search aei file in
@@ -186,29 +196,21 @@ Options:
 **Usage: main.py load-resonances [OPTIONS]**
 
 ```
-  Loads integers, satisfying D'Alambert rule, from axis/resonances and build
+  Loads integers, satisfying D'Alambert rule, from
+  /path/to/app/axis/resonances and build
   potentiallyresonances, that related to asteroid from catalog by comparing
-  axis from this file and catalog.
+  axis from this file and catalog
 
 Options:
-  --start INTEGER  Start asteroid number. Counting from 1.
-  --stop INTEGER   Stop asteroid number. Excepts last. Means, that asteroid
-                   with number, that equals this parameter, will not be
-                   integrated.
-  --help           Show this message and exit.
-```
-
-**Usage: main.py clear-phases [OPTIONS]**
-
-```
-  Clears phases from database and Redis, which related to pointed asteroids.
-
-Options:
-  --start INTEGER  Start asteroid number. Counting from 1.
-  --stop INTEGER   Stop asteroid number. Excepts last. Means, that asteroid
-                   with number, that equals this parameter, will not be
-                   integrated.
-  --help           Show this message and exit.
+  --start INTEGER     Start asteroid number. Counting from 1.
+  --stop INTEGER      Stop asteroid number. Excepts last. Means, that asteroid
+                      with number, that equals this parameter, will not be
+                      integrated.
+  --file TEXT         Name of file in axis directory with resonances default:
+                      /path/to/app/axis/resonances
+  --axis-swing FLOAT  Axis swing determines swing between semi major axis of
+                      asteroid from astdys catalog and resonance table.
+  --help              Show this message and exit.
 ```
 
 **Usage: main.py librations [OPTIONS]**
@@ -226,15 +228,19 @@ Options:
   --apocentric BOOLEAN      Example: 0
   --axis-interval FLOAT...  Interval is pointing by two values separated by
                             space. Example: 0.0 180.0
-  --integers INTEGER...     Integers are pointing by three values separated by
-                            space. Example: 5 -1 -1
+  -i, --integers TEXT       Integers are pointing by three values separated by
+                            space. Example: '5 -1 -1'
+  --csv
   --limit INTEGER           Example: 100
   --offset INTEGER          Example: 100
+  --body-count [2|3]        Example: 2. 2 means two body resonance, 3 means
+                            three body resonance,
   --help                    Show this message and exit.
 ```
 
 **Usage: main.py resonances [OPTIONS]**
 ```
+
   Shows integers from resonance table. Below options are need for filtering.
 
 Options:
@@ -248,31 +254,17 @@ Options:
                         body resonance,
   --limit INTEGER       Example: 100
   --offset INTEGER      Example: 100
+  -i, --integers TEXT   Examples: '>1 1', '>=3 <5', '1 -1 *'
   --help                Show this message and exit.
 ```
 
 **Usage: main.py planets [OPTIONS]**
 ```
+
   Shows planets, which exist inside resonance table.
 
 Options:
   --body-count [2|3]  Example: 2. 2 means two body resonance, 3 means three
                       body resonance,
   --help              Show this message and exit.
-```
-  
-**Usage: main.py planets [OPTIONS]**
-```
-  Generate res files for pointed planets.
-
-Options:
-  -a, --asteroid INTEGER     Number of asteroid
-  -p, --aei-paths TEXT       path to tar archive contains aei files. Provides
-                             downloading from AWS S3 if pointed options
-                             access_key, secret_key, bucket in section s3
-                             inside settings file. Example:
-                             /etc/aei-1-101.tar.gz
-  -i, --integers INTEGER...  Integers are pointing by three values separated
-                             by space. Example: 5 -1 -1
-  --help                     Show this message and exit.
 ```

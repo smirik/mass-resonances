@@ -1,24 +1,28 @@
 language: python
 python: 3.5
+dist: trusty
 sudo: false
+cache: pip
 addons:
-  postgresql: "9.4"
+  postgresql: "9.5"
   apt:
     packages:
-      - gfortran
-      - gnuplot
+      - gfortran-4.8
       - wget
-      - redis
+      - redis-server
 
 services:
   - redis
+  - postgres
 
 install:
+  - ln -s `which gfortran-4.8` $HOME/gfortran
+  - ./gnuplot-install.sh
   - git submodule update --init
   - cd ./mercury
   - ./compile.sh
   - cd -
-  - pip install -r reqs.pip
+  - pip install -e .
   - pip install coverage pytest==2.8.3
 
 env:
@@ -29,10 +33,12 @@ env:
     - TEST_DBHOST=localhost
     - TEST_DBUSER=postgres
     - TEST_DB=resonances_unittest
+    - PATH=$PATH:$HOME
+    - PATH=$PATH:`pwd`/gnuplot-5.0.5/bin
 
 
 before_script:
-  - cd ./catalog
+  - mkdir ./catalog && cd ./catalog
   - wget http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat
   - cd -
   - mkdir axis
@@ -50,17 +56,26 @@ before_script:
   - alembic -c ./alembic.test.ini upgrade head
 
 script:
-  - python ./main.py --help
-  - python ./main.py calc
-  - python ./main.py load-resonances --start=1 --stop=101 --file=axis/res_J --axis-swing=0.01 JUPITER
-  - python ./main.py load-resonances --start=1 --stop=101 --file=axis/resonances --axis-swing=0.01 JUPITER SATURN
-  - python ./main.py find JUPITER SATURN
-  - python ./main.py plot -o ./ JUPITER SATURN
-  - python ./main.py package --res=1 --compress=1 --aei=1
-  - python ./main.py clear-phases --start=1 --stop=101 JUPITER
-  - python ./main.py clear-phases --start=1 --stop=101 JUPITER SATURN
-  - python ./main.py librations --start=1 --stop=101 --first-planet=JUPITER --second-planet=SATURN -i '>0 >0 *' --pure=1 --apocentric=0 --axis-interval=0.0 90.0
-  - python ./main.py resonances --start=1 --stop=101  --first-planet=JUPITER --second-planet=SATURN -i '* * -1'
+  - python -m resonances --help
+  - python -m resonances calc
+  - python -m resonances load-resonances --start=1 --stop=101 --file=axis/res_J --axis-swing=0.01 JUPITER
+  - python -m resonances load-resonances --start=1 --stop=101 --file=axis/resonances --axis-swing=0.01 JUPITER SATURN
+  - python -m resonances load-resonances --start=1 --stop=11 --axis-swing=0.05 -g MARS JUPITER
+  - python -m resonances load-resonances --start=1 --stop=11 --axis-swing=0.1 -g SATURN
+  - python -m resonances find JUPITER SATURN
+  - python -m resonances plot -o ./js-plots JUPITER SATURN
+  - python -m resonances plot -b -o ./j-plots JUPITER
+  - ls -R ./js-plots/
+  - ls -R ./j-plots/
+  - python -m resonances genres -i '1 -1' -a 1 JUPITER
+  - python -m resonances genres -i '4 -2 -1' -a 10 JUPITER SATURN
+  - ls -R ./res
+  - python -m resonances clear-phases --start=1 --stop=101 JUPITER
+  - python -m resonances clear-phases --start=1 --stop=101 JUPITER SATURN
+  - python -m resonances librations --start=1 --stop=101 --first-planet=JUPITER --second-planet=SATURN -i '>0 >0 *' --pure=1 --apocentric=0 --axis-interval=0.0 90.0
+  - python -m resonances resonances --start=1 --stop=101  --first-planet=JUPITER --second-planet=SATURN -i '* * -1'
+  - python -m resonances planets --body-count=3
+  - python -m resonances planets --body-count=2
   - coverage run --omit='/home/travis/virtualenv/*,./tests/*' -m pytest `find ./tests -name '*.py'`
 
 after_success:
