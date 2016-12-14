@@ -64,7 +64,7 @@ class IOrbitalElementSetFacade(object):
                 )
 
     def _get_body_orbital_elements2(self, aei_data: List[str]) \
-        -> Iterable[List[OrbitalElementSet]]:
+            -> Iterable[List[OrbitalElementSet]]:
         # -> Iterable[_AggregatedElements]:
         """Build orbital elements of bodies from data of the .aei file.
         :return: generator of dictionaries, contains set of orbital elements
@@ -80,7 +80,7 @@ class IOrbitalElementSetFacade(object):
             yield var
 
     def _get_body_orbital_elements(self, aei_data: List[str]) \
-        -> Iterable[_AggregatedElements]:
+            -> Iterable[_AggregatedElements]:
         """Build orbital elements of bodies from data of the .aei file.
         :return: generator of dictionaries, contains set of orbital elements
         for two planets and asteroid.
