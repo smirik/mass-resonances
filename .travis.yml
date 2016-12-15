@@ -38,7 +38,7 @@ env:
 
 
 before_script:
-  - mkdir ./catalog && cd ./catalog
+  - cd ./catalog
   - wget http://hamilton.dm.unipi.it/~astdys2/catalogs/allnum.cat
   - cd -
   - mkdir axis
