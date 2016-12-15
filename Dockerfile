@@ -20,5 +20,4 @@ WORKDIR /opt/resonances/
 ADD . /opt/resonances/
 RUN pip install /opt/resonances/
 
-
-ENTRYPOINT ["/opt/resonances/main.py"]
+ENTRYPOINT ["python", "-m", "resonances"]

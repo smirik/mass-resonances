@@ -81,3 +81,14 @@ times with different options
 * `--start=150001 --stop=300001`
 * `--start=300001 --stop=464622`
 The manager will assign tasks to nodes proportional itself.
+
+## Complete cycle integration
+If you want to make complete cycle from building aei files to getting librations of couple of asteroid you can use *integrate* command.
+For example
+```
+docker run -v <path/to/catalog_file>:/opt/resonances/catalog/allnum.my:ro \
+--env-file=/media/storage/docs/resonances/envs/local_prod 4xxi/resonances:latest \
+integrate --from-day=2451000.5 --to-day=2551000.5 --catalog=/allnum.my -a 0.01 JUPITER SATURN
+```
+This will build aei files with data from day 2451000.5 to 2551000.5, generates resonance table and load it to database,
+gets suitable resonances by axis swing 0.01 for planets JUPITER and SATURN, and searches librations in these resonances.
