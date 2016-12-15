@@ -29,6 +29,8 @@ dump.rdb
 .s3files
 .python-version
 alembic.remote_test.ini
+resonances.egg-info/
+res/
 
 # special
 .git
