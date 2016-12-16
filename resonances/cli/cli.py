@@ -135,20 +135,22 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
         finder.find(i, end, aei_paths)
 
 
-@cli.command(help='')
+@cli.command(help='Makes complete integration for asteroids pointed in catalog with pointed '
+             'planets. You can point word "all" instead planet name and integration will work '
+             'with all planets. Catalog must have AstDys format.')
 @time_interval()
-@click.option('--gen', '-g', is_flag=True, help='If up it will generate resonance table.')
 @click.option('--axis-swing', '-a', type=float,
-              help='Axis swing determines swing between semi major axis of asteroid from astdys '
+              help='Axis swing determines swing between semi major axis of asteroid from '
                    'catalog and resonance table.')
 @click.option('--catalog', type=click.Path(resolve_path=True, exists=True))
 @click.argument('planets', type=click.Choice(PLANETS + ['all']), nargs=-1)
 @click.option('--integers', '-i', type=str, callback=validate_integer_expression, default=None,
               help='Examples: \'>1 1\', \'>=3 <5\', \'1 -1 *\'')
 def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
-              axis_swing: float, integers: List[str], gen: bool = False):
+              axis_swing: float, integers: List[str]):
+    assert 0 < len(planets) < 3
     from resonances.commands.integrate import integrate as _integrate
-    _integrate(from_day, to_day, planets, catalog, axis_swing, gen, integers)
+    _integrate(from_day, to_day, planets, catalog, axis_swing, integers)
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'

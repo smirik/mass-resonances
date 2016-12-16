@@ -134,12 +134,11 @@ class _LoadCommand(_ACommand):
     resonances id to /tmp/resonances/agres-<asteroid-buffer-number>.json.
     """
     def __init__(self, integration: _Integration, planets: Tuple[str],
-                 axis_swing: float, gen: bool):
+                 axis_swing: float):
         super(_LoadCommand, self).__init__(integration)
         self._builders = []
         for planets in planets_gen(planets):
             self._builders.append(PossibleResonanceBuilder(planets, axis_swing, self._catalog))
-        self._gen = gen
         self._state = _IntegrationState.load
 
     def exec(self):
@@ -153,7 +152,7 @@ class _LoadCommand(_ACommand):
                 logging.debug('Load resonances for %s' % ', '.join(planets))
                 for i, asteroid_buffer in enumerate(self.get_asteroid_list_gen()):
                     aggregated_resonances = load_resonances(
-                        RESONANCE_FILEPATH, asteroid_buffer, builder, self._gen)
+                        RESONANCE_FILEPATH, asteroid_buffer, builder, True)
 
                     folder = self._integration.get_agres_folder(planets)
                     if opexists(folder):
@@ -228,7 +227,7 @@ class _FindCommand(_ACommand):
 
 
 def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
-              axis_swing: float, gen: bool, integers: List[str]):
+              axis_swing: float, integers: List[str]):
     """
     Make complete cycle from calculation aei files to search librations. State
     of the cycle is saved after every step to file /tmp/integration_state.txt.
@@ -243,7 +242,7 @@ def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
     integration = _Integration(catalog)
     cmds = [
         _CalcCommand(integration, from_day, to_day),
-        _LoadCommand(integration, planets, axis_swing, gen),
+        _LoadCommand(integration, planets, axis_swing),
         _FindCommand(integration, planets, integers)
     ]
 
