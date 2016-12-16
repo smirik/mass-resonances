@@ -143,7 +143,8 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
         if i >= (body_count.value - 1):
             break
         query = query.filter(PLANET_TABLES[key].name == planets[i])
-    query = query.filter(t1.number >= start, t1.number < stop)\
+    query = query.filter(builder.asteroid_alias.name.op('~')('A\d*$'))\
+        .filter(t1.number >= start, t1.number < stop)\
         .options(joinedload('libration')).order_by(builder.asteroid_alias.number)
 
     query = _filter_by_integers(query, builder, integers)
@@ -191,7 +192,7 @@ class AEIDataGetter:
             self._asteroid_number = for_asteroid_number
             self._aei_data.clear()
 
-            aei_path = self._filepath_builder.build('A%i.aei' % self._asteroid_number)
+            aei_path = self._filepath_builder.build('A%s.aei' % self._asteroid_number)
             with open(aei_path) as aei_file:
                 for line in aei_file:
                     self._aei_data.append(line)
