@@ -130,6 +130,10 @@ class ComputedOrbitalElementSetFacade(IOrbitalElementSetFacade):
             yield resonance_data
 
 
+class AsteroidElementCountException(Exception):
+    pass
+
+
 class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
     """Facade of set of the orbital elements, that computes resonant phase for
     pointed resonance. It represents elements by pointed sets of orbital
@@ -146,7 +150,20 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
         super(ResonanceOrbitalElementSetFacade, self).__init__(orbital_element_sets)
         self._resonance = resonance
 
+    def _validate_asteroid_orbital_elements(self, from_aei_data: List[str]):
+        planets_elements_count = len(self._orbital_element_sets[0])
+        asteroid_elements_count = len(from_aei_data) - HEADER_LINE_COUNT
+        if planets_elements_count != asteroid_elements_count:
+            raise AsteroidElementCountException(
+                'Number of elements (%i) for asteroid in aei file is not '
+                'equal to number of elements (%i) for planets.' %
+                (planets_elements_count, asteroid_elements_count))
+
     def get_resonant_phases(self, aei_data: List[str]) -> Iterable[Tuple[float, float]]:
+        """
+        Returns generator of phases are built by predicted orbital elements of planets and asteroid.
+        """
+        self._validate_asteroid_orbital_elements(aei_data)
         for orbital_elements in self._get_body_orbital_elements(aei_data):
             small_body = orbital_elements.small_body
             resonant_phase = self._resonance.compute_resonant_phase(
