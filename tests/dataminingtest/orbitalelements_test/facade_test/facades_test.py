@@ -8,6 +8,7 @@ from resonances.datamining import ElementCountException
 from resonances.datamining import IOrbitalElementSetFacade
 from resonances.datamining import PhaseCountException
 from resonances.datamining import ResonanceOrbitalElementSetFacade
+from resonances.datamining import AsteroidElementCountException
 
 from resonances.entities import ThreeBodyResonance
 from tests.shortcuts import get_class_path
@@ -121,6 +122,10 @@ def test_get_elements(aei_data, first_serialized_planet, second_serialized_plane
          ['4.003 1.048', '4.003 1.048'],
          ['8.578 1.014', '8.578 1.014'],
          2.112),
+        ([first_aei_data()],
+         ['4.003 1.048', '4.003 1.048'],
+         ['8.578 1.014', '8.578 1.014'],
+         2.112),
     ]
 )
 def test_get_resonant_phases(aei_data, first_serialized_planet, second_serialized_planet,
@@ -133,11 +138,25 @@ def test_get_resonant_phases(aei_data, first_serialized_planet, second_serialize
     director = _FacadeDirector(planet_elems)
     facade = director.build(builder)    # type: ResonanceOrbitalElementSetFacade
 
+    if len(aei_data) == len(first_serialized_planet):
+        aei_data = TEST_HEADER + aei_data
+        _test_phase_correctness(aei_data, facade, phase_value)
+    else:
+        aei_data = TEST_HEADER + aei_data
+        _test_get_resonant_phases_raise(aei_data, facade)
+
+
+def _test_phase_correctness(aei_data, facade: ResonanceOrbitalElementSetFacade, phase_value):
     i = 0
-    aei_data = TEST_HEADER + aei_data
     for time, resonant_phase in facade.get_resonant_phases(aei_data):
         assert time == float(aei_data[i + len(TEST_HEADER)].split()[0])
         assert resonant_phase == phase_value
         i += 1
 
     assert i > 0
+
+
+def _test_get_resonant_phases_raise(aei_data, facade: ResonanceOrbitalElementSetFacade):
+    with pytest.raises(AsteroidElementCountException):
+        for item in facade.get_resonant_phases(aei_data):
+            pass
