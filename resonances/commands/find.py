@@ -17,6 +17,7 @@ from resonances.datamining import ResonanceAeiData
 from resonances.datamining import PhaseBuilder
 from resonances.datamining.orbitalelements import FilepathBuilder
 from resonances.datamining.orbitalelements.collection import AEIValueError
+from resonances.datamining import AsteroidElementCountException
 from resonances.entities import BodyNumberEnum, Libration, TwoBodyLibration
 from resonances.entities.dbutills import REDIS, get_or_create, engine
 from resonances.entities.dbutills import session
@@ -84,6 +85,10 @@ class LibrationFinder:
             except AEIValueError:
                 broken_asteroid_mediator.save()
                 continue
+            except AsteroidElementCountException as e:
+                broken_asteroid_mediator.save(str(e))
+                continue
+
             classifier.classify(orbital_elem_set_facade, serialized_phases)
 
         session.flush()
@@ -181,6 +186,6 @@ class _BrokenAsteroidMediator:
             query = exists().where(BrokenAsteroid.name == self._asteroid_name)
             return session.query(query).scalar()
 
-    def save(self):
-        get_or_create(BrokenAsteroid, name=self._asteroid_name)
+    def save(self, reason: str = None):
+        get_or_create(BrokenAsteroid, name=self._asteroid_name, reason=reason)
         session.flush()

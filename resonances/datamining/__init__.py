@@ -4,6 +4,7 @@ from .orbitalelements import ResonanceOrbitalElementSetFacade
 from .orbitalelements import build_bigbody_elements
 from .orbitalelements import IOrbitalElementSetFacade
 from .orbitalelements import ElementCountException
+from .orbitalelements import AsteroidElementCountException
 from .orbitalelements import PhaseCountException
 from .orbitalelements import OrbitalElementSet
 

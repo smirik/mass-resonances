@@ -50,3 +50,4 @@ class BrokenAsteroid(Base):
     __tablename__ = 'broken_asteroid'
     __table_args__ = (UniqueConstraint('name'),)
     name = Column(String(255), nullable=False)
+    reason = Column(String(255), nullable=True)
