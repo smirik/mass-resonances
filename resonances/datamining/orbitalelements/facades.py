@@ -172,14 +172,18 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
                         small_body_m_l: np.array, small_body_p_l: np.array) -> np.array:
         phases = np.zeros(len(elems))
         for i in range(len(elems[0])):
-            phases += (np.array([x[i].m_longitude for x in elems]) *
-                       self._resonance.get_big_bodies()[i].longitude_coeff)
-            phases += (np.array([x[i].p_longitude for x in elems]) *
-                       self._resonance.get_big_bodies()[i].perihelion_longitude_coeff)
+            m_longs = np.array([x[i].m_longitude for x in elems])
+            p_longs = np.array([x[i].p_longitude for x in elems])
+            big_body = self._resonance.get_big_bodies()[i]
 
+            summand1 = m_longs * big_body.longitude_coeff
+            summand2 = p_longs * big_body.perihelion_longitude_coeff
+            phases += summand1 + summand2
+
+        small_body = self._resonance.small_body
         phases += (
-            small_body_m_l * self._resonance.small_body.longitude_coeff +
-            small_body_p_l * self._resonance.small_body.perihelion_longitude_coeff
+            small_body_m_l * small_body.longitude_coeff +
+            small_body_p_l * small_body.perihelion_longitude_coeff
         )
 
         return [cutoff_angle(x) for x in phases]
