@@ -23,6 +23,7 @@ setup(
         'redis==2.10.5',
         'texttable==0.8.4',
         'boto==2.41.0',
+        'numpy==1.10.4'
     ],
 )
 
