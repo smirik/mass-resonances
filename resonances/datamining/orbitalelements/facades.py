@@ -1,6 +1,9 @@
+from math import radians
+from typing import List, Iterable, Tuple, Dict
+
+import numpy as np
 import os
 from abc import abstractmethod
-from typing import List, Iterable, Tuple, Dict
 
 from resonances.entities.resonance.twobodyresonance import ResonanceMixin
 
@@ -52,13 +55,29 @@ class IOrbitalElementSetFacade(object):
         if len(self._orbital_element_sets) == 1:
             return
         for i in range(1, len(orbital_element_sets)):
-            first_elems_len = len(orbital_element_sets[i-1])
+            first_elems_len = len(orbital_element_sets[i - 1])
             second_elems_len = len(orbital_element_sets[i])
             if not (first_elems_len == second_elems_len):
                 raise ElementCountException(
                     'count of first body elements: %i not equal second body: %i' %
                     (first_elems_len, second_elems_len)
                 )
+
+    def _get_body_orbital_elements2(self, aei_data: List[str]) \
+            -> Iterable[List[OrbitalElementSet]]:
+        # -> Iterable[_AggregatedElements]:
+        """Build orbital elements of bodies from data of the .aei file.
+        :return: generator of dictionaries, contains set of orbital elements
+        for two planets and asteroid.
+        """
+        for i, line in enumerate(aei_data):
+            if i < HEADER_LINE_COUNT:
+                continue
+
+            index = i - HEADER_LINE_COUNT
+            var = [x[index] for x in self._orbital_element_sets]
+            # yield _AggregatedElements(OrbitalElementSet(line), var)
+            yield var
 
     def _get_body_orbital_elements(self, aei_data: List[str]) \
             -> Iterable[_AggregatedElements]:
@@ -71,9 +90,8 @@ class IOrbitalElementSetFacade(object):
                 continue
 
             index = i - HEADER_LINE_COUNT
-            yield _AggregatedElements(
-                OrbitalElementSet(line),
-                [x[index] for x in self._orbital_element_sets])
+            var = [x[index] for x in self._orbital_element_sets]
+            yield _AggregatedElements(OrbitalElementSet(line), var)
 
     def write_to_resfile(self, res_filepath: str, aei_data: List[str]):
         """Saves data, returned by method get_elements to res file.
@@ -150,6 +168,43 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
         super(ResonanceOrbitalElementSetFacade, self).__init__(orbital_element_sets)
         self._resonance = resonance
 
+    def _compute_phases(self, elems: List[List[OrbitalElementSet]],
+                        small_body_m_l: np.array, small_body_p_l: np.array) -> np.array:
+        phases = np.zeros(len(elems))
+        for i in range(len(elems[0])):
+            m_longs = np.array([x[i].m_longitude for x in elems])
+            p_longs = np.array([x[i].p_longitude for x in elems])
+            big_body = self._resonance.get_big_bodies()[i]
+
+            summand1 = m_longs * big_body.longitude_coeff
+            summand2 = p_longs * big_body.perihelion_longitude_coeff
+            phases += summand1 + summand2
+
+        small_body = self._resonance.small_body
+        phases += (
+            small_body_m_l * small_body.longitude_coeff +
+            small_body_p_l * small_body.perihelion_longitude_coeff
+        )
+
+        return [cutoff_angle(x) for x in phases]
+
+    def _get_asteroid_pars(self, aei_data: List[str]):
+        times = []
+        p_longs = []
+        mean_anomalies = []
+        for i, line in enumerate(aei_data):
+            if i < HEADER_LINE_COUNT:
+                continue
+
+            datas = line.split()
+            times.append(float(datas[0]))
+            p_longs.append(radians(float(datas[1])))
+            mean_anomalies.append(radians(float(datas[2])))
+        p_longs = np.array(p_longs)
+        mean_anomalies = np.array(mean_anomalies)
+        m_longs = p_longs + mean_anomalies
+        return m_longs, p_longs, times
+
     def _validate_asteroid_orbital_elements(self, from_aei_data: List[str]):
         planets_elements_count = len(self._orbital_element_sets[0])
         asteroid_elements_count = len(from_aei_data) - HEADER_LINE_COUNT
@@ -160,15 +215,13 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
                 (planets_elements_count, asteroid_elements_count))
 
     def get_resonant_phases(self, aei_data: List[str]) -> Iterable[Tuple[float, float]]:
-        """
-        Returns generator of phases are built by predicted orbital elements of planets and asteroid.
-        """
         self._validate_asteroid_orbital_elements(aei_data)
-        for orbital_elements in self._get_body_orbital_elements(aei_data):
-            small_body = orbital_elements.small_body
-            resonant_phase = self._resonance.compute_resonant_phase(
-                *_get_longitudes(orbital_elements.big_bodies + [small_body]))
-            yield small_body.time, cutoff_angle(resonant_phase)
+        m_longs, p_longs, times = self._get_asteroid_pars(aei_data)
+        elems = [x for x in self._get_body_orbital_elements2(aei_data)]
+        if not elems:
+            return []
+        phases = self._compute_phases(elems, m_longs, p_longs)
+        return [(x, y) for x, y in zip(times, phases)]
 
     def get_elements(self, aei_data: List[str]) -> Iterable[str]:
         """
