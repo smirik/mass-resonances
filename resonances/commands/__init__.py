@@ -15,3 +15,4 @@ from .load_resonances import load_resonances
 from .plot import plot
 from .genres import genres
 from .resonace_table import generate_resonance_table
+from .variations import get_variations

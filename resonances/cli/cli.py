@@ -14,6 +14,7 @@ from .internal import time_interval
 from .internal import build_logging, validate_ints, validate_planets, validate_integer_expression, \
     validate_or_set_body_count
 from .internal import report_interval_options
+from resonances.commands.variations import URL_BASE
 from resonances.shortcuts import PLANETS
 
 LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
@@ -304,3 +305,19 @@ def rtable(planets, file: str, axis_max: float, order_max: int):
     with open(file, 'w') if file else sys.stdout as out:
         for line in data:
             print(line, file=out)
+
+
+@cli.command('get-variations', help='Grab varitions for pointed asteroids from %s' % URL_BASE)
+@click.option('--csv', is_flag=True)
+@click.argument('asteroids', nargs=-1)
+def get_variations(asteroids: tuple, csv: bool):
+    from resonances.commands import get_variations
+    get_variations(iter(asteroids), csv)
+
+
+@cli.command()
+@click.option('--catalog', '-c', type=click.Path(resolve_path=True, exists=True))
+def virtast(catalog: str):
+    from resonances.commands.virtualast import VirtualAsteroidCatalogBuilder
+    builder = VirtualAsteroidCatalogBuilder(catalog)
+    builder.build(5)

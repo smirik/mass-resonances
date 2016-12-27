@@ -14,6 +14,14 @@ AXIS_COLUMNS = {BodyNumberEnum.two: 4, BodyNumberEnum.three: 6}
 ASTDYS = opjoin(PROJECT_DIR, CONFIG['catalog']['file'])
 
 
+def read_header(from_catalog: str) -> Iterable[str]:
+    with open(from_catalog) as fd:
+        for i, line in enumerate(fd):
+            if i >= SKIP_LINES:
+                break
+            yield line[:-1]
+
+
 def find_by_number(number: int, catalog_path: str = ASTDYS) -> List[float]:
     """Find asteroid parameters by number in catalog.
 
@@ -62,24 +70,31 @@ def _parse_asteroid_data(line: str) -> AsteroidData:
     return asteroid_name, arr
 
 
-def asteroid_list_gen(step: int, catalog_path: str = ASTDYS, start: int = None, stop: int = None)\
-        -> Generator[List[AsteroidData], None, None]:
+def asteroid_gen(catalog_path: str = ASTDYS, start: int = None, stop: int = None)\
+        -> Iterable[AsteroidData]:
     with open(catalog_path, 'r') as fd:
-        id_buffer = []
         for i, line in enumerate(fd):
-            diff = i - SKIP_LINES
-            if i < SKIP_LINES or start is not None and diff + 1 < start:
+            diff = i - SKIP_LINES + 1
+            if i < SKIP_LINES or start is not None and diff < start:
                 continue
 
-            asteroid_data = _parse_asteroid_data(line)
-            id_buffer.append(asteroid_data)
-
-            if stop is not None and diff + 2 >= stop:
+            if stop is not None and diff >= stop:
                 break
 
-            if (diff + 1) % step == 0 and i != SKIP_LINES:
-                yield id_buffer
-                id_buffer.clear()
+            asteroid_data = _parse_asteroid_data(line)
+            yield asteroid_data
+
+
+def asteroid_list_gen(buffer_size: int, catalog_path: str = ASTDYS, start: int = None,
+                      stop: int = None) -> Generator[List[AsteroidData], None, None]:
+    id_buffer = []
+    for i, asteroid_data in enumerate(asteroid_gen(catalog_path, start, stop)):
+        diff = i + 1
+        id_buffer.append(asteroid_data)
+
+        if diff % buffer_size == 0:
+            yield id_buffer
+            id_buffer.clear()
 
     if id_buffer:
         yield id_buffer
