@@ -1,3 +1,5 @@
+import logging
+from resonances.shortcuts import FAIL, ENDC
 from numpy.random import normal as normal_dist
 from typing import Tuple
 from typing import Iterable
@@ -61,6 +63,10 @@ class VirtualAsteroidCatalogBuilder:
             yield name, dists
 
     def build(self, count: int):
+        if count is None or count < 1:
+            logging.error('%sCount of virtual asteroids for generating must be more than 1%s',
+                          FAIL, ENDC)
+            exit(-1)
         for item in self._header_lines:
             print(item)
 

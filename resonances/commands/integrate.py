@@ -32,12 +32,15 @@ from resonances.datamining import get_resonances_with_id
 from resonances.entities import ResonanceMixin
 from resonances.catalog import AsteroidData
 from resonances.catalog import asteroid_list_gen
+from resonances.catalog import asteroid_names_gen
+from resonances.io import move_aei_files
 
 CONFIG = Config.get_params()
 RESONANCE_TABLE_FILE = CONFIG['resonance_table']['file']
 PROJECT_DIR = Config.get_project_dir()
 RESONANCE_FILEPATH = opjoin(PROJECT_DIR, 'axis', RESONANCE_TABLE_FILE)
 STEP = CONFIG['integrator']['number_of_bodies']
+INTEGRATOR_PATH = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 
 
 @unique
@@ -93,6 +96,19 @@ class _Integration:
         return opjoin(self.agres_folder, '-'.join(for_planets))
 
 
+def _get_last_computed_asteroid(catalog: str, in_path: str) -> int:
+    """
+    Return sequence number in catalog of first asteroid that doesn't have
+    A*.aei file in pointed_path.
+    """
+    i = 0
+    for i, name in enumerate(asteroid_names_gen(catalog)):
+        path = opjoin(in_path, 'A%s.aei' % name)
+        if not opexists(path):
+            break
+    return i
+
+
 class _ACommand(object):
     def __init__(self, integration: _Integration):
         self._integration = integration
@@ -115,14 +131,29 @@ class _CalcCommand(_ACommand):
     Used for calling mercury6 that will predict orbital elements and saves
     results to /tmp/aei/*.aei files.
     """
-    def __init__(self, integration: _Integration, from_day: float, to_day: float):
+    def __init__(self, integration: _Integration, from_day: float,
+                 to_day: float, is_continue: bool):
         super(_CalcCommand, self).__init__(integration)
         self._from_day = from_day
         self._to_day = to_day
         self._state = _IntegrationState.calc
+        self._is_continue = is_continue
+
+    def get_asteroid_list_gen(self) -> Iterable[List[AsteroidData]]:
+        """
+        Getter is neccessary for instantiating below generator. Generators
+        cannot be reused.
+        """
+        start = None
+        if self._is_continue:
+            start = _get_last_computed_asteroid(self._catalog, self._integration.aei_path) + 1
+        return asteroid_list_gen(STEP, self._catalog, start=start)
 
     def exec(self):
-        if self._integration.state == _IntegrationState.start:
+        if self._integration.state == _IntegrationState.start or self._is_continue:
+            if self._is_continue:
+                move_aei_files(self._integration.aei_path)
+
             calc(self.get_asteroid_list_gen(), self._from_day,
                  self._to_day, self._integration.aei_path)
             self._integration.save(self._state)
@@ -227,7 +258,7 @@ class _FindCommand(_ACommand):
 
 
 def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
-              axis_swing: float, integers: List[str]):
+              axis_swing: float, integers: List[str], do_continue: bool):
     """
     Make complete cycle from calculation aei files to search librations. State
     of the cycle is saved after every step to file /tmp/integration_state.txt.
@@ -241,7 +272,7 @@ def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
     """
     integration = _Integration(catalog)
     cmds = [
-        _CalcCommand(integration, from_day, to_day),
+        _CalcCommand(integration, from_day, to_day, do_continue),
         _LoadCommand(integration, planets, axis_swing),
         _FindCommand(integration, planets, integers)
     ]

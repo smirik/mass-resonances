@@ -13,8 +13,8 @@ from .internal import asteroid_time_intervals_options
 from .internal import time_interval
 from .internal import build_logging, validate_ints, validate_planets, validate_integer_expression, \
     validate_or_set_body_count
+from .internal import validate_positivie_int
 from .internal import report_interval_options
-from resonances.commands.variations import URL_BASE
 from resonances.shortcuts import PLANETS
 
 LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
@@ -26,6 +26,7 @@ RESONANCE_TABLE_FILE = CONFIG['resonance_table']['file']
 RESONANCE_FILEPATH = opjoin(PROJECT_DIR, 'axis', RESONANCE_TABLE_FILE)
 STEP = CONFIG['integrator']['number_of_bodies']
 INTEGRATOR_DIR = CONFIG['integrator']['dir']
+VARITION_URL_BASE = CONFIG['online']['neodys']['variation_base_url']
 
 BodyCountType = TypeVar('T', str, int)
 
@@ -147,11 +148,12 @@ def find(start: int, stop: int, from_day: float, to_day: float, reload_resonance
 @click.argument('planets', type=click.Choice(PLANETS + ['all']), nargs=-1)
 @click.option('--integers', '-i', type=str, callback=validate_integer_expression, default=None,
               help='Examples: \'>1 1\', \'>=3 <5\', \'1 -1 *\'')
+@click.option('--continue', '-c', 'continue_', is_flag=True)
 def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
-              axis_swing: float, integers: List[str]):
+              axis_swing: float, integers: List[str], continue_: bool):
     assert 0 < len(planets) < 3
     from resonances.commands.integrate import integrate as _integrate
-    _integrate(from_day, to_day, planets, catalog, axis_swing, integers)
+    _integrate(from_day, to_day, planets, catalog, axis_swing, integers, continue_)
 
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
@@ -307,7 +309,8 @@ def rtable(planets, file: str, axis_max: float, order_max: int):
             print(line, file=out)
 
 
-@cli.command('get-variations', help='Grab varitions for pointed asteroids from %s' % URL_BASE)
+@cli.command('get-variations', help='Grab varitions for pointed asteroids from %s' %
+             VARITION_URL_BASE)
 @click.option('--csv', is_flag=True)
 @click.argument('asteroids', nargs=-1)
 def get_variations(asteroids: tuple, csv: bool):
@@ -317,7 +320,7 @@ def get_variations(asteroids: tuple, csv: bool):
 
 @cli.command()
 @click.option('--catalog', '-c', type=click.Path(resolve_path=True, exists=True))
-def virtast(catalog: str):
+@click.option('--count', type=int, callback=validate_positivie_int)
+def virtast(catalog: str, count: int):
     from resonances.commands.virtualast import VirtualAsteroidCatalogBuilder
-    builder = VirtualAsteroidCatalogBuilder(catalog)
-    builder.build(5)
+    VirtualAsteroidCatalogBuilder(catalog).build(count)

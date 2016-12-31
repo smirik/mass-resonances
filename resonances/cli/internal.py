@@ -24,6 +24,12 @@ def _unite_decorators(*decorators):
     return deco
 
 
+def validate_positivie_int(ctx: click.Context, option: click.Option, value):
+    if not isinstance(value, int) or value < 1:
+        raise click.BadOptionUsage(option, 'Value must be more than 0')
+    return value
+
+
 def _try_to_int(val: str, option: click.Option):
     try:
         int(val)

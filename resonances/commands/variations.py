@@ -12,7 +12,10 @@ from typing import List
 from typing import Dict
 import logging
 import texttable
-URL_BASE = 'http://newton.dm.unipi.it/neodys/index.php?pc=1.1.1&n='
+from resonances.settings import Config
+
+CONFIG = Config.get_params()
+URL_BASE = CONFIG['online']['neodys']['variation_base_url']
 
 
 def _variations_gen(from_cells: List[Tag]):

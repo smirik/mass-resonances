@@ -1,12 +1,7 @@
 from typing import Iterable
 import logging
 import os
-import tarfile
-from glob import iglob
-from os.path import join as opjoin
-import shutil
 
-from boto.s3.key import Key
 from resonances.integrator import SmallBodiesFileBuilder, set_time_interval
 from resonances.integrator import aei_clean
 from resonances.integrator import element6
@@ -14,7 +9,8 @@ from resonances.integrator import mercury6
 from resonances.integrator import simple_clean
 from resonances.shortcuts import create_aws_s3_key
 from resonances.shortcuts import is_tar as _is_tar
-from resonances.shortcuts import is_tar as _is_s3
+from resonances.shortcuts import is_s3 as _is_s3
+from resonances.io import save_aei_files
 from resonances.catalog import AsteroidData
 
 from resonances.settings import Config
@@ -58,7 +54,7 @@ def calc(buffered_asteroid_names: Iterable[AsteroidData], from_day: float, to_da
     :param to_day:
     :param int start: start is position of start element for computing.
     :param int stop:
-    :param str target_path: path where will be saved aei files.
+    :param str output_path: path where will be saved aei files.
     """
     set_time_interval(from_day, to_day)
     aei_clean()
@@ -74,29 +70,7 @@ def calc(buffered_asteroid_names: Iterable[AsteroidData], from_day: float, to_da
     for asteroid_names in buffered_asteroid_names:
         _integrate(asteroid_names)
 
-    _save_aei_files(output_path, s3_bucket_key)
-
-
-def _save_aei_files(output_path: str, s3_bucket_key: Key):
-    if INTEGRATOR_PATH == output_path:
-        return
-    if _is_tar(output_path):
-        tar_path = output_path
-        if s3_bucket_key:
-            tar_path = opjoin(PROJECT_DIR, os.path.basename(output_path))
-
-        with tarfile.open(tar_path, 'w:gz') as tarf:
-            for path in iglob(os.path.join(INTEGRATOR_PATH, '*.aei')):
-                tarf.add(path, arcname=os.path.basename(path))
-                os.remove(path)
-
-        if s3_bucket_key:
-            s3_bucket_key.set_contents_from_filename(tar_path)
-    else:
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-        for path in iglob(os.path.join(INTEGRATOR_PATH, '*.aei')):
-            shutil.move(path, os.path.join(output_path, os.path.basename(path)))
+    save_aei_files(output_path, s3_bucket_key)
 
 
 def _integrate(asteroid_data: AsteroidData):
