@@ -56,14 +56,32 @@ class SpaceException(Exception):
 AsteroidData = Tuple[str, List[float]]
 
 
-def _parse_asteroid_data(line: str) -> AsteroidData:
+def _gen_data(from_catalog: str) -> Iterable[str]:
+    with open(from_catalog, 'r') as fd:
+        for i, line in enumerate(fd):
+            if i < SKIP_LINES:
+                continue
+            yield line
+
+
+def asteroid_names_gen(from_catalog: str) -> Iterable[str]:
+    for line in _gen_data(from_catalog):
+        name, _ = _parse_asteroid_name(line)
+        yield name
+
+
+def _parse_asteroid_name(line: str) -> Tuple[str, int]:
     pos = line.find("'", 1)
     if pos == -1:
         raise ApostropheException('no apostrophe in %s' % line)
     asteroid_name = line[1:pos]
     if ' ' in asteroid_name:
         raise SpaceException('Asteroid\'s name contains spaces %s' % asteroid_name)
+    return asteroid_name, pos
 
+
+def _parse_asteroid_data(line: str) -> AsteroidData:
+    asteroid_name, pos = _parse_asteroid_name(line)
     arr = line[pos:-1].split()[1:]
     arr = [float(x) for x in arr]
     arr[4], arr[5] = arr[5], arr[4]
