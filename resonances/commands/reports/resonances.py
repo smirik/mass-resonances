@@ -1,4 +1,3 @@
-import os
 from typing import List, Dict
 
 from resonances.entities import BodyNumberEnum
@@ -11,15 +10,14 @@ from .shortcuts import AsteroidCondition, PlanetCondition
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
-PATH = os.path.join(PROJECT_DIR, CONFIG['catalog']['file'])
 SKIP_LINES = CONFIG['catalog']['astdys']['skip']
 PRECISION = 4
 
 
-def get_asteroid_axises(start: int = 1, stop: int = None) -> Dict[str, float]:
+def _get_asteroid_axises(from_catalog: str, start: int = 1, stop: int = None) -> Dict[str, float]:
     res = {}
 
-    with open(PATH, 'r') as catalog_file:
+    with open(from_catalog, 'r') as catalog_file:
         for i, line in enumerate(catalog_file):
             if i < start + SKIP_LINES - 1:
                 continue
@@ -35,7 +33,7 @@ def get_asteroid_axises(start: int = 1, stop: int = None) -> Dict[str, float]:
 
 def show_resonance_table(asteroid_condition: AsteroidCondition = None,
                          planet_condtion: PlanetCondition = None, limit=100, offset=0,
-                         body_count: int=3, integers: List[str] = None):
+                         body_count: int=3, integers: List[str] = None, catalog_path: str = None):
     body_count = BodyNumberEnum(body_count)
     builder = GetQueryBuilder(body_count, True)
     query = builder.get_resonances()
@@ -43,9 +41,13 @@ def show_resonance_table(asteroid_condition: AsteroidCondition = None,
     if asteroid_condition:
         query = query.filter(builder.asteroid_alias.number >= asteroid_condition.start,
                              builder.asteroid_alias.number < asteroid_condition.stop)
-        catalog_axises = get_asteroid_axises(asteroid_condition.start, asteroid_condition.stop)
-    else:
-        catalog_axises = get_asteroid_axises()
+    catalog_axises = None
+    if catalog_path:
+        if asteroid_condition:
+            catalog_axises = _get_asteroid_axises(catalog_path, asteroid_condition.start,
+                                                  asteroid_condition.stop)
+        else:
+            catalog_axises = _get_asteroid_axises(catalog_path)
 
     if planet_condtion:
         if planet_condtion.first_planet_name:
@@ -74,10 +76,16 @@ def show_resonance_table(asteroid_condition: AsteroidCondition = None,
             table.set_precision(PRECISION)
             table.header(options.column_names + ['catalog axis', 'axis difference'])
 
-        catalog_axis = catalog_axises[resonance.small_body.name]
+        if catalog_axises is not None:
+            catalog_axis = catalog_axises[resonance.small_body.name]
+            axis_diff = round(catalog_axis, PRECISION) - resonance.asteroid_axis
+            catalog_axis = '%.5f' % catalog_axis
+        else:
+            catalog_axis = '-'
+            axis_diff = '-'
+
         row = options.get_data(resonance) + [
-            '%.5f' % catalog_axis,
-            round(catalog_axis, PRECISION) - resonance.asteroid_axis
+            catalog_axis, axis_diff
         ]
         table.add_row(row)
 

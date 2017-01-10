@@ -27,6 +27,7 @@ RESONANCE_FILEPATH = opjoin(PROJECT_DIR, 'axis', RESONANCE_TABLE_FILE)
 STEP = CONFIG['integrator']['number_of_bodies']
 INTEGRATOR_DIR = CONFIG['integrator']['dir']
 VARITION_URL_BASE = CONFIG['online']['neodys']['variation_base_url']
+ASTDYS = opjoin(PROJECT_DIR, CONFIG['catalog']['file'])
 
 BodyCountType = TypeVar('T', str, int)
 
@@ -68,9 +69,10 @@ FIND_HELP_PREFIX = 'If true, the application will'
               help='Axis swing determines swing between semi major axis of asteroid from astdys '
                    'catalog and resonance table.')
 @click.option('--gen', '-g', is_flag=True, help='If up it will generate resonance table.')
+@click.option('--catalog', type=click.Path(resolve_path=True, exists=True), default=ASTDYS)
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
 def load_resonances(start: int, stop: int, file: str, axis_swing: float,
-                    planets: Tuple[str], gen: bool):
+                    planets: Tuple[str], gen: bool, catalog: str):
     assert axis_swing > 0.
 
     from resonances.shortcuts import FAIL, ENDC
@@ -81,7 +83,7 @@ def load_resonances(start: int, stop: int, file: str, axis_swing: float,
     from resonances.catalog import PossibleResonanceBuilder
     from resonances.commands import load_resonances as _load_resonances
     from resonances.catalog import asteroid_list_gen
-    _asteroid_list_gen = asteroid_list_gen(STEP, start=start, stop=stop)
+    _asteroid_list_gen = asteroid_list_gen(STEP, start=start, stop=stop, catalog_path=catalog)
     builder = PossibleResonanceBuilder(planets, axis_swing)
     if file == RESONANCE_FILEPATH:
         logging.info('%s will be used as source of integers' % file)
@@ -247,10 +249,12 @@ def librations(start: int, stop: int, first_planet: str, second_planet: str, pur
               callback=validate_or_set_body_count,
               help='Example: 2. 2 means two body resonance, 3 means three body resonance,')
 @report_interval_options()
+@click.option('--catalog', '-c', type=click.Path(resolve_path=True, exists=True))
 @click.option('--integers', '-i', type=str, callback=validate_integer_expression, default=None,
               help='Examples: \'>1 1\', \'>=3 <5\', \'1 -1 *\'')
 def resonances(start: int, stop: int, first_planet: str, second_planet: str,
-               body_count: BodyCountType, limit, offset, integers: List[str]):
+               body_count: BodyCountType, limit, offset, integers: List[str],
+               catalog: str):
     from resonances.commands import AsteroidCondition
     from resonances.commands import show_resonance_table as _show_resonance_table
     from resonances.commands import PlanetCondition
@@ -264,6 +268,8 @@ def resonances(start: int, stop: int, first_planet: str, second_planet: str,
     }
     if start and stop:
         kwargs['asteroid_condition'] = AsteroidCondition(start, stop)
+    if catalog:
+        kwargs['catalog_path'] = catalog
     _show_resonance_table(integers=integers, **kwargs)
 
 
