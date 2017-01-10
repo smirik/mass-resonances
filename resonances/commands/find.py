@@ -19,10 +19,11 @@ from resonances.datamining.orbitalelements import FilepathBuilder
 from resonances.datamining.orbitalelements.collection import AEIValueError
 from resonances.datamining import AsteroidElementCountException
 from resonances.entities import BodyNumberEnum, Libration, TwoBodyLibration
-from resonances.entities.dbutills import REDIS, get_or_create, engine
+from resonances.entities.dbutills import REDIS, engine
 from resonances.entities.dbutills import session
 from resonances.shortcuts import get_asteroid_interval, ProgressBar, fix_id_sequence
 from sqlalchemy import exists
+from resonances.entities.dbutills import OnConflictInsert
 
 from resonances.entities.body import BrokenAsteroid
 from resonances.settings import Config
@@ -190,5 +191,8 @@ class _BrokenAsteroidMediator:
             return session.query(query).scalar()
 
     def save(self, reason: str = None):
-        get_or_create(BrokenAsteroid, name=self._asteroid_name, reason=reason)
-        session.flush()
+        table = BrokenAsteroid.__table__
+        insert_q = table.insert().values(name=self._asteroid_name, reason=reason)
+        insert_q = OnConflictInsert(insert_q, ['name'])
+        conn = engine.connect()
+        conn.execute(insert_q)

@@ -11,7 +11,7 @@ RETVAL=$?
 
 echo "PyLint checks..."
 pylint -E `git ls | grep py$ | grep -v --regexp="\(alembic\|fabfile\.py\|setup\.py\)"` --disable=E1136 --disable=E1126 --disable=no-self-argument\
-    --ignored-classes=Planet,Asteroid,ThreeBodyResonance,Libration,PlanetName,TwoBodyResonance,TwoBodyLibration\
+    --ignored-classes=Planet,Asteroid,ThreeBodyResonance,Libration,PlanetName,TwoBodyResonance,TwoBodyLibration,BrokenAsteroid\
     --ignored-modules=resonances.entities.resonance.twobodyresonance,resonances.entities.resonance.threebodyresonance,resonances.entities.resonance.resonancemixin
 PYLINTVAL=$?
 
