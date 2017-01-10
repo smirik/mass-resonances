@@ -227,7 +227,6 @@ class _FindCommand(_ACommand):
                 asteroid_name = resonance.small_body.name
                 with open(opjoin(self._aei_path, '%s.aei' % asteroid_name)) as fd:
                     aei_data = [x for x in fd]
-            assert aei_data
             yield resonance, aei_data
 
     def exec(self):
