@@ -181,14 +181,15 @@ class _LoadCommand(_ACommand):
             for builder in self._builders:
                 planets = builder.planets
                 logging.debug('Load resonances for %s' % ', '.join(planets))
+                folder = self._integration.get_agres_folder(planets)
+                if opexists(folder):
+                    rmtree(folder)
+                makedirs(folder)
+
                 for i, asteroid_buffer in enumerate(self.get_asteroid_list_gen()):
                     aggregated_resonances = load_resonances(
                         RESONANCE_FILEPATH, asteroid_buffer, builder, True)
 
-                    folder = self._integration.get_agres_folder(planets)
-                    if opexists(folder):
-                        rmtree(folder)
-                    makedirs(folder)
                     filename = opjoin(folder, 'agres-%i.json' % i)
                     with open(filename, 'w') as fd:
                         json.dump(aggregated_resonances, fd)
