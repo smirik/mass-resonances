@@ -60,7 +60,7 @@ class _ResonanceGeneratorBuilder:
     def _2b_resonance_gen(self):
         for i in range(1, self.order_max + 1):
             for j in range(1, self.order_max + 1):
-                if i < j or gcd(i, j) > 1:
+                if gcd(i, j) > 1:
                     continue
                 diff = i - j
                 resonance = [i, -j, 0, -diff]
