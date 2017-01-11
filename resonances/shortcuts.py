@@ -13,7 +13,6 @@ from sqlalchemy import Table
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.util import AliasedClass
-from itertools import product
 from itertools import combinations
 from functools import reduce
 from operator import add
@@ -37,7 +36,8 @@ def planets_gen(planets: Tuple[str]) -> Iterable[Tuple[str]]:
             if planet_expr != ANY_PLANET:
                 variations[i] = [planet_expr]
 
-        explicit_defined_planets = reduce(add, [x for x in variations if x is not None])
+        filtered_variations = [x for x in variations if x is not None]
+        explicit_defined_planets = reduce(add, filtered_variations) if filtered_variations else None
         if explicit_defined_planets:
             possible_planets = [x for x in PLANETS if x not in explicit_defined_planets]
         else:
