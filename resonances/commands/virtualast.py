@@ -59,18 +59,15 @@ def _make_dists(orbital_elems: List[float], names, asteroid_variations):
     arg_peric_dist = builder.build(orbital_elems[4], 'arg. peric.')
     long_node_dist = builder.build(orbital_elems[5], 'long. node')
     mean_anomaly_dist = builder.build(orbital_elems[6], 'mean anomaly')
-    dists = [axis_dist, ecc_dist, inc_dist, long_node_dist,
-             arg_peric_dist, mean_anomaly_dist]
+    dists = [axis_dist, ecc_dist, inc_dist, long_node_dist, arg_peric_dist, mean_anomaly_dist]
     return dists
 
 
-def _dump_dists(name: str, dists: List[_DistributionParams], count: int):
+def _dump_dists(name: str, dists: List[_DistributionParams], count: int, epoch: float):
     """Outputs asteroids are made by normal distribition."""
     for i, virtual_orbital_elems in enumerate(_virtual_asteroid_gen(dists, count)):
-        arr = virtual_orbital_elems
-        arr[5], arr[4] = arr[4], arr[5]
         virtual_orbital_elems_str = '\t'.join(['%.16E' % x for x in virtual_orbital_elems])
-        print("'%s.%i'" % (name, i), virtual_orbital_elems_str, 0, 0, 0, sep='\t')
+        print("'%s.%i' %f" % (name, i, epoch), virtual_orbital_elems_str, 0, 0, 0, sep='\t')
 
 
 def _accumulate_distributions(future: Future):
@@ -113,10 +110,13 @@ class VirtualAsteroidCatalogBuilder:
         self._start = start
         self._stop = stop
         self._header_lines = [x for x in read_header(catalog)]
+        self._epoch = None
 
     def _gen_distributions(self) -> Iterable[List[_DistributionParams]]:
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=THREADS) as executor:
             for name, orbital_elems in asteroid_gen(self._catalog, self._start, self._stop):
+                if self._epoch is None:
+                    self._epoch = orbital_elems[0]
                 task = executor.submit(_wrapped_grab_variations, name, orbital_elems)
                 task.add_done_callback(_accumulate_distributions)
 
@@ -131,7 +131,7 @@ class VirtualAsteroidCatalogBuilder:
         self._gen_distributions()
 
         for name, dists in _name_dists:
-            _dump_dists(name, dists, count)
+            _dump_dists(name, dists, count, self._epoch)
 
 
 def _virtual_asteroid_gen(dists: Iterable[_DistributionParams], count: int)\
