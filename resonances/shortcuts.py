@@ -142,7 +142,7 @@ def add_integer_filter(query: Query, ints: List[str], body_tables: List[AliasedC
 
     for integer, table in zip(ints, body_tables):
         if integer != any_int:
-            query = query.filter(eval("table.longitude_coeff %s" % integer))
+            query = query.filter(eval('table.longitude_coeff %s' % integer))
     return query
 
 

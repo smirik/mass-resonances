@@ -127,3 +127,6 @@ s3:
 online:
   neodys:
     variation_base_url: 'http://newton.dm.unipi.it/neodys/index.php?pc=1.1.1&n='
+
+system:
+  threads: 1

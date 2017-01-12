@@ -77,6 +77,15 @@ class GetQueryBuilder:
         return query
 
 
+def filter_by_planets(query: Query, planets) -> Query:
+    body_count = BodyNumberEnum(len(planets) + 1)
+    for i, key in enumerate(FOREIGNS):
+        if i >= (body_count.value - 1):
+            break
+        query = query.filter(PLANET_TABLES[key].name == planets[i])
+    return query
+
+
 def get_resonance_query(for_bodies: BodyNumberEnum) -> Query:
     """
     Make select query for getting two or three body resonances.
@@ -102,7 +111,7 @@ def get_resonance_query(for_bodies: BodyNumberEnum) -> Query:
     return query
 
 
-def _filter_by_integers(query: Query, builder, integers) -> Query:
+def filter_by_integers(query: Query, builder: GetQueryBuilder, integers: List[int]) -> Query:
     if integers:
         tables = [PLANET_TABLES['first_body']]
         if builder.for_bodies == BodyNumberEnum.three:
@@ -113,7 +122,7 @@ def _filter_by_integers(query: Query, builder, integers) -> Query:
     return query
 
 
-def _iterate_resonances(query: Query, empty_message: str) -> Iterable[ResonanceMixin]:
+def iterate_resonances(query: Query, empty_message: str) -> Iterable[ResonanceMixin]:
     is_empty = True
     for resonance in query:
         is_empty = False
@@ -139,20 +148,17 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
     builder = GetQueryBuilder(body_count, True)
     query = builder.get_resonances()
     t1 = builder.asteroid_alias
-    for i, key in enumerate(FOREIGNS):
-        if i >= (body_count.value - 1):
-            break
-        query = query.filter(PLANET_TABLES[key].name == planets[i])
+    query = filter_by_planets(query, planets)
     query = query.filter(builder.asteroid_alias.name.op('~')('A\d*$'))\
         .filter(t1.number >= start, t1.number < stop)\
         .options(joinedload('libration')).order_by(builder.asteroid_alias.number)
 
-    query = _filter_by_integers(query, builder, integers)
+    query = filter_by_integers(query, builder, integers)
     if only_librations:
         query = query.join('libration')
 
     msg = 'We have no resonances, try command load-resonances --start=%i --stop=%i' % (start, stop)
-    yield from _iterate_resonances(query, msg)
+    yield from iterate_resonances(query, msg)
 
 
 def get_resonances_with_id(id_list, planets: Tuple[str, ...], integers: List[str])\
@@ -167,17 +173,14 @@ def get_resonances_with_id(id_list, planets: Tuple[str, ...], integers: List[str
     body_count = BodyNumberEnum(len(planets) + 1)
     builder = GetQueryBuilder(body_count, True)
     query = builder.get_resonances()
-    for i, key in enumerate(FOREIGNS):
-        if i >= (body_count.value - 1):
-            break
-        query = query.filter(PLANET_TABLES[key].name == planets[i])
+    query = filter_by_planets(query, planets)
     query = query.filter(builder.resonance_cls.id.in_(id_list))\
         .order_by(builder.asteroid_alias.name)
 
     if integers:
-        query = _filter_by_integers(query, builder, integers)
+        query = filter_by_integers(query, builder, integers)
     msg = 'We have no resonances'
-    yield from _iterate_resonances(query, msg)
+    yield from iterate_resonances(query, msg)
 
 
 class AEIDataGetter:

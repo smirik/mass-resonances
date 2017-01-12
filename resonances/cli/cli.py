@@ -330,3 +330,13 @@ def get_variations(asteroids: tuple, csv: bool):
 def virtast(catalog: str, count: int):
     from resonances.commands.virtualast import VirtualAsteroidCatalogBuilder
     VirtualAsteroidCatalogBuilder(catalog).build(count)
+
+
+@cli.command()
+@click.option('--integers', '-i', type=str, callback=validate_integer_expression, default=None,
+              help='Examples: \'>1 1\', \'>=3 <5\', \'1 -1 *\'')
+@click.option('--count', type=int, callback=validate_positivie_int)
+@click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
+def randomast(integers: List[int], planets: Tuple[str], count: int):
+    from resonances.commands import get_random_asteroids
+    get_random_asteroids(integers, planets, count)
