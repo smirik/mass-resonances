@@ -16,3 +16,4 @@ from .plot import plot
 from .genres import genres
 from .resonace_table import generate_resonance_table
 from .variations import get_variations
+from .randomast import get_random_asteroids
