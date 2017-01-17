@@ -161,7 +161,7 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
     yield from iterate_resonances(query, msg)
 
 
-def get_resonances_with_id(id_list, planets: Tuple[str, ...], integers: List[str])\
+def get_resonances_with_id(id_list: List[int], planets: Tuple[str, ...], integers: List[str])\
         -> Iterable[ResonanceMixin]:
     """get_resonances_with_id returns generator of resonances mined from
     database by pointed id numbers and integers satisfying D'Alambert rule.
@@ -179,7 +179,7 @@ def get_resonances_with_id(id_list, planets: Tuple[str, ...], integers: List[str
 
     if integers:
         query = filter_by_integers(query, builder, integers)
-    msg = 'We have no resonances'
+    msg = 'We have no resonances for %s with integers %s' % (' '.join(planets), ' '.join(integers))
     yield from iterate_resonances(query, msg)
 
 

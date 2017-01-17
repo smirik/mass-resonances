@@ -15,6 +15,6 @@ def get_random_asteroids(of_resonance_integers: List[str], for_planets: tuple, c
     query = filter_by_planets(query, for_planets)
     query = filter_by_integers(query, builder, of_resonance_integers)
 
-    msg = 'We have no resonances'
+    msg = 'We have no resonances for %s' % ' '.join(for_planets)
     names = sample([x.small_body.name[1:] for x in iterate_resonances(query, msg)], count)
     return names

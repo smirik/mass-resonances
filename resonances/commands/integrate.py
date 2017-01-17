@@ -248,10 +248,10 @@ class _FindCommand(_ACommand):
                 for filename in listdir(folder):
                     with open(opjoin(folder, filename)) as fd:
                         aggregated_resonances_id = json.load(fd)  # type: Dict[str, List[int]]
-                        resonances_id = reduce(add, aggregated_resonances_id.values())
+                        resonances_id_list = reduce(add, aggregated_resonances_id.values())
 
                         resonance_gen = get_resonances_with_id(
-                            resonances_id, planets, self._integers)
+                            resonances_id_list, planets, self._integers)
                         gen = self._resonance_aei_gen(resonance_gen)
                         finder.find_by_resonances(gen, (self._aei_path,))
             self._integration.save(self._state)
