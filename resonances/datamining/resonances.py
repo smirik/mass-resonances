@@ -161,6 +161,10 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
     yield from iterate_resonances(query, msg)
 
 
+class NoIDlistException(Exception):
+    pass
+
+
 def get_resonances_with_id(id_list: List[int], planets: Tuple[str, ...], integers: List[str])\
         -> Iterable[ResonanceMixin]:
     """get_resonances_with_id returns generator of resonances mined from
@@ -170,17 +174,23 @@ def get_resonances_with_id(id_list: List[int], planets: Tuple[str, ...], integer
     :param planets:
     :param integers:
     """
+    if not id_list:
+        raise NoIDlistException
     body_count = BodyNumberEnum(len(planets) + 1)
     builder = GetQueryBuilder(body_count, True)
     query = builder.get_resonances()
     query = filter_by_planets(query, planets)
     query = query.filter(builder.resonance_cls.id.in_(id_list))\
         .order_by(builder.asteroid_alias.name)
-
     if integers:
         query = filter_by_integers(query, builder, integers)
-    msg = 'We have no resonances for %s with integers %s' % (' '.join(planets), ' '.join(integers))
-    yield from iterate_resonances(query, msg)
+    msg = 'We have no resonances for %s' % ' '.join(planets)
+    if integers:
+        int_msg = 'with integers %s.' % ' '.join([str(x) for x in integers])
+    else:
+        int_msg = 'without integers'
+
+    yield from iterate_resonances(query, '%s %s' % (msg, int_msg))
 
 
 class AEIDataGetter:

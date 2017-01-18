@@ -58,6 +58,17 @@ class _Integration:
     """
     Class aims to store state of complete cycle of integration. It also
     contains neccessary options used by related commands.
+
+    Every step of integration is saved in file /tmp/integration_state.txt. This file
+    contains only on number represents step.
+    1 means complete computing of aei files.
+    2 means complete generation of resonances.
+    3 means complete search of librations.
+
+    After computing aei files they will be in /tmp/aei folder.
+    After generating resonances the application saves id numbers of the
+    resonances to /tmp/resonances/<BODIES>/. The id numbers will be grouped by
+    suitable asteoroids.
     """
     def __init__(self, catalog: str):
         if opexists(self.state_file):
@@ -190,11 +201,22 @@ class _LoadCommand(_ACommand):
                     aggregated_resonances = load_resonances(
                         RESONANCE_FILEPATH, asteroid_buffer, builder, True)
 
-                    filename = opjoin(folder, 'agres-%i.json' % i)
-                    with open(filename, 'w') as fd:
-                        json.dump(aggregated_resonances, fd)
+                    asteroids_without_resonances = [
+                        x for x in aggregated_resonances.keys() if not aggregated_resonances[x]
+                    ]
+                    for key in asteroids_without_resonances:
+                        del aggregated_resonances[key]
 
-                    self._integration.files_with_aggregated_asteroids.append(filename)
+                    if asteroids_without_resonances:
+                        logging.info('Asteroids %s have no resonances with axis variation: %f',
+                                     ' '.join(asteroids_without_resonances), builder.axis_swing)
+
+                    if aggregated_resonances:
+                        filename = opjoin(folder, 'agres-%i.json' % i)
+                        with open(filename, 'w') as fd:
+                            json.dump(aggregated_resonances, fd)
+
+                        self._integration.files_with_aggregated_asteroids.append(filename)
             self._integration.save(self._state)
 
 
