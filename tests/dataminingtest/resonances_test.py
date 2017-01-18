@@ -105,3 +105,12 @@ def test_planets(_resonance_fixture_different_planets):
 def test_only_librations(only_librations, resonance_count, _resonance_fixture_different_librations):
     asteroid_nums, planets, libration = _resonance_fixture_different_librations
     assert len([x for x in get_resonances(1, 10 ** 5, only_librations, planets)]) == resonance_count
+
+
+def test_if_there_are_non_numerical_asteroids(_resonancesfixture):
+    ASTEROIDS_NUMBER_IN_RESONANCESFIXTURE = 6
+    planets = ('JUPITER', 'SATURN')
+    line_data_set = ['1 1 1 0 0 -3 4.1509'.split(), '1 2 2 0 0 -5 3.5083'.split()]
+    _fixture_base(('2004A111',), (planets,), line_data_set)
+    assert len([x for x in get_resonances(1, 10 ** 5, False, planets)])\
+            == ASTEROIDS_NUMBER_IN_RESONANCESFIXTURE

@@ -149,7 +149,7 @@ def get_resonances(start: int, stop: int, only_librations: bool, planets: Tuple[
     query = builder.get_resonances()
     t1 = builder.asteroid_alias
     query = filter_by_planets(query, planets)
-    query = query.filter(builder.asteroid_alias.name.op('~')('A\d*$'))\
+    query = query.filter(builder.asteroid_alias.name.op('~')('^A\d*$'))\
         .filter(t1.number >= start, t1.number < stop)\
         .options(joinedload('libration')).order_by(builder.asteroid_alias.number)
 
