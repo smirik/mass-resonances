@@ -18,6 +18,7 @@ from .resonances import get_aggregated_resonances
 from .resonances import get_resonances
 from .resonances import AEIDataGetter
 from .resonances import ResonanceAeiData
+from .resonances import get_resonances_by_asteroids
 
 from .phases import PhaseBuilder
 from .phases import PhaseLoader

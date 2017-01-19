@@ -77,7 +77,30 @@ class GetQueryBuilder:
         return query
 
 
+def get_resonances_by_asteroids(asteroids_names: Iterable[str], only_librations: bool,
+                                integers: List[str], planets: tuple) -> Iterable[ResonanceMixin]:
+    """Get resonances satisfyied pointed parameters."""
+    body_count = BodyNumberEnum(len(planets) + 1)
+    builder = GetQueryBuilder(body_count, True)
+    query = builder.get_resonances()
+    t1 = builder.asteroid_alias
+
+    query = query.filter(t1.name.in_(asteroids_names))
+    query = filter_by_integers(query, builder, integers)\
+        .options(joinedload('libration'))
+
+    if only_librations:
+        query = query.join('libration')
+
+    query = filter_by_planets(query, planets)
+
+    msg = 'We have no resonances, try command load-resonances for asteroids %s' % (
+        ', '.join(asteroids_names))
+    yield from iterate_resonances(query, msg)
+
+
 def filter_by_planets(query: Query, planets) -> Query:
+    """Add filter state for query that gets resonances."""
     body_count = BodyNumberEnum(len(planets) + 1)
     for i, key in enumerate(FOREIGNS):
         if i >= (body_count.value - 1):
@@ -196,16 +219,16 @@ def get_resonances_with_id(id_list: List[int], planets: Tuple[str, ...], integer
 class AEIDataGetter:
     def __init__(self, filepath_builder: FilepathBuilder, clear: bool = False):
         self._filepath_builder = filepath_builder
-        self._asteroid_number = None
+        self._asteroid_name = None
         self._aei_data = []
         self._clear = clear
 
-    def get_aei_data(self, for_asteroid_number: int) -> List[str]:
-        if for_asteroid_number != self._asteroid_number:
-            self._asteroid_number = for_asteroid_number
+    def get_aei_data(self, for_asteroid_name: str) -> List[str]:
+        if for_asteroid_name != self._asteroid_name:
+            self._asteroid_name = for_asteroid_name
             self._aei_data.clear()
 
-            aei_path = self._filepath_builder.build('A%s.aei' % self._asteroid_number)
+            aei_path = self._filepath_builder.build('%s.aei' % self._asteroid_name)
             with open(aei_path) as aei_file:
                 for line in aei_file:
                     self._aei_data.append(line)
@@ -236,6 +259,6 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librati
     for resonance in get_resonances(from_asteroid, to_asteroid, only_librations, planets, integers):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=exc.SAWarning)
-            aei_data = aei_getter.get_aei_data(resonance.asteroid_number)
+            aei_data = aei_getter.get_aei_data(resonance.small_body.name)
             assert len(aei_data) > 0
             yield resonance, aei_data
