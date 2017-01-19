@@ -283,7 +283,7 @@ def show_planets(body_count: str):
 
 
 @cli.command(help='Generate res files for pointed planets.')
-@click.option('--asteroid', '-a', type=int, help='Number of asteroid')
+@click.option('--asteroids', '-a', type=str, help='Number of asteroid', multiple=True)
 @click.option('--aei-paths', '-p', multiple=True,
               default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
               type=Path(exists=True, resolve_path=True),
@@ -291,14 +291,14 @@ def show_planets(body_count: str):
                    ' Provides downloading from AWS S3 if pointed options access_key,'
                    ' secret_key, bucket in section s3 inside settings file.'
                    ' Example: /etc/aei-1-101.tar.gz')
-@click.option('--integers', '-i', default=None, type=str,
+@click.option('--integers', '-i', type=str, callback=validate_integer_expression, default=None,
               help='Integers are pointing by three values separated by space.'
-                   ' Example: \'5 -1 -1\', Example \'1 -1\'', callback=validate_ints)
+                   ' Example: \'5 -1 -1\', Example \'1 -1\'')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1, callback=validate_planets)
-def genres(asteroid: int, integers: List[int], aei_paths: Tuple, planets: Tuple):
+def genres(asteroids: tuple, integers: List[str], aei_paths: Tuple, planets: Tuple):
     from resonances.commands import genres as _genres
     assert integers
-    _genres(asteroid, integers, [x for x in aei_paths], planets)
+    _genres(asteroids, integers, [x for x in aei_paths], planets)
 
 
 @cli.command(help='Generates resonance table')

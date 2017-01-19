@@ -77,6 +77,19 @@ class GetQueryBuilder:
         return query
 
 
+def get_resonances_by_asteroids(asteroids_names: Iterable[str], integers: List[str], planets: tuple):
+    body_count = BodyNumberEnum(len(planets) + 1)
+    builder = GetQueryBuilder(body_count, True)
+    query = builder.get_resonances()
+    t1 = builder.asteroid_alias
+
+    query = query.filter(t1.name.in_(asteroids_names))
+    query = filter_by_integers(query, builder, integers)
+
+    msg = 'We have no resonances, try command load-resonances for asteroids %s' % (
+        ', '.join(asteroids_names))
+    yield from iterate_resonances(query, msg)
+
 def filter_by_planets(query: Query, planets) -> Query:
     body_count = BodyNumberEnum(len(planets) + 1)
     for i, key in enumerate(FOREIGNS):
