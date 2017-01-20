@@ -63,12 +63,12 @@ script:
   - python -m resonances load-resonances --start=1 --stop=11 --axis-swing=0.05 -g MARS JUPITER
   - python -m resonances load-resonances --start=1 --stop=11 --axis-swing=0.1 -g SATURN
   - python -m resonances find JUPITER SATURN
-  - python -m resonances plot -o ./js-plots JUPITER SATURN
-  - python -m resonances plot -b -o ./j-plots JUPITER
+  - python -m resonances plot -a A1 -o ./js-plots JUPITER SATURN
+  - python -m resonances plot -a A1 -b -o ./j-plots JUPITER
   - ls -R ./js-plots/
   - ls -R ./j-plots/
-  - python -m resonances genres -i '1 -1' -a 1 JUPITER
-  - python -m resonances genres -i '4 -2 -1' -a 10 JUPITER SATURN
+  - python -m resonances genres -i '18 -7' -a A1 JUPITER
+  - python -m resonances genres -i '6 1 -3' -a A10 JUPITER SATURN
   - ls -R ./res
   - python -m resonances clear-phases --start=1 --stop=101 JUPITER
   - python -m resonances clear-phases --start=1 --stop=101 JUPITER SATURN

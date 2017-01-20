@@ -11,7 +11,7 @@ from .internal import aei_path_options
 from .internal import asteroid_interval_options
 from .internal import asteroid_time_intervals_options
 from .internal import time_interval
-from .internal import build_logging, validate_ints, validate_planets, validate_integer_expression, \
+from .internal import build_logging, validate_planets, validate_integer_expression, \
     validate_or_set_body_count
 from .internal import validate_positivie_int
 from .internal import report_interval_options
@@ -33,9 +33,9 @@ BodyCountType = TypeVar('T', str, int)
 
 
 @click.group()
-@click.option('--loglevel', default='DEBUG', help='default: DEBUG',
+@click.option('--loglevel', default='DEBUG', show_default=True,
               type=click.Choice(LEVELS))
-@click.option('--logfile', default=None, help='default: None',
+@click.option('--logfile', default=None, show_default=True,
               type=str)
 def cli(loglevel: str = 'DEBUG', logfile: str = None):
     build_logging(getattr(logging, loglevel), logfile, '%(asctime)s %(levelname)s %(message)s',
@@ -160,25 +160,25 @@ def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
                   ' Libration can be created by command \'find\'.')
-@asteroid_interval_options()
+@click.option('--asteroid', '-a', 'asteroids', type=str, multiple=True)
 @click.option('--phase-storage', default='FILE', type=click.Choice(PHASE_STORAGE),
               help='will load phases for plotting from redis or postgres or file')
 @click.option('--only-librations', default=False, type=bool,
               help='flag indicates about plotting only for resonances, that librates')
 @click.option('--output', '-o', default=os.getcwd(), type=Path(resolve_path=True),
-              help='Directory or tar, where will be plots. By default is current directory.')
+              help='Directory or tar, where will be plots.', show_default=True)
 @click.option('--integers', '-i', default=None, type=str, callback=validate_integer_expression,
               help='Integers are pointing by three values separated by space. Example: \'5 -1 -1\'')
 @click.option('--build-phase', '-b', default=False, type=bool, is_flag=True,
               help='It will build phases')
 @aei_path_options()
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1)
-def plot(start: int, stop: int, phase_storage: str, only_librations: bool,
+def plot(asteroids: tuple, phase_storage: str, only_librations: bool,
          integers: List[str], aei_paths: Tuple[str, ...], recursive: bool,
          planets: Tuple[str], output: str, build_phase: bool):
     from resonances.datamining import PhaseStorage
     from resonances.commands import plot as _plot
-    _plot(start, stop, PhaseStorage(PHASE_STORAGE.index(phase_storage)),
+    _plot(asteroids, PhaseStorage(PHASE_STORAGE.index(phase_storage)),
           only_librations, integers, aei_paths, recursive, planets, output, build_phase)
 
 
@@ -283,7 +283,7 @@ def show_planets(body_count: str):
 
 
 @cli.command(help='Generate res files for pointed planets.')
-@click.option('--asteroid', '-a', type=int, help='Number of asteroid')
+@click.option('--asteroids', '-a', type=str, help='Number of asteroid', multiple=True)
 @click.option('--aei-paths', '-p', multiple=True,
               default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
               type=Path(exists=True, resolve_path=True),
@@ -291,14 +291,14 @@ def show_planets(body_count: str):
                    ' Provides downloading from AWS S3 if pointed options access_key,'
                    ' secret_key, bucket in section s3 inside settings file.'
                    ' Example: /etc/aei-1-101.tar.gz')
-@click.option('--integers', '-i', default=None, type=str,
+@click.option('--integers', '-i', type=str, callback=validate_integer_expression, default=None,
               help='Integers are pointing by three values separated by space.'
-                   ' Example: \'5 -1 -1\', Example \'1 -1\'', callback=validate_ints)
+                   ' Example: \'5 -1 -1\', Example \'1 -1\'')
 @click.argument('planets', type=click.Choice(PLANETS), nargs=-1, callback=validate_planets)
-def genres(asteroid: int, integers: List[int], aei_paths: Tuple, planets: Tuple):
+def genres(asteroids: tuple, integers: List[str], aei_paths: Tuple, planets: Tuple):
     from resonances.commands import genres as _genres
     assert integers
-    _genres(asteroid, integers, [x for x in aei_paths], planets)
+    _genres(asteroids, integers, [x for x in aei_paths], planets)
 
 
 @cli.command(help='Generates resonance table')
