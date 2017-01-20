@@ -27,4 +27,3 @@ from .phases import PhaseCleaner
 from .phases import get_file_name
 
 from .asteroids import get_random_asteroids
-

@@ -20,7 +20,7 @@ from resonances.entities.body import Planet
 from resonances.shortcuts import cutoff_angle
 from tests.shortcuts import TARGET_TABLES, clear_resonance_finalizer
 from tests.shortcuts import get_class_path
-from tests.shortcuts import resonancesfixture
+
 
 BODY_FOREIGNS = ['first_body', 'second_body']
 

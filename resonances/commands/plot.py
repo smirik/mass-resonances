@@ -1,4 +1,5 @@
 import logging
+from boto.s3.key import Key
 from resonances.entities import ResonanceMixin
 import os
 import shutil
@@ -11,12 +12,12 @@ from resonances.datamining import AEIDataGetter, PhaseBuilder, ResonanceOrbitalE
 from resonances.datamining import ComputedOrbitalElementSetFacade
 from resonances.datamining import PhaseLoader, PhaseStorage
 from resonances.datamining import build_bigbody_elements
-from resonances.datamining import get_aggregated_resonances
 from resonances.datamining.orbitalelements import FilepathBuilder
 from resonances.shortcuts import create_aws_s3_key
 from resonances.shortcuts import cutoff_angle
 from resonances.shortcuts import is_s3 as _is_s3
 from resonances.shortcuts import is_tar as _is_tar
+from resonances.datamining import get_resonances_by_asteroids
 
 from resonances.settings import Config
 from resonances.view import make_plot
@@ -44,6 +45,12 @@ class OutPaths:
         self.output_images = opjoin(output_dir, outoption['images'])
         self.output_res_path = opjoin(output_dir, outoption['angle'])
         self.output_gnu_path = opjoin(output_dir, outoption['gnuplot'])
+
+        if not os.path.exists(self.output_images):
+            os.makedirs(self.output_images)
+
+        if not os.path.exists(self.output_gnu_path):
+            os.makedirs(self.output_gnu_path)
 
 
 class OutTarException(Exception):
@@ -87,7 +94,7 @@ class ImageBuilder:
         self._res_filepath = opjoin(out_paths.output_res_path, 'A%i_%i.res' %
                                     (resonance.asteroid_number, resonance.id))
         self._gnu_filepath = opjoin(out_paths.output_gnu_path, 'A%i_%i.gnu' %
-                              (resonance.asteroid_number, resonance.id))
+                                    (resonance.asteroid_number, resonance.id))
         self._title = title
         self._resmaker = resmaker
         self._out_paths = out_paths
@@ -133,7 +140,16 @@ class PlotBuilder:
         self._saver.save(png_path)
 
 
-def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: bool,
+def _get_folder_on_s3(tarpath) -> Key:
+    """Makes folder for tar archive on AWS S3 bucket."""
+    tar_dir = opjoin(PROJECT_DIR, os.path.basename(tarpath))
+    s3_bucket_key = create_aws_s3_key(CONFIG['s3']['access_key'],
+                                      CONFIG['s3']['secret_key'],
+                                      CONFIG['s3']['bucket'], tar_dir)
+    return s3_bucket_key
+
+
+def plot(asteroids: tuple, phase_storage: PhaseStorage, for_librations: bool,
          integers: List[str], aei_paths: Tuple[str, ...], is_recursive: bool, planets: Tuple[str],
          output: str, build_phases: bool):
     is_s3 = _is_s3(output)
@@ -151,20 +167,11 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
         if not is_tar:
             logging.error('You must point tar archive in AWS S3 bucket.')
             exit(-1)
-        output = opjoin(PROJECT_DIR, os.path.basename(output))
-        s3_bucket_key = create_aws_s3_key(CONFIG['s3']['access_key'],
-                                          CONFIG['s3']['secret_key'],
-                                          CONFIG['s3']['bucket'], output)
+        s3_bucket_key = _get_folder_on_s3(output)
 
     pathbuilder = FilepathBuilder(aei_paths, is_recursive)
     planet_aei_paths = [pathbuilder.build('%s.aei' % x) for x in planets]
     resmaker = ResfileMaker(planets, planet_aei_paths)
-
-    if not os.path.exists(out_paths.output_images):
-        os.makedirs(out_paths.output_images)
-
-    if not os.path.exists(out_paths.output_gnu_path):
-        os.makedirs(out_paths.output_gnu_path)
 
     phase_builder = PhaseBuilder(phase_storage)
     orbital_element_sets = None
@@ -176,8 +183,8 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
     plot_saver = PlotSaver(out_paths, output if is_tar else None, s3_bucket_key)
     builder = PlotBuilder(phase_loader, plot_saver, resmaker, planets)
 
-    for resonance, aei_data in get_aggregated_resonances(start, stop, for_librations, planets,
-                                                         aei_getter, integers):
+    for resonance in get_resonances_by_asteroids(asteroids, for_librations, integers, planets):
+        aei_data = aei_getter.get_aei_data(resonance.small_body.name)
         if build_phases:
             orbital_elem_set_facade = ResonanceOrbitalElementSetFacade(
                 orbital_element_sets, resonance)
@@ -186,4 +193,4 @@ def plot(start: int, stop: int, phase_storage: PhaseStorage, for_librations: boo
         builder.build(resonance, aei_data)
 
     if is_tar:
-        shutil.rmtree(out_paths.output_root, True)
+        shutil.rmtree(out_paths.output_dir, True)
