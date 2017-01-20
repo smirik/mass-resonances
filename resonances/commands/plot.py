@@ -91,10 +91,11 @@ class ImageBuilder:
                  aei_data: List[str], out_paths: OutPaths):
 
         self._resonance = resonance
-        self._res_filepath = opjoin(out_paths.output_res_path, 'A%i_%i.res' %
-                                    (resonance.asteroid_number, resonance.id))
-        self._gnu_filepath = opjoin(out_paths.output_gnu_path, 'A%i_%i.gnu' %
-                                    (resonance.asteroid_number, resonance.id))
+        asteroid_name = resonance.small_body.name
+        self._res_filepath = opjoin(out_paths.output_res_path, '%s_%i.res' %
+                                    (asteroid_name, resonance.id))
+        self._gnu_filepath = opjoin(out_paths.output_gnu_path, '%s_%i.gnu' %
+                                    (asteroid_name, resonance.id))
         self._title = title
         self._resmaker = resmaker
         self._out_paths = out_paths
@@ -104,8 +105,8 @@ class ImageBuilder:
         """makes png and return path to it."""
         output_images = self._out_paths.output_images
         self._resmaker.make(phases, self._aei_data, self._res_filepath)
-        png_path = opjoin(PROJECT_DIR, output_images, 'A%i-res%i%s.png' % (
-            self._resonance.asteroid_number, self._resonance.id, suffix))
+        png_path = opjoin(PROJECT_DIR, output_images, '%s-res%i%s.png' % (
+            self._resonance.small_body.name, self._resonance.id, suffix))
         make_plot(self._res_filepath, self._gnu_filepath, png_path, self._title)
 
         return png_path
@@ -129,7 +130,7 @@ class PlotBuilder:
     def build(self, resonance: ResonanceMixin, aei_data: List[str]):
         phases = self._phase_loader.load(resonance.id)
         apocentric_phases = [cutoff_angle(x + pi) for x in phases]
-        title = 'Asteroid %i %s %s' % (resonance.asteroid_number, str(resonance),
+        title = 'Asteroid %s %s %s' % (resonance.small_body.name, str(resonance),
                                        ' '.join(self._planets))
         image_builder = ImageBuilder(resonance, title, self._resmaker, aei_data,
                                      self._saver.out_paths)
