@@ -160,7 +160,7 @@ def integrate(from_day: float, to_day: float, planets: Tuple[str], catalog: str,
 
 @cli.command(help='Build graphics for asteroids in pointed interval, that have libration.'
                   ' Libration can be created by command \'find\'.')
-@click.option('--asteroid', '-a', 'asteroids', type=str, multiple=True)
+@click.option('--asteroid', '-a', 'asteroids', type=str, multiple=True, help='Name of asteroid')
 @click.option('--phase-storage', default='FILE', type=click.Choice(PHASE_STORAGE),
               help='will load phases for plotting from redis or postgres or file')
 @click.option('--only-librations', default=False, type=bool,
@@ -283,7 +283,7 @@ def show_planets(body_count: str):
 
 
 @cli.command(help='Generate res files for pointed planets.')
-@click.option('--asteroids', '-a', type=str, help='Number of asteroid', multiple=True)
+@click.option('--asteroids', '-a', type=str, help='Name of asteroid', multiple=True)
 @click.option('--aei-paths', '-p', multiple=True,
               default=(opjoin(PROJECT_DIR, INTEGRATOR_DIR),),
               type=Path(exists=True, resolve_path=True),

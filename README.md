@@ -171,17 +171,14 @@ Options:
   Libration can be created by command 'find'.
 
 Options:
-  --start INTEGER                 Start asteroid number. Counting from 1.
-  --stop INTEGER                  Stop asteroid number. Excepts last. Means,
-                                  that asteroid with number, that equals this
-                                  parameter, will not be integrated.
+  -a, --asteroid TEXT             Name of asteroid
   --phase-storage [REDIS|DB|FILE]
                                   will load phases for plotting from redis or
                                   postgres or file
   --only-librations BOOLEAN       flag indicates about plotting only for
                                   resonances, that librates
-  -o, --output PATH               Directory or tar, where will be plots. By
-                                  default is current directory.
+  -o, --output PATH               Directory or tar, where will be plots.
+                                  [default: /media/storage/develop/resonances]
   -i, --integers TEXT             Integers are pointing by three values
                                   separated by space. Example: '5 -1 -1'
   -b, --build-phase               It will build phases
