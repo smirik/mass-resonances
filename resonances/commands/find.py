@@ -194,5 +194,12 @@ class _BrokenAsteroidMediator:
         table = BrokenAsteroid.__table__
         insert_q = table.insert().values(name=self._asteroid_name, reason=reason)
         insert_q = OnConflictInsert(insert_q, ['name'])
-        conn = engine.connect()
-        conn.execute(insert_q)
+
+        connection = engine.connect()
+        trans = connection.begin()
+        try:
+            connection.execute(insert_q)
+            trans.commit()
+        except:
+            trans.rollback()
+            raise
