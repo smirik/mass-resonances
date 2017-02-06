@@ -170,7 +170,7 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
         super(ResonanceOrbitalElementSetFacade, self).__init__(orbital_element_sets)
         self._resonance = resonance
 
-    def _compute_phases(self, elems: List[List[OrbitalElementSet]],
+    def _compute_phases(self, elems: List[Tuple[np.ndarray, np.ndarray]],
                         small_body_m_l: np.array, small_body_p_l: np.array) -> np.array:
         phases = np.zeros(len(elems))
         for i in range(len(elems[0])):
@@ -227,11 +227,28 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
 
     def get_resonant_phases(self, aei_data: pd.DataFrame) -> Iterable[Tuple[float, float]]:
         self._validate_asteroid_orbital_elements(aei_data)
+        phases = np.zeros(aei_data.shape[0])
+        for big_body, set_ in zip(self._resonance.get_big_bodies(), self._orbital_element_sets):
+            m_longs, p_longs, times = self._get_longitutes(set_.orbital_elements)
+            summand1 = m_longs * big_body.longitude_coeff
+            summand2 = p_longs * big_body.perihelion_longitude_coeff
+            phases += summand1 + summand2
+
         m_longs, p_longs, times = self._get_longitutes(aei_data)
-        elems = [x for x in self._get_body_orbital_elements2(aei_data)]
-        if not elems:
-            return []
-        phases = self._compute_phases(elems, m_longs, p_longs)
+        small_body = self._resonance.small_body
+        phases += (
+            m_longs * small_body.longitude_coeff +
+            p_longs * small_body.perihelion_longitude_coeff
+        )
+
+        # elems = [x for x in self._get_body_orbital_elements2(aei_data)]
+        # if not elems:
+            # return []
+        # phases = self._compute_phases(planet_elems, m_longs, p_longs)
+        print('%s %s %s' % (str(self._resonance), small_body.number,
+              ' '.join([x.name for x in self._resonance.get_big_bodies()])))
+        print('\n'.join([str(x) for x in phases]))
+        exit(1)
         return [(x, y) for x, y in zip(times, phases)]
 
     def get_elements(self, aei_data: List[str]) -> Iterable[str]:

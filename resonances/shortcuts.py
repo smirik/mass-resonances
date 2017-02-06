@@ -18,6 +18,9 @@ from functools import reduce
 from operator import add
 
 
+AEI_HEADER = ['Time (years)', 'long', 'M', 'a', 'e', 'i', 'peri', 'node', 'mass']
+
+
 PLANETS = ['EARTHMOO', 'JUPITER', 'MARS', 'NEPTUNE',
            'SATURN', 'URANUS', 'VENUS']
 

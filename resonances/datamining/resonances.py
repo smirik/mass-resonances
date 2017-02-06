@@ -25,6 +25,7 @@ from sqlalchemy.orm.util import AliasedClass
 from resonances.entities.body import Asteroid
 from resonances.entities.body import Planet
 from resonances.settings import Config
+from resonances.shortcuts import AEI_HEADER
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -219,9 +220,6 @@ def get_resonances_with_id(id_list: List[int], planets: Tuple[str, ...], integer
         int_msg = 'without integers'
 
     yield from iterate_resonances(query, '%s %s' % (msg, int_msg))
-
-
-AEI_HEADER = ['Time (years)', 'long', 'M', 'a', 'e', 'i', 'peri', 'node', 'mass']
 
 
 class AEIDataGetter:
