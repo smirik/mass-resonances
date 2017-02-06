@@ -1,5 +1,7 @@
 import json
 import os
+import pandas as pd
+
 from enum import Enum
 from enum import unique
 from os.path import isabs
@@ -70,7 +72,7 @@ class PhaseBuilder:
     def __init__(self, phase_storage: PhaseStorage = None):
         self._phase_storage = phase_storage
 
-    def build(self, by_aei_data: List[str], resonance_id: int,
+    def build(self, by_aei_data: pd.DataFrame, resonance_id: int,
               orbital_elem_set: ResonanceOrbitalElementSetFacade) \
             -> List[Dict[str, float]]:
 

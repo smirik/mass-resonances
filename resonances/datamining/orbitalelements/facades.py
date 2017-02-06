@@ -12,6 +12,7 @@ from resonances.entities.body import PERI
 from resonances.shortcuts import cutoff_angle
 from .collection import OrbitalElementSet
 from .collection import OrbitalElementSetCollection
+import pandas as pd
 
 SMALL_BODY = 'small_body'
 BIG_BODIES = 'big_bodies'
@@ -63,19 +64,20 @@ class IOrbitalElementSetFacade(object):
                     (first_elems_len, second_elems_len)
                 )
 
-    def _get_body_orbital_elements2(self, aei_data: List[str]) \
+    def _get_body_orbital_elements2(self, aei_data: pd.DataFrame) \
             -> Iterable[List[OrbitalElementSet]]:
         # -> Iterable[_AggregatedElements]:
         """Build orbital elements of bodies from data of the .aei file.
         :return: generator of dictionaries, contains set of orbital elements
         for two planets and asteroid.
         """
-        for i, line in enumerate(aei_data):
-            if i < HEADER_LINE_COUNT:
-                continue
+        # for i, line in enumerate(aei_data):
+        for i in range(aei_data.shape[0]):
+            # if i < HEADER_LINE_COUNT:
+            #     continue
 
-            index = i - HEADER_LINE_COUNT
-            var = [x[index] for x in self._orbital_element_sets]
+            # index = i - HEADER_LINE_COUNT
+            var = [x[i] for x in self._orbital_element_sets]
             # yield _AggregatedElements(OrbitalElementSet(line), var)
             yield var
 
@@ -205,18 +207,27 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
         m_longs = p_longs + mean_anomalies
         return m_longs, p_longs, times
 
-    def _validate_asteroid_orbital_elements(self, from_aei_data: List[str]):
+# AEI_HEADER = ['Time (years)', 'long', 'M', 'a', 'e', 'i', 'peri', 'node', 'mass']
+
+    def _get_longitutes(self, aei_data: pd.DataFrame):
+        times = aei_data['Time (years)']
+        p_longs = np.radians(aei_data['long'])
+        mean_anomalies = np.radians(aei_data['M'])
+        m_longs = p_longs + mean_anomalies
+        return m_longs, p_longs, times
+
+    def _validate_asteroid_orbital_elements(self, from_aei_data: pd.DataFrame):
         planets_elements_count = len(self._orbital_element_sets[0])
-        asteroid_elements_count = len(from_aei_data) - HEADER_LINE_COUNT
+        asteroid_elements_count = from_aei_data.shape[0]
         if planets_elements_count != asteroid_elements_count:
             raise AsteroidElementCountException(
                 'Number of elements (%i) for asteroid in aei file is not '
                 'equal to number of elements (%i) for planets.' %
                 (planets_elements_count, asteroid_elements_count))
 
-    def get_resonant_phases(self, aei_data: List[str]) -> Iterable[Tuple[float, float]]:
+    def get_resonant_phases(self, aei_data: pd.DataFrame) -> Iterable[Tuple[float, float]]:
         self._validate_asteroid_orbital_elements(aei_data)
-        m_longs, p_longs, times = self._get_asteroid_pars(aei_data)
+        m_longs, p_longs, times = self._get_longitutes(aei_data)
         elems = [x for x in self._get_body_orbital_elements2(aei_data)]
         if not elems:
             return []

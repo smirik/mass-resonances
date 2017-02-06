@@ -3,6 +3,10 @@ Module contains kit for getting resonances from databases.
 """
 import logging
 import warnings
+
+import pandas as pd
+import numpy as np
+
 from os import remove
 from os.path import join as opjoin
 from typing import Iterable, Tuple, List, Dict
@@ -28,7 +32,8 @@ MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 
 FOREIGNS = ['first_body', 'second_body']
 PLANET_TABLES = {x: aliased(Planet) for x in FOREIGNS}  # type: Dict[str, Planet]
-ResonanceAeiData = Tuple[ResonanceMixin, List[str]]
+# ResonanceAeiData = Tuple[ResonanceMixin, List[str]]
+ResonanceAeiData = Tuple[ResonanceMixin, pd.DataFrame]
 
 
 class GetQueryBuilder:
@@ -216,6 +221,9 @@ def get_resonances_with_id(id_list: List[int], planets: Tuple[str, ...], integer
     yield from iterate_resonances(query, '%s %s' % (msg, int_msg))
 
 
+AEI_HEADER = ['Time (years)', 'long', 'M', 'a', 'e', 'i', 'peri', 'node', 'mass']
+
+
 class AEIDataGetter:
     def __init__(self, filepath_builder: FilepathBuilder, clear: bool = False):
         self._filepath_builder = filepath_builder
@@ -235,6 +243,18 @@ class AEIDataGetter:
             if self._clear:
                 remove(aei_path)
 
+        return self._aei_data
+
+    def get_aei_matrix(self, for_asteroid_name: str) -> pd.DataFrame:
+        if for_asteroid_name != self._asteroid_name:
+            self._asteroid_name = for_asteroid_name
+            self._aei_data = None
+
+            aei_path = self._filepath_builder.build('%s.aei' % self._asteroid_name)
+            self._aei_data = pd.read_csv(aei_path, dtype=np.float64, names=AEI_HEADER,
+                                         skiprows=4, delimiter=r"\s+")
+            if self._clear:
+                remove(aei_path)
         return self._aei_data
 
 
@@ -259,6 +279,6 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librati
     for resonance in get_resonances(from_asteroid, to_asteroid, only_librations, planets, integers):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=exc.SAWarning)
-            aei_data = aei_getter.get_aei_data(resonance.small_body.name)
-            assert len(aei_data) > 0
+            aei_data = aei_getter.get_aei_matrix(resonance.small_body.name)
+            assert aei_data.size > 0
             yield resonance, aei_data
