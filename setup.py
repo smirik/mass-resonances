@@ -25,5 +25,6 @@ setup(
         'boto==2.41.0',
         'numpy==1.10.4',
         'beautifulsoup4==4.5.1',
+        'pandas==0.19.2',
     ],
 )
