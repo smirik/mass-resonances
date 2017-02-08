@@ -184,7 +184,10 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
             p_longs * small_body.perihelion_longitude_coeff
         )
 
-        phases = [cutoff_angle(x) for x in phases]
+        phases = np.mod(phases, 2 * np.pi)
+        mask = np.where(phases > np.pi)
+        phases[mask] = phases[mask] - 2 * np.pi
+
         return [(x, y) for x, y in zip(times, phases)]
 
     def get_elements(self, aei_data: List[str]) -> Iterable[str]:
