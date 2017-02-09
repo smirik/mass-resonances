@@ -5,7 +5,6 @@ import logging
 import warnings
 
 import pandas as pd
-import numpy as np
 
 from os import remove
 from os.path import join as opjoin
@@ -25,7 +24,7 @@ from sqlalchemy.orm.util import AliasedClass
 from resonances.entities.body import Asteroid
 from resonances.entities.body import Planet
 from resonances.settings import Config
-from resonances.shortcuts import AEI_HEADER
+from resonances.shortcuts import read_aei
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -249,8 +248,7 @@ class AEIDataGetter:
             self._aei_data = None
 
             aei_path = self._filepath_builder.build('%s.aei' % self._asteroid_name)
-            self._aei_data = pd.read_csv(aei_path, dtype=np.float64, names=AEI_HEADER,
-                                         skiprows=4, delimiter=r"\s+")
+            self._aei_data = read_aei(aei_path)
             if self._clear:
                 remove(aei_path)
         return self._aei_data

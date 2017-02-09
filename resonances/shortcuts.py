@@ -16,9 +16,17 @@ from sqlalchemy.orm.util import AliasedClass
 from itertools import combinations
 from functools import reduce
 from operator import add
+import pandas as pd
+import numpy as np
 
 
 AEI_HEADER = ['Time (years)', 'long', 'M', 'a', 'e', 'i', 'peri', 'node', 'mass']
+
+
+def read_aei(aei_path) -> pd.DataFrame:
+    res = pd.read_csv(aei_path, dtype=np.float64, names=AEI_HEADER,
+                      skiprows=4, delimiter=r"\s+")
+    return res
 
 
 PLANETS = ['EARTHMOO', 'JUPITER', 'MARS', 'NEPTUNE',

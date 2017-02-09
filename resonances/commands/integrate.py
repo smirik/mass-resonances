@@ -34,6 +34,7 @@ from resonances.catalog import AsteroidData
 from resonances.catalog import asteroid_list_gen
 from resonances.catalog import asteroid_names_gen
 from resonances.io import move_aei_files
+from resonances.shortcuts import read_aei
 
 CONFIG = Config.get_params()
 RESONANCE_TABLE_FILE = CONFIG['resonance_table']['file']
@@ -248,8 +249,8 @@ class _FindCommand(_ACommand):
         for resonance in resonances:
             if asteroid_name != resonance.small_body.name:
                 asteroid_name = resonance.small_body.name
-                with open(opjoin(self._aei_path, '%s.aei' % asteroid_name)) as fd:
-                    aei_data = [x for x in fd]
+                filepath = opjoin(self._aei_path, '%s.aei' % asteroid_name)
+                aei_data = read_aei(filepath)
             yield resonance, aei_data
 
     def exec(self):
