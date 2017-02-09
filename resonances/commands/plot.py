@@ -1,4 +1,6 @@
 import logging
+
+import pandas as pd
 from boto.s3.key import Key
 from resonances.entities import ResonanceMixin
 import os
@@ -33,7 +35,7 @@ class ResfileMaker:
             planet_paths = [opjoin(MERCURY_DIR, '%s.aei' % x) for x in planets]
         self.orbital_element_sets = build_bigbody_elements(planet_paths)
 
-    def make(self, with_phases: List[float], by_aei_data: List[str], filepath: str):
+    def make(self, with_phases: List[float], by_aei_data: pd.DataFrame, filepath: str):
         orbital_elem_set = ComputedOrbitalElementSetFacade(self.orbital_element_sets, with_phases)
         orbital_elem_set.write_to_resfile(filepath, by_aei_data)
 
@@ -86,9 +88,9 @@ class PlotSaver:
             self._s3_bucket_key.set_contents_from_filename(self._tarpath)
 
 
-class ImageBuilder:
+class _ImageBuilder:
     def __init__(self, resonance: ResonanceMixin, title: str, resmaker: ResfileMaker,
-                 aei_data: List[str], out_paths: OutPaths):
+                 aei_data: pd.DataFrame, out_paths: OutPaths):
 
         self._resonance = resonance
         asteroid_name = resonance.small_body.name
@@ -112,7 +114,7 @@ class ImageBuilder:
         return png_path
 
 
-class PlotBuilder:
+class _PlotBuilder:
     def __init__(self, phase_loader: PhaseLoader, saver: PlotSaver,
                  resmaker: ResfileMaker, planets: tuple):
         """Process data and build plots.
@@ -127,13 +129,13 @@ class PlotBuilder:
         self._planets = planets
         self._saver = saver
 
-    def build(self, resonance: ResonanceMixin, aei_data: List[str]):
+    def build(self, resonance: ResonanceMixin, aei_data: pd.DataFrame):
         phases = self._phase_loader.load(resonance.id)
         apocentric_phases = [cutoff_angle(x + pi) for x in phases]
         title = 'Asteroid %s %s %s' % (resonance.small_body.name, str(resonance),
                                        ' '.join(self._planets))
-        image_builder = ImageBuilder(resonance, title, self._resmaker, aei_data,
-                                     self._saver.out_paths)
+        image_builder = _ImageBuilder(resonance, title, self._resmaker, aei_data,
+                                      self._saver.out_paths)
 
         png_path = image_builder.build(phases)
         self._saver.save(png_path)
@@ -182,7 +184,7 @@ def plot(asteroids: tuple, phase_storage: PhaseStorage, for_librations: bool,
     aei_getter = AEIDataGetter(pathbuilder)
 
     plot_saver = PlotSaver(out_paths, output if is_tar else None, s3_bucket_key)
-    builder = PlotBuilder(phase_loader, plot_saver, resmaker, planets)
+    builder = _PlotBuilder(phase_loader, plot_saver, resmaker, planets)
 
     for resonance in get_resonances_by_asteroids(asteroids, for_librations, integers, planets):
         aei_data = aei_getter.get_aei_matrix(resonance.small_body.name)
