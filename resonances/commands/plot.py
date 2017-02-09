@@ -185,7 +185,7 @@ def plot(asteroids: tuple, phase_storage: PhaseStorage, for_librations: bool,
     builder = PlotBuilder(phase_loader, plot_saver, resmaker, planets)
 
     for resonance in get_resonances_by_asteroids(asteroids, for_librations, integers, planets):
-        aei_data = aei_getter.get_aei_data(resonance.small_body.name)
+        aei_data = aei_getter.get_aei_matrix(resonance.small_body.name)
         if build_phases:
             orbital_elem_set_facade = ResonanceOrbitalElementSetFacade(
                 orbital_element_sets, resonance)

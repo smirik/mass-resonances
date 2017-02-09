@@ -117,11 +117,34 @@ class ComputedOrbitalElementSetFacade(IOrbitalElementSetFacade):
             )
         self._resonant_phases = resonant_phases
 
-    def get_elements(self, aei_data: List[str]) -> Iterable[str]:
+    def get_elements(self, aei_data: pd.DataFrame) -> Iterable[str]:
         """
         :param aei_data:
         :return:
         """
+        res_data_args = [
+            aei_data['Time (years)'],
+            np.array(self._resonant_phases),
+            aei_data['a'].values,
+            aei_data['e'].values,
+            aei_data['i'].values,
+            aei_data['i'].values,
+            aei_data['node'].values,
+            aei_data['long'].values,
+        ]
+
+        for planet in self._orbital_element_sets:
+            res_data_args.append(planet.orbital_elements['a'].values)
+            res_data_args.append(planet.orbital_elements['e'].values)
+        res_data = np.column_stack(res_data_args)
+        print(res_data[0])
+        exit(1)
+        
+        return '%f %f %f %f %f' % (self.semi_axis, self.eccentricity, self.inclination,
+                                   self.node, self.p_longitude)
+        return res_data
+        print(self._resonant_phases)
+        exit(1)
         for i, orbital_elements in enumerate(self._get_body_orbital_elements(aei_data)):
             resonant_phase = self._resonant_phases[i]
             resonance_data = "%f %f %s %s\n" % (
