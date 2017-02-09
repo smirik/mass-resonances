@@ -127,18 +127,17 @@ class ComputedOrbitalElementSetFacade(IOrbitalElementSetFacade):
             np.array(self._resonant_phases),
             aei_data['a'].values,
             aei_data['e'].values,
-            aei_data['i'].values,
-            aei_data['i'].values,
-            aei_data['node'].values,
-            aei_data['long'].values,
+            np.radians(aei_data['i'].values.astype(int)),
+            np.radians(aei_data['node'].values.astype(int)),
+            np.radians(aei_data['long'].values),
         ]
 
         for planet in self._orbital_element_sets:
             res_data_args.append(planet.orbital_elements['a'].values)
             res_data_args.append(planet.orbital_elements['e'].values)
         res_data = np.column_stack(res_data_args)
-        print(res_data[0])
-        exit(1)
+        for item in res_data[:10]:
+            print(["%.3f"%x for x in item])
         
         return '%f %f %f %f %f' % (self.semi_axis, self.eccentricity, self.inclination,
                                    self.node, self.p_longitude)
