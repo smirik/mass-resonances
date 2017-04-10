@@ -109,8 +109,8 @@ class OrbitalElementSetCollection:
         self._set = self._get_orbital_elements()
 
     def _get_orbital_elements(self) -> pd.DataFrame:
-        res = pd.read_csv(self._filepath, dtype=np.float64, names=AEI_HEADER,
-                          skiprows=HEADER_LINE_COUNT, delimiter=r"\s+")
+        res = pd.read_csv(self._filepath, dtype=np.float64,  # pylint: disable=no-member
+                          names=AEI_HEADER, skiprows=HEADER_LINE_COUNT, delimiter=r"\s+")
         return res
 
     @property
