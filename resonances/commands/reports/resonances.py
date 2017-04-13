@@ -37,6 +37,7 @@ def show_resonance_table(asteroid_condition: AsteroidCondition = None,
     body_count = BodyNumberEnum(body_count)
     builder = GetQueryBuilder(body_count, True)
     query = builder.get_resonances()
+    query = query.order_by(builder.resonance_cls.id)
 
     if asteroid_condition:
         query = query.filter(builder.asteroid_alias.number >= asteroid_condition.start,
@@ -72,9 +73,9 @@ def show_resonance_table(asteroid_condition: AsteroidCondition = None,
         if options is None:
             options = type(resonance).get_table_options()
             table = Texttable(max_width=120)
-            table.set_cols_width(options.column_widths + [10, 10])
+            table.set_cols_width([6] + options.column_widths + [10, 10])
             table.set_precision(PRECISION)
-            table.header(options.column_names + ['catalog axis', 'axis difference'])
+            table.header(['ID'] + options.column_names + ['catalog axis', 'axis difference'])
 
         if catalog_axises is not None:
             catalog_axis = catalog_axises[resonance.small_body.name]
@@ -84,9 +85,7 @@ def show_resonance_table(asteroid_condition: AsteroidCondition = None,
             catalog_axis = '-'
             axis_diff = '-'
 
-        row = options.get_data(resonance) + [
-            catalog_axis, axis_diff
-        ]
+        row = [resonance.id] + options.get_data(resonance) + [catalog_axis, axis_diff]
         table.add_row(row)
 
     print(table.draw() if table else 'No resonance by pointed filter.')

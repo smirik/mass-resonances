@@ -120,4 +120,6 @@ def _save_file(serialized_phases: List[Dict[str, float]], filename: str):
         for i, phase in enumerate(serialized_phases):
             if i > 0:
                 f.write('\n')
-            f.write(str(phase))
+            sorted_items = sorted(phase.items())
+            line = '{%s}' % ', '.join("'{}': {}".format(key, val) for key, val in sorted_items)
+            f.write(line)
