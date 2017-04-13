@@ -24,7 +24,8 @@ AEI_HEADER = ['Time (years)', 'long', 'M', 'a', 'e', 'i', 'peri', 'node', 'mass'
 
 
 def read_aei(aei_path) -> pd.DataFrame:
-    res = pd.read_csv(aei_path, dtype=np.float64, names=AEI_HEADER,
+    dtype = np.float64  # pylint: disable=no-member
+    res = pd.read_csv(aei_path, dtype=dtype, names=AEI_HEADER,
                       skiprows=4, delimiter=r"\s+")
     return res
 

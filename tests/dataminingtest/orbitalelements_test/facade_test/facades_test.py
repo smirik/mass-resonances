@@ -128,6 +128,8 @@ def test_get_elements(aei_data, first_serialized_planet, second_serialized_plane
     director = _FacadeDirector(planet_elems)
     facade = director.build(builder)
     i = 0
+    import pandas as pd
+    aei_data = pd.DataFrame([], columns=['Time (years)', 'a', 'e', 'i', 'node', 'long'])
     data = TEST_HEADER + [aei_data]
 
     for linedata in facade.get_elements(data):

@@ -121,7 +121,8 @@ class OrbitalElementSetCollection:
         return self._set
 
     def __getitem__(self, item: int) -> OrbitalElementSet:
-        return self.orbital_elements.values[item]
+        elems = self.orbital_elements
+        return elems.values[item]  # pylint: disable=no-member
 
     def __len__(self) -> int:
         return self.orbital_elements.shape[0]

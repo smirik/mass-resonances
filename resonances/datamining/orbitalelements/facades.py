@@ -8,11 +8,9 @@ from resonances.entities.resonance.twobodyresonance import ResonanceMixin
 
 from resonances.entities.body import LONG
 from resonances.entities.body import PERI
-from resonances.shortcuts import cutoff_angle
 from .collection import OrbitalElementSet
 from .collection import OrbitalElementSetCollection
 import pandas as pd
-
 SMALL_BODY = 'small_body'
 BIG_BODIES = 'big_bodies'
 HEADER_LINE_COUNT = 4
@@ -139,7 +137,8 @@ class ComputedOrbitalElementSetFacade(IOrbitalElementSetFacade):
         :param aei_data:
         :return:
         """
-        res_data = self._make_res_data(aei_data, np.array(self._resonant_phases))
+        phases = np.array(self._resonant_phases)
+        res_data = self._make_res_data(aei_data, phases)
         return res_data
 
 
