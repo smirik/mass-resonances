@@ -1,3 +1,4 @@
+import pandas as pd
 from abc import abstractmethod
 from typing import List
 from unittest import mock
@@ -114,32 +115,40 @@ def test_init(mock_side_effect, exception_cls, builder):
         (first_aei_data(), '4.003 1.048', '8.578 1.014',
          _ComputedFacadeBuilder(phases=[2.112])),
         (first_aei_data(), '5.203 0.048', '9.578 0.054',
-         _ResonanceFacadeBuilder(resonances=[_build_resonance(3.)])),
+         _ResonanceFacadeBuilder(resonances=[_build_resonance(-2.873582432742813)])),
         (first_aei_data(), '4.003 1.048', '8.578 1.014',
-         _ResonanceFacadeBuilder(resonances=[_build_resonance(2.112)])),
+         _ResonanceFacadeBuilder(resonances=[_build_resonance(1.2318644363250906)])),
     ]
 )
 def test_get_elements(aei_data, first_serialized_planet, second_serialized_planet,
                       builder: _IFacadeBuilder):
+    import numpy as np
     planet_elems = build_orbital_collection([
-        [build_elem_set(first_serialized_planet)],
-        [build_elem_set(second_serialized_planet)]
+        build_elem_set([first_serialized_planet]),
+        build_elem_set([second_serialized_planet]),
     ])
     director = _FacadeDirector(planet_elems)
     facade = director.build(builder)
-    i = 0
-    import pandas as pd
-    aei_data = pd.DataFrame([], columns=['Time (years)', 'a', 'e', 'i', 'node', 'long'])
-    data = TEST_HEADER + [aei_data]
 
-    for linedata in facade.get_elements(data):
-        assert linedata == (
-            '0.000000 %f 2.765030 0.077237 0.174533 1.396263 2.690092 %s %s\n' %
-            (builder.phases[i], first_serialized_planet, second_serialized_planet)
-        )
-        i += 1
+    d = [float(x) for x in aei_data.split()]
+    aei_data = pd.DataFrame(
+        [d[:6] + [d[7]]],
+        columns=['Time (years)', 'long', 'M', 'a', 'e', 'i', 'node'])
 
-    assert i > 0
+    orbital_elements = facade.get_elements(aei_data)
+
+    elem_len = len(orbital_elements)
+    for i in range(elem_len):
+        linedata = orbital_elements.loc[0].tolist()
+        first_planet = [float(x) for x in first_serialized_planet.split()]
+        second_planet = [float(x) for x in second_serialized_planet.split()]
+        etalon = [
+            0.000000, builder.phases[i], 2.765030, 0.077237, 0.174533, 1.396263, 2.690092
+        ] + first_planet + second_planet
+        assert np.isclose(linedata, etalon).all()
+
+
+    assert elem_len > 0
 
 
 @pytest.mark.parametrize(
@@ -167,17 +176,27 @@ def test_get_resonant_phases(aei_data, first_serialized_planet: List[str],
     """
     builder = _ResonanceFacadeBuilder(resonances=[_build_resonance()])
 
-    first_planet_elems = [build_elem_set(x) for x in first_serialized_planet]
-    second_planet_elems = [build_elem_set(x) for x in second_serialized_planet]
+    first_planet_elems = build_elem_set(first_serialized_planet)
+    second_planet_elems = build_elem_set(second_serialized_planet)
     planet_elems = build_orbital_collection_set([first_planet_elems, second_planet_elems])
     director = _FacadeDirector(planet_elems)
     facade = director.build(builder)    # type: ResonanceOrbitalElementSetFacade
 
     if len(aei_data) == len(first_serialized_planet):
-        aei_data = TEST_HEADER + aei_data
+        vals = [x.split() for x in aei_data]
+        aei_data = pd.DataFrame(
+            [ d[:6] + [d[7]]  for d in vals],
+            columns=['Time (years)', 'long', 'M', 'a', 'e', 'i', 'node'],
+            dtype=float
+        )
         _test_phase_correctness(aei_data, facade, phase_values)
     else:
-        aei_data = TEST_HEADER + aei_data
+        vals = [x.split() for x in aei_data]
+        aei_data = pd.DataFrame(
+            [ d[:6] + [d[7]]  for d in vals],
+            columns=['Time (years)', 'long', 'M', 'a', 'e', 'i', 'node'],
+            dtype=float
+        )
         _test_get_resonant_phases_raise(aei_data, facade)
 
 

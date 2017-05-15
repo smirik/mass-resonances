@@ -75,8 +75,10 @@ class IOrbitalElementSetFacade(object):
         for planet in self._orbital_element_sets:
             res_data_args.append(planet.orbital_elements['a'].values)
             res_data_args.append(planet.orbital_elements['e'].values)
+
         res_data = np.column_stack(res_data_args)
         res_data = pd.DataFrame(res_data)
+
         return res_data
 
     def _get_body_orbital_elements(self, aei_data: List[str]) \
@@ -206,7 +208,8 @@ class ResonanceOrbitalElementSetFacade(IOrbitalElementSetFacade):
         :param aei_data:
         :return:
         """
-        phases = self.get_resonant_phases(aei_data)
+        time_phases = self.get_resonant_phases(aei_data)
+        phases = np.array(time_phases)[:, 1]
         res_data = self._make_res_data(aei_data, phases)
         return res_data
 

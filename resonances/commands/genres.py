@@ -31,7 +31,7 @@ def _make_res(by_resonance: ResonanceMixin, filepaths: List[str],
     orbital_element_sets = build_bigbody_elements(planet_aei_paths)
     orbital_elem_set_facade = ResonanceOrbitalElementSetFacade(orbital_element_sets, by_resonance)
 
-    aei_data = getter.get_aei_data(asteroid_name)
+    aei_data = getter.get_aei_matrix(asteroid_name)
     phase_builder.build(aei_data, resonance_id, orbital_elem_set_facade)
     phases = phase_loader.load(resonance_id)
 
