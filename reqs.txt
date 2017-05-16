@@ -1,0 +1,12 @@
+# is used for docker build
+PyYAML==3.11
+click==5.1
+SQLAlchemy==1.0.9
+alembic==0.8.3
+psycopg2==2.6.1
+redis==2.10.5
+texttable==0.8.4
+boto==2.41.0
+numpy==1.10.4
+beautifulsoup4==4.5.1
+pandas==0.19.2

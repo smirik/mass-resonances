@@ -123,3 +123,10 @@ s3:
   access_key: $S3_ACCESS_KEY
   secret_key: $S3_SECRET_KEY
   bucket: $S3_BUCKET
+
+online:
+  neodys:
+    variation_base_url: 'http://newton.dm.unipi.it/neodys/index.php?pc=1.1.1&n='
+
+system:
+  threads: 1

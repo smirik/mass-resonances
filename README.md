@@ -6,9 +6,7 @@ This is Python fork of Three-body-resonances (https://github.com/smirik/Three-bo
 Technical documentation is in docs directory.
 
 # Installation
-* virtualenv .venv
-* source .venv/bin/activate
-* pip install -r reqs.pip
+* pip install git+https://github.com/4xxi/resonances
 * If it needs, you can override settings by file config/local_config.yml
 * move alembic.ini.dist alembic.ini and point in this file path to database in parameter 
 `sqlalchemy.url` in section `[alembic]`
@@ -34,19 +32,19 @@ This example of usecase of the application. It computes aei files for time inter
 pointed half-interval from 1 to 101 (101 will be excluded).
 
 1. Run the script: `source .venv/bin/activate`
-2. To find the resonances: `./main.py find --recalc=1 --from-day=2451000.5 --to-day=38976000.5
+2. To find the resonances: `python -m resonances find --recalc=1 --from-day=2451000.5 --to-day=38976000.5
 --start=1 --stop=101 --reload-resonances=1`
-3. Make plots `./main.py plot --start=1 --stop=101`
+3. Make plots `python -m resonances plot --start=1 --stop=101`
 
 This example has same effect.
 
 1. Run the script: `source .venv/bin/activate`
-2. Calculate aei files: `./main.py calc --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101`
-3. To load possible resonances `./main.py load-resonances --start=1 --stop=101`
-4. To find the resonances: `./main.py find --start=1 --stop=101`
-5. Make plots `./main.py plot --start=1 --stop=101`
+2. Calculate aei files: `python -m resonances calc --from-day=2451000.5 --to-day=38976000.5 --start=1 --stop=101`
+3. To load possible resonances `python -m resonances load-resonances --start=1 --stop=101`
+4. To find the resonances: `python -m resonances find --start=1 --stop=101`
+5. Make plots `python -m resonances plot --start=1 --stop=101`
 
-If you need to clear computed resonant phases `./main.py clear-phases --start=1 --stop=101`
+If you need to clear computed resonant phases `python -m resonances clear-phases --start=1 --stop=101`
 
 Plots will be in /path/to/app/output/images/
 
@@ -93,7 +91,7 @@ of our application.
 Take a look on files param.in, big.in, small.in.
 
 * `param.in` must contain algorithm `mvs`. `--from-day` must be `2451000.5` and `--to-day` must be
-`38976000.5`, they passed by arguments for `calc` command. Make `./main.py calc --help` for more.
+`38976000.5`, they passed by arguments for `calc` command. Make `python -m resonances calc --help` for more.
 * `big.in` must contain `epoch` that equals `2451000.5`.
 * `small.in` lists asteroids. For every asteroid it stores `ep` (means epoch), this parameter must
 be `2455400.5`. This day is result of expression `55400.0 + 2400000.5`, where `55400.0` has been got
@@ -102,7 +100,7 @@ in catalog.
 
 # <a href="usage"></a>Usage
 
-**Usage: main.py calc [OPTIONS]**
+**Usage: python -m resonances calc [OPTIONS]**
 
 ```
   Launch integrator Mercury6 for computing orbital elements of asteroids and
@@ -122,7 +120,7 @@ Options:
   --help               Show this message and exit.
 ```
   
-**Usage: main.py find [OPTIONS]**
+**Usage: python -m resonances find [OPTIONS]**
 
 ```
   Computes resonant phases, find in them circulations and saves to
@@ -166,24 +164,21 @@ Options:
   --help                          Show this message and exit.
 ```
   
-**Usage: main.py plot [OPTIONS]**
+**Usage: python -m resonances plot [OPTIONS]**
 
 ```
   Build graphics for asteroids in pointed interval, that have libration.
   Libration can be created by command 'find'.
 
 Options:
-  --start INTEGER                 Start asteroid number. Counting from 1.
-  --stop INTEGER                  Stop asteroid number. Excepts last. Means,
-                                  that asteroid with number, that equals this
-                                  parameter, will not be integrated.
+  -a, --asteroid TEXT             Name of asteroid
   --phase-storage [REDIS|DB|FILE]
                                   will load phases for plotting from redis or
                                   postgres or file
   --only-librations BOOLEAN       flag indicates about plotting only for
                                   resonances, that librates
-  -o, --output PATH               Directory or tar, where will be plots. By
-                                  default is current directory.
+  -o, --output PATH               Directory or tar, where will be plots.
+                                  [default: /media/storage/develop/resonances]
   -i, --integers TEXT             Integers are pointing by three values
                                   separated by space. Example: '5 -1 -1'
   -b, --build-phase               It will build phases
@@ -195,7 +190,7 @@ Options:
   --help                          Show this message and exit.
 ```
 
-**Usage: main.py load-resonances [OPTIONS]**
+**Usage: python -m resonances load-resonances [OPTIONS]**
 
 ```
   Loads integers, satisfying D'Alambert rule, from
@@ -215,7 +210,7 @@ Options:
   --help              Show this message and exit.
 ```
 
-**Usage: main.py librations [OPTIONS]**
+**Usage: python -m resonances librations [OPTIONS]**
 ```
   Shows librations. Below options are need for filtering.
 
@@ -240,7 +235,7 @@ Options:
   --help                    Show this message and exit.
 ```
 
-**Usage: main.py resonances [OPTIONS]**
+**Usage: python -m resonances resonances [OPTIONS]**
 ```
 
   Shows integers from resonance table. Below options are need for filtering.
@@ -260,7 +255,7 @@ Options:
   --help                Show this message and exit.
 ```
 
-**Usage: main.py planets [OPTIONS]**
+**Usage: python -m resonances planets [OPTIONS]**
 ```
 
   Shows planets, which exist inside resonance table.
@@ -269,4 +264,22 @@ Options:
   --body-count [2|3]  Example: 2. 2 means two body resonance, 3 means three
                       body resonance,
   --help              Show this message and exit.
+```
+
+**Usage: python -m resonances integrate [OPTIONS] [PLANETS]...**
+```
+  Makes complete integration for asteroids pointed in catalog with pointed
+  planets. You can point word "all" instead planet name and integration will
+  work with all planets. Catalog must have AstDys format.
+
+Options:
+  --from-day FLOAT        This parameter will be passed to param.in file for
+                          integrator Mercury6 as start time pointed in days.
+  --to-day FLOAT          This parameter will be passed to param.in file for
+                          integrator Mercury6 as stop time pointed in days.
+  -a, --axis-swing FLOAT  Axis swing determines swing between semi major axis
+                          of asteroid from catalog and resonance table.
+  --catalog PATH
+  -i, --integers TEXT     Examples: '>1 1', '>=3 <5', '1 -1 *'
+  --help                  Show this message and exit.
 ```

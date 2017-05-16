@@ -6,7 +6,7 @@ asteroid, any integers. But before this operation you *must load resonance table
 For this operation you need aei files. For example you need generate this for asteroid *A490* with Jupiter and Saturn. Take a look.
 ```
 docker run --link=some-resonances-data:postgres -v <path/to/aei/files>:/aei-files:ro -v `pwd`/res:/opt/resonances/res:rw\
-    --env-file=<path/to/.env> 4xxi/resonances genres -p /aei-files -a 490 JUPITER SATURN
+    --env-file=<path/to/.env> 4xxi/resonances genres -p /aei-files -a A490 JUPITER SATURN
 ```
 You must get `res` folder in you current working directory, because there is this option
 ```
@@ -15,7 +15,7 @@ You must get `res` folder in you current working directory, because there is thi
 Maybe you have aei files inside tar.gz archive. You can point pass it to application. And let add filter by integers.
 ```
 docker run --link=some-resonances-data:postgres -v <path/to/tar.gz>:/aei-401-501.tar.gz:ro -v `pwd`/res:/opt/resonances/res:rw\
-    --env-file=<path/to/.env> 4xxi/resonances genres -p /aei-401-501.tar.gz -a 490 -i '5 -2 -2' JUPITER SATURN
+    --env-file=<path/to/.env> 4xxi/resonances genres -p /aei-401-501.tar.gz -a A490 -i '5 -2 -2' JUPITER SATURN
 ```
 This command will generate res file in res directory for asteroid A490 with Jupiter and Saturn.
 *NOTE* If you run it on cluster remove option `--link=some-resonances-data:postgres`. Options for connection to database must be in `.env` file.
@@ -81,3 +81,14 @@ times with different options
 * `--start=150001 --stop=300001`
 * `--start=300001 --stop=464622`
 The manager will assign tasks to nodes proportional itself.
+
+## Complete cycle integration
+If you want to make complete cycle from building aei files to getting librations of couple of asteroid you can use *integrate* command.
+For example
+```
+docker run -v <path/to/catalog_file>:/opt/resonances/catalog/allnum.my:ro \
+--env-file=/media/storage/docs/resonances/envs/local_prod 4xxi/resonances:latest \
+integrate --from-day=2451000.5 --to-day=2551000.5 --catalog=/allnum.my -a 0.01 JUPITER SATURN
+```
+This will build aei files with data from day 2451000.5 to 2551000.5, generates resonance table and load it to database,
+gets suitable resonances by axis swing 0.01 for planets JUPITER and SATURN, and searches librations in these resonances.

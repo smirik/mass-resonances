@@ -1,21 +1,20 @@
-from typing import Tuple, List
+from typing import Tuple
 from unittest import mock
 
 import pytest
-from abc import abstractmethod
-from datamining.resonances import get_resonance_query, PLANET_TABLES
-from entities.body import Planet, Asteroid
-from settings import Config
+from resonances.datamining import LibrationClassifier, ResonanceOrbitalElementSetFacade
+from resonances.datamining.resonances import get_resonance_query, PLANET_TABLES
+from resonances.entities import Libration
+from resonances.entities import ThreeBodyResonance, get_resonance_factory, BodyNumberEnum, TwoBodyResonance, \
+    ResonanceMixin, TwoBodyLibration
+from resonances.entities import build_resonance
+from resonances.entities.dbutills import session, engine
 from sqlalchemy.exc import InvalidRequestError
 
-from tests.shortcuts import get_class_path
-from datamining import LibrationClassifier, ResonanceOrbitalElementSetFacade
-from entities import ThreeBodyResonance, get_resonance_factory, BodyNumberEnum, TwoBodyResonance, \
-    ResonanceMixin, TwoBodyLibration
-from entities import build_resonance
-from entities import Libration
-from entities.dbutills import session, engine
+from resonances.entities.body import Planet, Asteroid
+from resonances.settings import Config
 from tests.entitiestest.librationtest import PERCENTAGE_BREAKS
+from tests.shortcuts import get_class_path
 
 CONFIG = Config.get_params()
 X_STOP = CONFIG['gnuplot']['x_stop']

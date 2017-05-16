@@ -1,7 +1,9 @@
-from typing import List, Tuple
+from typing import List
+
 import pytest
-from catalog import find_by_number
-from settings import Config
+
+from resonances.catalog import find_by_number
+from resonances.settings import Config
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
