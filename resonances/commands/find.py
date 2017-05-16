@@ -75,7 +75,7 @@ class LibrationFinder:
             if broken_asteroid_mediator.check():
                 continue
 
-            if not aei_data:
+            if aei_data.empty:
                 broken_asteroid_mediator.save('Has no data in aei file.')
 
             logging.debug('Analyze asteroid %s, resonance %s' % (asteroid_name, resonance))

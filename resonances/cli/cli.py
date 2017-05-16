@@ -45,13 +45,14 @@ def cli(loglevel: str = 'DEBUG', logfile: str = None):
 @cli.command(help='Launch integrator Mercury6 for computing orbital elements of asteroids and'
                   ' planets, that will be stored in aei files.')
 @asteroid_time_intervals_options()
+@click.option('--catalog', type=click.Path(resolve_path=True, exists=True), default=ASTDYS)
 @click.option('--aei-path', '-p', multiple=False, default=opjoin(PROJECT_DIR, INTEGRATOR_DIR),
               type=Path(resolve_path=True),
               help='Path where will be stored aei files. It can be tar.gz archive.')
-def calc(start: int, stop: int, from_day: float, to_day: float, aei_path: str):
+def calc(start: int, stop: int, from_day: float, to_day: float, aei_path: str, catalog: str):
     from resonances.commands import calc as _calc
     from resonances.catalog import asteroid_list_gen
-    asteroids = asteroid_list_gen(STEP, start=start, stop=stop)
+    asteroids = asteroid_list_gen(STEP, catalog_path=catalog, start=start, stop=stop)
     _calc(asteroids, from_day, to_day, aei_path)
 
 

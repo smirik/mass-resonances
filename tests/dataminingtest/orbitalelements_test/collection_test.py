@@ -8,27 +8,6 @@ from resonances.datamining import OrbitalElementSetCollection
 from resonances.datamining.orbitalelements.collection import AEIValueError
 from resonances.settings import Config
 
-PROJECT_DIR = Config.get_project_dir()
-PARAMS = Config.get_params()
-A1_AEI_FILE_LEN = 46
-
-
-def test_orbital_elements():
-    filepath = opjoin(PROJECT_DIR, PARAMS['integrator']['dir'], 'A1.aei')
-    collection = OrbitalElementSetCollection(filepath)
-    assert len(collection.orbital_elements) == A1_AEI_FILE_LEN
-    assert len(collection) == A1_AEI_FILE_LEN
-    orbitalelements = collection.orbital_elements[0]
-
-    assert orbitalelements == collection[0]
-    assert orbitalelements.time == 0.0000000
-    assert orbitalelements.p_longitude == radians(1.541309E+02)
-    assert orbitalelements.mean_anomaly == radians(3.172742E+02)
-    assert orbitalelements.semi_axis == 2.76503
-    assert orbitalelements.eccentricity == 0.077237
-    assert orbitalelements.inclination == radians(int(10.6047))
-    assert orbitalelements.node == radians(int(80.4757))
-
 
 @pytest.fixture()
 def first_aei_data():

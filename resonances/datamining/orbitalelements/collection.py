@@ -1,8 +1,11 @@
 from math import radians
 from math import sqrt
 from typing import List
+import pandas as pd
+import numpy as np
 
 from resonances.settings import Config
+from resonances.shortcuts import AEI_HEADER
 
 SMALL_BODY = 'small_body'
 CONFIG = Config.get_params()
@@ -105,28 +108,24 @@ class OrbitalElementSetCollection:
         self._filepath = filepath
         self._set = self._get_orbital_elements()
 
-    def _get_orbital_elements(self) -> List[OrbitalElementSet]:
-        res = []
-        with open(self._filepath) as bodyfile:
-            for i, line in enumerate(bodyfile):
-                if i < HEADER_LINE_COUNT:
-                    continue
-
-                res.append(OrbitalElementSet(line))
+    def _get_orbital_elements(self) -> pd.DataFrame:
+        res = pd.read_csv(self._filepath, dtype=np.float64,  # pylint: disable=no-member
+                          names=AEI_HEADER, skiprows=HEADER_LINE_COUNT, delimiter=r"\s+")
         return res
 
     @property
-    def orbital_elements(self) -> List[OrbitalElementSet]:
+    def orbital_elements(self) -> pd.DataFrame:
         """
         :return: list of orbital elements, that stored in aei file earlier.
         """
         return self._set
 
     def __getitem__(self, item: int) -> OrbitalElementSet:
-        return self.orbital_elements[item]
+        elems = self.orbital_elements
+        return elems.values[item]  # pylint: disable=no-member
 
     def __len__(self) -> int:
-        return len(self.orbital_elements)
+        return self.orbital_elements.shape[0]
 
 
 def build_bigbody_elements(planet_filepaths: List[str]) -> List[OrbitalElementSetCollection]:

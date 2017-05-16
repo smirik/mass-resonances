@@ -3,6 +3,9 @@ Module contains kit for getting resonances from databases.
 """
 import logging
 import warnings
+
+import pandas as pd
+
 from os import remove
 from os.path import join as opjoin
 from typing import Iterable, Tuple, List, Dict
@@ -21,6 +24,7 @@ from sqlalchemy.orm.util import AliasedClass
 from resonances.entities.body import Asteroid
 from resonances.entities.body import Planet
 from resonances.settings import Config
+from resonances.shortcuts import read_aei
 
 CONFIG = Config.get_params()
 PROJECT_DIR = Config.get_project_dir()
@@ -28,7 +32,8 @@ MERCURY_DIR = opjoin(PROJECT_DIR, CONFIG['integrator']['dir'])
 
 FOREIGNS = ['first_body', 'second_body']
 PLANET_TABLES = {x: aliased(Planet) for x in FOREIGNS}  # type: Dict[str, Planet]
-ResonanceAeiData = Tuple[ResonanceMixin, List[str]]
+# ResonanceAeiData = Tuple[ResonanceMixin, List[str]]
+ResonanceAeiData = Tuple[ResonanceMixin, pd.DataFrame]
 
 
 class GetQueryBuilder:
@@ -237,6 +242,17 @@ class AEIDataGetter:
 
         return self._aei_data
 
+    def get_aei_matrix(self, for_asteroid_name: str) -> pd.DataFrame:
+        if for_asteroid_name != self._asteroid_name:
+            self._asteroid_name = for_asteroid_name
+            self._aei_data = None
+
+            aei_path = self._filepath_builder.build('%s.aei' % self._asteroid_name)
+            self._aei_data = read_aei(aei_path)
+            if self._clear:
+                remove(aei_path)
+        return self._aei_data
+
 
 def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librations: bool,
                               planets: Tuple[str, ...], aei_getter: AEIDataGetter,
@@ -259,6 +275,6 @@ def get_aggregated_resonances(from_asteroid: int, to_asteroid: int, only_librati
     for resonance in get_resonances(from_asteroid, to_asteroid, only_librations, planets, integers):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=exc.SAWarning)
-            aei_data = aei_getter.get_aei_data(resonance.small_body.name)
-            assert len(aei_data) > 0
+            aei_data = aei_getter.get_aei_matrix(resonance.small_body.name)
+            assert aei_data.size > 0
             yield resonance, aei_data

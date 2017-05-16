@@ -7,6 +7,8 @@ from resonances.datamining import OrbitalElementSet
 from resonances.datamining import OrbitalElementSetCollection
 from tests.shortcuts import get_class_path
 
+import pandas as pd
+
 
 def build_orbital_collection(property_mock_values: List) \
         -> List[OrbitalElementSetCollection]:
@@ -24,13 +26,22 @@ def build_orbital_collection(property_mock_values: List) \
 
             type(first_elems).orbital_elements = orbital_elements1
             type(first_elems).__len__ = mock.MagicMock(return_value=len(property_mock_values[0]))
-            type(first_elems).__getitem__ = mock.MagicMock(
-                return_value=property_mock_values[0][0])
+
+            if type(property_mock_values[0]) == pd.DataFrame:
+                type(first_elems).__getitem__ = mock.MagicMock(
+                    return_value=property_mock_values[0].loc[0])
+            else:
+                type(first_elems).__getitem__ = mock.MagicMock(
+                    return_value=property_mock_values[0][0])
 
             type(second_elems).orbital_elements = orbital_elements2
             type(second_elems).__len__ = mock.MagicMock(return_value=len(property_mock_values[1]))
-            type(second_elems).__getitem__ = mock.MagicMock(
-                return_value=property_mock_values[1][0])
+            if type(property_mock_values[1]) == pd.DataFrame:
+                type(first_elems).__getitem__ = mock.MagicMock(
+                    return_value=property_mock_values[1].loc[0])
+            else:
+                type(second_elems).__getitem__ = mock.MagicMock(
+                    return_value=property_mock_values[1][0])
 
             return [first_elems, second_elems]
 
@@ -83,13 +94,28 @@ def third_aei_data():
     return '19.9876797  1.539926E+02  9.863090E+01  2.76589 0.078327  10.5864' \
             ' 73.9825  80.0102  0.000000E+00'
 
+from typing import Iterable
 
-def build_elem_set(serialize_value: str):
-    class_path = get_class_path(OrbitalElementSet)
-    with mock.patch(class_path) as mock_OrbitalElementSet:
-        obj = mock_OrbitalElementSet()
-        obj.serialize_as_planet.return_value = serialize_value
-        m_longitude, p_longitude = serialize_value.split()
-        type(obj).m_longitude = mock.PropertyMock(return_value=float(m_longitude))
-        type(obj).p_longitude = mock.PropertyMock(return_value=float(p_longitude))
-        return obj
+def build_elem_set(serialize_values: Iterable[str]):
+    import pandas as pd
+    import numpy as np
+
+    values = []
+    for serialize_value in serialize_values:
+        vals = [float(x) for x in serialize_value.split()]
+        values.append(vals)
+
+    obj = pd.DataFrame(
+        [{'Time (years)': 0, 'a': vals[0], 'e': vals[1],
+          'long': vals[0], 'M': vals[0] - np.degrees(vals[1])}
+         for vals in values],
+        dtype=float)
+    return obj
+    # class_path = get_class_path(OrbitalElementSet)
+    # with mock.patch(class_path) as mock_OrbitalElementSet:
+        # obj = mock_OrbitalElementSet()
+        # obj.serialize_as_planet.return_value = serialize_value
+        # m_longitude, p_longitude = serialize_value.split()
+        # type(obj).m_longitude = mock.PropertyMock(return_value=float(m_longitude))
+        # type(obj).p_longitude = mock.PropertyMock(return_value=float(p_longitude))
+        # return obj
