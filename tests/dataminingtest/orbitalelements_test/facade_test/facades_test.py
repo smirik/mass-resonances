@@ -21,6 +21,7 @@ from .shortcuts import build_orbital_collection_set
 from .shortcuts import first_aei_data
 from .shortcuts import second_aei_data
 from .shortcuts import third_aei_data
+import numpy as np
 
 TEST_HEADER = 'some expected header content'.split()
 
@@ -92,7 +93,6 @@ def _build_body(cls, long: int, peri: int = 0):
     return body
 
 
-
 @pytest.mark.parametrize('mock_side_effect, exception_cls, builder', [
     ([[0], ['first_any_str', None]], ElementCountException,
      _ComputedFacadeBuilder(phases=[3., 6., 9.])),
@@ -122,7 +122,6 @@ def test_init(mock_side_effect, exception_cls, builder):
 )
 def test_get_elements(aei_data, first_serialized_planet, second_serialized_planet,
                       builder: _IFacadeBuilder):
-    import numpy as np
     planet_elems = build_orbital_collection([
         build_elem_set([first_serialized_planet]),
         build_elem_set([second_serialized_planet]),
@@ -145,7 +144,7 @@ def test_get_elements(aei_data, first_serialized_planet, second_serialized_plane
         etalon = [
             0.000000, builder.phases[i], 2.765030, 0.077237, 0.174533, 1.396263, 2.690092
         ] + first_planet + second_planet
-        assert np.isclose(linedata, etalon).all()
+        assert np.isclose(linedata, etalon).all()  # pylint: disable=no-member
 
 
     assert elem_len > 0
@@ -156,11 +155,11 @@ def test_get_elements(aei_data, first_serialized_planet, second_serialized_plane
         ([first_aei_data(), second_aei_data(), third_aei_data()],
          ['5.203 0.048', '3.203 0.037', '7.913 0.049'],
          ['9.578 0.054', '8.511 0.044', '6.070 0.041'],
-         [-1.1913877375688626, 1.3964129457677625, 1.6286880229625851]),
+         [-2.87358243274, -0.88372908443, 1.5333412318]),
         ([first_aei_data(), second_aei_data()],
          ['4.003 1.048', '5.203 0.048'],
          ['3.203 0.037', '6.070 0.041'],
-         [0.47542695525155043, 1.7120423314085897]),
+         [-0.346889774496, -0.484062455946]),
         ([first_aei_data()],
          ['4.003 1.048', '4.003 1.048'],
          ['8.578 1.014', '8.578 1.014'],
@@ -182,29 +181,24 @@ def test_get_resonant_phases(aei_data, first_serialized_planet: List[str],
     director = _FacadeDirector(planet_elems)
     facade = director.build(builder)    # type: ResonanceOrbitalElementSetFacade
 
+    vals = [x.split() for x in aei_data]
+    aei_data = pd.DataFrame(
+        [ d[:6] + [d[7]]  for d in vals ],
+        columns=['Time (years)', 'long', 'M', 'a', 'e', 'i', 'node'],
+        dtype=float
+    )
+
     if len(aei_data) == len(first_serialized_planet):
-        vals = [x.split() for x in aei_data]
-        aei_data = pd.DataFrame(
-            [ d[:6] + [d[7]]  for d in vals],
-            columns=['Time (years)', 'long', 'M', 'a', 'e', 'i', 'node'],
-            dtype=float
-        )
         _test_phase_correctness(aei_data, facade, phase_values)
     else:
-        vals = [x.split() for x in aei_data]
-        aei_data = pd.DataFrame(
-            [ d[:6] + [d[7]]  for d in vals],
-            columns=['Time (years)', 'long', 'M', 'a', 'e', 'i', 'node'],
-            dtype=float
-        )
         _test_get_resonant_phases_raise(aei_data, facade)
 
 
 def _test_phase_correctness(aei_data, facade: ResonanceOrbitalElementSetFacade, phase_values):
     i = 0
     for time, resonant_phase in facade.get_resonant_phases(aei_data):
-        assert time == float(aei_data[i + len(TEST_HEADER)].split()[0])
-        assert resonant_phase == phase_values[i]
+        assert time == aei_data['Time (years)'][i]
+        assert np.isclose(resonant_phase, phase_values[i])
         i += 1
 
     assert i > 0
